@@ -1,9 +1,13 @@
 package com.clinica.model;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -19,6 +23,9 @@ public class Paciente {
 	private String telefone;
 	private String email;
 	private Boolean ativo;
+
+	@OneToMany(mappedBy = "paciente")@JsonBackReference
+	private List<Consulta> consultas;
 
 	public Paciente() {
 	}
@@ -87,6 +94,10 @@ public class Paciente {
 
 	public void setAtivo(Boolean ativo) {
 		this.ativo = ativo;
+	}
+
+	public List<Consulta> getConsultas() {
+		return consultas;
 	}
 
 	@Override

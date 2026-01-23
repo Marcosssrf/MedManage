@@ -1,7 +1,10 @@
 package com.clinica.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -15,6 +18,9 @@ public class Medico {
 	@Column(nullable = false,  unique = true)
 	private String crm;
 	private String especialidade;
+
+	@OneToMany(mappedBy = "medico")
+	private List<Consulta> consultas;
 
 	public Medico() {}
 
@@ -55,6 +61,10 @@ public class Medico {
 
 	public void setEspecialidade(String especialidade) {
 		this.especialidade = especialidade;
+	}
+
+	public List<Consulta> getConsultas() {
+		return consultas;
 	}
 
 	@Override
