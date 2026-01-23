@@ -3,6 +3,7 @@ package com.clinica.model;
 import com.clinica.model.enums.FormaPagamento;
 import com.clinica.model.enums.StatusPagamento;
 import com.clinica.model.enums.TipoPagamento;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -12,11 +13,21 @@ public class Pagamento {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
+
+	@Enumerated(EnumType.STRING)
 	private TipoPagamento tipoPagamento;
+
+	@Enumerated(EnumType.STRING)
 	private FormaPagamento formaPagamento;
+
 	private Double valor;
+
+	@Enumerated(EnumType.STRING)
 	private StatusPagamento statusPagamento;
-	@OneToOne
+
+	@ManyToOne
+	@JoinColumn(name = "consulta_id", nullable = false)
+	@JsonBackReference
 	private Consulta consulta;
 
 	public Pagamento() {

@@ -63,10 +63,6 @@ public class Medico {
 		this.especialidade = especialidade;
 	}
 
-	public List<Consulta> getConsultas() {
-		return consultas;
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (o == null || getClass() != o.getClass()) return false;

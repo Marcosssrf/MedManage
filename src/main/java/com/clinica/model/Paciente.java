@@ -24,7 +24,7 @@ public class Paciente {
 	private String email;
 	private Boolean ativo;
 
-	@OneToMany(mappedBy = "paciente")@JsonBackReference
+	@OneToMany(mappedBy = "paciente")
 	private List<Consulta> consultas;
 
 	public Paciente() {
@@ -96,9 +96,6 @@ public class Paciente {
 		this.ativo = ativo;
 	}
 
-	public List<Consulta> getConsultas() {
-		return consultas;
-	}
 
 	@Override
 	public boolean equals(Object o) {

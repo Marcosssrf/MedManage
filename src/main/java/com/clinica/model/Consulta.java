@@ -1,11 +1,10 @@
 package com.clinica.model;
 
 import com.clinica.model.enums.StatusConsulta;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "consulta")
@@ -26,6 +25,9 @@ public class Consulta {
 	@ManyToOne
 	@JoinColumn(name = "medico_id", nullable = false)
 	private Medico medico;
+
+	@OneToMany(mappedBy = "consulta")
+	private List<Pagamento> pagamentos;
 
 	public Consulta() {
 	}

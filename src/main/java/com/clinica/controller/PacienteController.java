@@ -1,5 +1,6 @@
 package com.clinica.controller;
 
+import com.clinica.model.Medico;
 import com.clinica.model.Paciente;
 import com.clinica.service.PacienteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,12 @@ public class PacienteController {
 	public ResponseEntity<List<Paciente>> findAll() {
 		List<Paciente> pacientes = pacienteService.findAll();
 		return ResponseEntity.ok().body(pacientes);
+	}
+
+	@GetMapping(value = "/{id}")
+	public ResponseEntity<Paciente> findById(@PathVariable Integer id){
+		Paciente paciente = pacienteService.findById(id);
+		return ResponseEntity.ok().body(paciente);
 	}
 
 	@PostMapping

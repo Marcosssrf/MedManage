@@ -24,6 +24,12 @@ public class ConsultaController {
 		return ResponseEntity.ok(consultas);
 	}
 
+	@GetMapping(value = "/{id}")
+	public ResponseEntity<Consulta> findById(@PathVariable Integer id){
+		Consulta consulta = consultaService.findById(id);
+		return ResponseEntity.ok().body(consulta);
+	}
+
 	@PostMapping
 	public ResponseEntity<Consulta> insert(@RequestBody ConsultaDTO dto) {
 		Consulta consulta = consultaService.insert(dto);
