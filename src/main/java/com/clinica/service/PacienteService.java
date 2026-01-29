@@ -13,9 +13,7 @@ public class PacienteService {
 	@Autowired
 	PacienteRepository pacienteRepository;
 
-	public List<Paciente> findAll() {
-		return pacienteRepository.findAll();
-	}
+	public List<Paciente> findAll() { return pacienteRepository.findAll();}
 
 	public Paciente findById(Integer id) {
 		return pacienteRepository.findById(id).get();

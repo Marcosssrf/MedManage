@@ -1,9 +1,5 @@
 package com.clinica.model;
 
-
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -14,7 +10,8 @@ import java.util.Objects;
 @Table(name = "paciente")
 public class Paciente {
 
-	@Id	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 	private String nome;
 	@Column(nullable = false,  unique = true)

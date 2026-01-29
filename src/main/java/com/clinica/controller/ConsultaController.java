@@ -2,6 +2,7 @@ package com.clinica.controller;
 
 import com.clinica.dto.ConsultaDTO;
 import com.clinica.model.Consulta;
+import com.clinica.model.enums.StatusConsulta;
 import com.clinica.service.ConsultaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,17 @@ public class ConsultaController {
 		Consulta consulta = consultaService.findById(id);
 		return ResponseEntity.ok().body(consulta);
 	}
+
+	@GetMapping(value = "/buscar")
+	public ResponseEntity<List<Consulta>> findByPaciente(@RequestParam String nome){
+		return ResponseEntity.ok().body(consultaService.findByPaciente(nome));
+	}
+
+	@GetMapping(value = "/buscar/medico")
+	public ResponseEntity<List<Consulta>> findByMedico(@RequestParam String nome){
+		return ResponseEntity.ok().body(consultaService.findByMedico(nome));
+	}
+
 
 	@PostMapping
 	public ResponseEntity<Consulta> insert(@RequestBody ConsultaDTO dto) {

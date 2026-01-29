@@ -17,18 +17,21 @@ public class Medico {
 	private String nome;
 	@Column(nullable = false,  unique = true)
 	private String crm;
+	@Column(nullable = false)
 	private String especialidade;
+	private Boolean ativo;
 
 	@OneToMany(mappedBy = "medico")
 	private List<Consulta> consultas;
 
 	public Medico() {}
 
-	public Medico(Integer id, String nome, String crm, String especialidade) {
+	public Medico(Integer id, String nome, String crm, String especialidade,  Boolean ativo) {
 		this.id = id;
 		this.nome = nome;
 		this.crm = crm;
 		this.especialidade = especialidade;
+		this.ativo = ativo;
 	}
 
 	public Integer getId() {
@@ -61,6 +64,14 @@ public class Medico {
 
 	public void setEspecialidade(String especialidade) {
 		this.especialidade = especialidade;
+	}
+
+	public Boolean getAtivo() {
+		return ativo;
+	}
+
+	public void setAtivo(Boolean ativo) {
+		this.ativo = ativo;
 	}
 
 	@Override

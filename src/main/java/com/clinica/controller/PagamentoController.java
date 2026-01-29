@@ -1,7 +1,6 @@
 package com.clinica.controller;
 
 import com.clinica.dto.PagamentoDTO;
-import com.clinica.model.Paciente;
 import com.clinica.model.Pagamento;
 import com.clinica.service.PagamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
