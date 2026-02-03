@@ -4,11 +4,14 @@ import com.clinica.model.enums.FormaPagamento;
 import com.clinica.model.enums.StatusPagamento;
 import com.clinica.model.enums.TipoPagamento;
 
+import java.time.LocalDate;
+
 public class PagamentoDTO {
 
 	private Integer consultaId;
 	private TipoPagamento tipoPagamento;
 	private FormaPagamento formaPagamento;
+	private LocalDate dataPagamento;
 	private Double valor;
 	private StatusPagamento statusPagamento;
 
@@ -34,6 +37,14 @@ public class PagamentoDTO {
 
 	public void setFormaPagamento(FormaPagamento formaPagamento) {
 		this.formaPagamento = formaPagamento;
+	}
+
+	public LocalDate getDataPagamento() {
+		return dataPagamento;
+	}
+
+	public void setDataPagamento(LocalDate dataPagamento) {
+		this.dataPagamento = dataPagamento;
 	}
 
 	public Double getValor() {

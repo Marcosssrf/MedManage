@@ -6,6 +6,8 @@ import com.clinica.model.enums.TipoPagamento;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "pagamento")
 public class Pagamento {
@@ -20,6 +22,8 @@ public class Pagamento {
 	@Enumerated(EnumType.STRING)
 	private FormaPagamento formaPagamento;
 
+	private LocalDate dataPagamento;
+
 	private Double valor;
 
 	@Enumerated(EnumType.STRING)
@@ -33,10 +37,11 @@ public class Pagamento {
 	public Pagamento() {
 	}
 
-	public Pagamento(Integer id, TipoPagamento tipoPagamento,FormaPagamento formaPagamento, Double valor, StatusPagamento statusPagamento, Consulta consulta) {
+	public Pagamento(Integer id, TipoPagamento tipoPagamento,FormaPagamento formaPagamento,LocalDate dataPagamento ,Double valor, StatusPagamento statusPagamento, Consulta consulta) {
 		this.id = id;
 		this.tipoPagamento = tipoPagamento;
 		this.formaPagamento = formaPagamento;
+		this.dataPagamento = dataPagamento;
 		this.valor = valor;
 		this.statusPagamento = statusPagamento;
 		this.consulta = consulta;
@@ -64,6 +69,14 @@ public class Pagamento {
 
 	public void setFormaPagamento(FormaPagamento formaPagamento) {
 		this.formaPagamento = formaPagamento;
+	}
+
+	public LocalDate getDataPagamento() {
+		return dataPagamento;
+	}
+
+	public void setDataPagamento(LocalDate dataPagamento) {
+		this.dataPagamento = dataPagamento;
 	}
 
 	public Double getValor() {

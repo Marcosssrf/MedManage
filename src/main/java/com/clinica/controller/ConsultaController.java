@@ -41,7 +41,6 @@ public class ConsultaController {
 		return ResponseEntity.ok().body(consultaService.findByMedico(nome));
 	}
 
-
 	@PostMapping
 	public ResponseEntity<Consulta> insert(@RequestBody ConsultaDTO dto) {
 		Consulta consulta = consultaService.insert(dto);
@@ -61,6 +60,9 @@ public class ConsultaController {
 		return ResponseEntity.ok().body(consulta);
 	}
 
-
-
+	@PutMapping(value = "/{id}/cancelar")
+	public ResponseEntity<Consulta> cancelar(@PathVariable Integer id) {
+		Consulta consultaCancelada = consultaService.cancelar(id);
+		return ResponseEntity.ok(consultaCancelada);
+	}
 }

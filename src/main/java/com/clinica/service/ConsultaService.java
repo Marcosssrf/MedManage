@@ -11,7 +11,6 @@ import com.clinica.repository.PacienteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -28,7 +27,6 @@ public class ConsultaService {
 	@Autowired
 	PacienteRepository pacienteRepository;
 
-	LocalDateTime dataHoje = LocalDateTime.now();
 	LocalTime inicio = LocalTime.of(8, 0);
 	LocalTime fim = LocalTime.of(18, 0);
 
@@ -36,58 +34,106 @@ public class ConsultaService {
 
 	/*
 	✓ implementar busca por nome do paciente ou medico
-	✓ data nao pode ser < que a atual			 							* prioridade
-	nao pode existir 2 consultas com o mesmo medico no mesmo horario
+	✓ data nao pode ser < que a atual										* prioridade
+	✓ nao pode existir 2 consultas com o mesmo medico no mesmo horario
 	✓ toda consulta comeca com agendada
-	consulta so pode ser cancelada ate 24 horas antes
-	paciente inativo nao pode agendar uma consulta
+	✓ consulta so pode ser cancelada ate 24 horas antes
+	✓ paciente inativo nao pode agendar uma consulta
 	✓ medico tem que ter uma especialidade
 	✓ adicionar status no medico para poder inativar ele
 	✓ medico inativo nao pode ter uma consulta
 	✓ horario de atendimento (ex 08:00 as 18:00)
-	uma consulta so pode ter UM pagamento, nao pode ter mais de um		* prioridade
-	nao pode pagar uma consulta inexistente
-	pagamento so com consulta realizda
-	fluxo de status (agendada -> confirmada -> realizada)				* prioridade
+	✓ uma consulta so pode ter UM pagamento, nao pode ter mais de um		* prioridade
+	✓ nao pode pagar uma consulta inexistente
+	✓ pagamento so com consulta realizda
+	✓ fluxo de status (agendada -> confirmada -> realizada)				* prioridade
 	relatorios (faturamento por mes, medico mais atendido)
 	*/
 
 	public Consulta insert(ConsultaDTO dto){
+
+		LocalDateTime dataHoje = LocalDateTime.now();
 
 		Paciente paciente = pacienteRepository.findById(dto.getPacienteId()).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
 		Medico medico = medicoRepository.findById(dto.getMedicoId()).orElseThrow(() -> new RuntimeException("Medico não encontrado"));
 
 		LocalTime horario = dto.getDataHora().toLocalTime();
 
-		boolean isBetween = (horario.isAfter(inicio) && horario.isBefore(fim));
+		boolean isHorarioAtendimento = (horario.isAfter(inicio) && horario.isBefore(fim));
 
-		Consulta consulta = new Consulta();
-		consulta.setPaciente(paciente);
-		consulta.setMedico(medico);
-		consulta.setStatus(StatusConsulta.AGENDADA);
+		if (paciente.getAtivo() == false){
+			throw new RuntimeException("Paciente inativo");
+		}
 
 		if(medico.getAtivo() == false){
 			throw new RuntimeException("Medico nao ativo");
 		}
 
-		if(isBetween){
-			if(dto.getDataHora().isAfter(dataHoje)){
-				consulta.setDataHora(dto.getDataHora());
-				return consultaRepository.save(consulta);
-			}else{
-				throw new RuntimeException("Data anterior a hoje");
-			}
-		}else{
-			throw new RuntimeException("Fora de horario de atendimento");
+		if(!isHorarioAtendimento){
+			throw new RuntimeException("Fora do horario de atendimento!");
+		}
+
+		if(!dto.getDataHora().isAfter(dataHoje)){
+			throw new RuntimeException("Data de atendimento deve ser futura!");
+		}
+
+		Consulta consulta = new Consulta();
+		consulta.setPaciente(paciente);
+		consulta.setMedico(medico);
+		consulta.setStatus(StatusConsulta.AGENDADA);
+		consulta.setDataHora(dto.getDataHora());
+
+		boolean conflito = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.getDataHora());
+
+		if(conflito){
+			throw new RuntimeException("Já existe uma consulta para esse médico nesse horário");
+		}
+
+		return consultaRepository.save(consulta);
+	}
+
+	public void atualizarStatus(Consulta consulta){
+		LocalDateTime agora = LocalDateTime.now();
+
+		if (consulta.getStatus() == StatusConsulta.REALIZADA) {
+			return;
+		}
+		if (consulta.getDataHora().isBefore(agora)) {
+			consulta.setStatus(StatusConsulta.REALIZADA);
+		}
+		else if (consulta.getDataHora().isBefore(agora.plusHours(24))) {
+			consulta.setStatus(StatusConsulta.CONFIRMADA);
 		}
 	}
 
-	public List<Consulta> findAll(){
-		return consultaRepository.findAll();
+	public Consulta cancelar(Integer id){
+		Consulta consulta = consultaRepository.findById(id).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+
+		LocalDateTime agora = LocalDateTime.now();
+
+		if (consulta.getStatus() == StatusConsulta.REALIZADA ||
+				consulta.getStatus() == StatusConsulta.CANCELADA) {
+			throw new RuntimeException("Consulta não pode ser cancelada");
+		}
+
+		if (consulta.getDataHora().isBefore(agora.plusHours(24))) {
+			throw new RuntimeException("Consulta só pode ser cancelada com 24h de antecedência");
+		}
+
+		consulta.setStatus(StatusConsulta.CANCELADA);
+		return consultaRepository.save(consulta);
+	}
+
+	public List<Consulta> findAll() {
+		List<Consulta> consultas = consultaRepository.findAll();
+		consultas.forEach(this::atualizarStatus);
+		return consultaRepository.saveAll(consultas);
 	}
 
 	public Consulta findById(Integer id) {
-		return consultaRepository.findById(id).get();
+		Consulta consulta = consultaRepository.findById(id).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+		atualizarStatus(consulta);
+		return consultaRepository.save(consulta);
 	}
 
 	public Consulta update(Integer id, Consulta consulta) {
@@ -101,11 +147,15 @@ public class ConsultaService {
 	}
 
 	public List<Consulta> findByPaciente(String nome){
-		return consultaRepository.findByPacienteNomeContainingIgnoreCase(nome);
+		List<Consulta> consultas = consultaRepository.findByPacienteNomeContainingIgnoreCase(nome);
+		consultas.forEach(this::atualizarStatus);
+		return consultaRepository.saveAll(consultas);
 	}
 
 	public List<Consulta> findByMedico(String nome){
-		return consultaRepository.findByMedicoNomeContainingIgnoreCase(nome);
+		List<Consulta> consultas = consultaRepository.findByMedicoNomeContainingIgnoreCase(nome);
+		consultas.forEach(this::atualizarStatus);
+		return consultaRepository.saveAll(consultas);
 	}
 
 }

@@ -2,6 +2,7 @@ package com.clinica.controller;
 
 import com.clinica.dto.PagamentoDTO;
 import com.clinica.model.Pagamento;
+import com.clinica.model.enums.StatusPagamento;
 import com.clinica.service.PagamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +35,7 @@ public class PagamentoController {
 	public ResponseEntity<Pagamento> insert(@RequestBody PagamentoDTO dto) {
 		Pagamento pagamento = pagamentoService.insert(dto);
 		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(pagamento.getId()).toUri();
+		pagamento.setStatusPagamento(StatusPagamento.PAGO);
 		return ResponseEntity.created(uri).body(pagamento);
 	}
 

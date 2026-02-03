@@ -3,6 +3,8 @@ package com.clinica.service;
 import com.clinica.dto.PagamentoDTO;
 import com.clinica.model.Consulta;
 import com.clinica.model.Pagamento;
+import com.clinica.model.enums.StatusConsulta;
+import com.clinica.model.enums.StatusPagamento;
 import com.clinica.repository.ConsultaRepository;
 import com.clinica.repository.PagamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,15 +22,28 @@ public class PagamentoService {
 	ConsultaRepository consultaRepository;
 
 	public Pagamento insert(PagamentoDTO dto){
-		Consulta consulta = consultaRepository.findById(dto.getConsultaId()).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+
+		Consulta consulta = consultaRepository.findById(dto.getConsultaId())
+				.orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+
+		if (consulta.getStatus() != StatusConsulta.REALIZADA) {
+			throw new RuntimeException("Consulta não realizada, impossível pagar");
+		}
+
+		if (pagamentoRepository.existsByConsultaIdAndStatusPagamento(
+				dto.getConsultaId(),
+				StatusPagamento.PAGO
+		)) {
+			throw new RuntimeException("Essa consulta já foi paga!");
+		}
 
 		Pagamento pagamento = new Pagamento();
-
 		pagamento.setConsulta(consulta);
+		pagamento.setDataPagamento(dto.getDataPagamento());
 		pagamento.setValor(dto.getValor());
 		pagamento.setTipoPagamento(dto.getTipoPagamento());
 		pagamento.setFormaPagamento(dto.getFormaPagamento());
-		pagamento.setStatusPagamento(dto.getStatusPagamento());
+		pagamento.setStatusPagamento(StatusPagamento.PAGO); // sistema decide
 
 		return pagamentoRepository.save(pagamento);
 	}

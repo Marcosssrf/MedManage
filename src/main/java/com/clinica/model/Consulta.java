@@ -2,6 +2,7 @@ package com.clinica.model;
 
 import com.clinica.model.enums.StatusConsulta;
 import jakarta.persistence.*;
+import jakarta.validation.Constraint;
 
 import java.time.LocalDateTime;
 import java.util.List;
