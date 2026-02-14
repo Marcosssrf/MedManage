@@ -2,7 +2,6 @@ package com.clinica.controller;
 
 import com.clinica.dto.ConsultaDTO;
 import com.clinica.model.Consulta;
-import com.clinica.model.enums.StatusConsulta;
 import com.clinica.service.ConsultaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

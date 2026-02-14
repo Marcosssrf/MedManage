@@ -1,9 +1,7 @@
 package com.clinica.controller;
 
 import com.clinica.dto.PacienteDTO;
-import com.clinica.dto.PacienteUpdateDTO;
-import com.clinica.dto.PagamentoDTO;
-import com.clinica.model.Medico;
+import com.clinica.dto.update.PacienteUpdateDTO;
 import com.clinica.model.Paciente;
 import com.clinica.service.PacienteService;
 import jakarta.validation.Valid;
@@ -59,8 +57,8 @@ public class PacienteController {
 	}
 
 	@PatchMapping(value = "/{id}")
-	public ResponseEntity<Paciente> atualizar(@PathVariable UUID id, @RequestBody @Valid PacienteUpdateDTO dto){
-		return ResponseEntity.ok(pacienteService.atualizar(id,dto));
+	public ResponseEntity<Paciente> patch(@PathVariable UUID id, @RequestBody @Valid PacienteUpdateDTO dto){
+		return ResponseEntity.ok(pacienteService.patch(id,dto));
 	}
 
 }

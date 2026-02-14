@@ -1,7 +1,7 @@
 package com.clinica.service;
 
 import com.clinica.dto.PacienteDTO;
-import com.clinica.dto.PacienteUpdateDTO;
+import com.clinica.dto.update.PacienteUpdateDTO;
 import com.clinica.model.Paciente;
 import com.clinica.repository.PacienteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +51,7 @@ public class PacienteService {
 		pacienteRepository.deleteById(id);
 	}
 
-	public Paciente atualizar(UUID id, PacienteUpdateDTO dto){
+	public Paciente patch(UUID id, PacienteUpdateDTO dto){
 		Paciente paciente = pacienteRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Paciente não encontrado!"));
 		if (dto.nome() != null){

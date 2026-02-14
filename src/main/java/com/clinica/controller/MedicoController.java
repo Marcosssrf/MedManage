@@ -1,8 +1,10 @@
 package com.clinica.controller;
 
-import com.clinica.model.Consulta;
+import com.clinica.dto.MedicoDTO;
+import com.clinica.dto.update.MedicoUpdateDTO;
 import com.clinica.model.Medico;
 import com.clinica.service.MedicoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,9 +34,13 @@ public class MedicoController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Medico> insert(@RequestBody Medico medico) {
-		medico = medicoService.insert(medico);
-		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(medico.getId()).toUri();
+	public ResponseEntity<Medico> insert(@RequestBody @Valid MedicoDTO dto) {
+		Medico medico = medicoService.insert(dto);
+		URI uri = ServletUriComponentsBuilder
+				.fromCurrentRequest()
+				.path("/{id}")
+				.buildAndExpand(medico.getId())
+				.toUri();
 		return ResponseEntity.created(uri).body(medico);
 	}
 
@@ -45,11 +51,15 @@ public class MedicoController {
 	}
 
 	@PutMapping(value = "/{id}")
-	public ResponseEntity<Medico> update(@PathVariable UUID id, @RequestBody Medico medico) {
-		medico = medicoService.update(id, medico);
+	public ResponseEntity<Medico> update(@PathVariable UUID id, @RequestBody @Valid MedicoDTO dto) {
+		Medico medico = medicoService.update(id, dto);
 		return ResponseEntity.ok().body(medico);
 	}
 
+	@PatchMapping(value = "/{id}")
+	public ResponseEntity<Medico> patch(@PathVariable UUID id, @RequestBody @Valid MedicoUpdateDTO dto){
+		return ResponseEntity.ok(medicoService.patch(id,dto));
+	}
 
 
 }

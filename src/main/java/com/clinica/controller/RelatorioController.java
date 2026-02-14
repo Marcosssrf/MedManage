@@ -1,6 +1,5 @@
 package com.clinica.controller;
 
-import com.clinica.model.Pagamento;
 import com.clinica.service.RelatorioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

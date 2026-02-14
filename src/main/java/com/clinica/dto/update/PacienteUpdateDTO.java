@@ -1,4 +1,4 @@
-package com.clinica.dto;
+package com.clinica.dto.update;
 
 public record PacienteUpdateDTO(
         String nome,
