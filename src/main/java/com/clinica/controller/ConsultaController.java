@@ -1,8 +1,10 @@
 package com.clinica.controller;
 
 import com.clinica.dto.ConsultaDTO;
+import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.model.Consulta;
 import com.clinica.service.ConsultaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +44,7 @@ public class ConsultaController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Consulta> insert(@RequestBody ConsultaDTO dto) {
+	public ResponseEntity<Consulta> insert(@RequestBody @Valid ConsultaDTO dto) {
 		Consulta consulta = consultaService.insert(dto);
 		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(consulta.getId()).toUri();
 		return ResponseEntity.created(uri).body(consulta);
@@ -55,8 +57,8 @@ public class ConsultaController {
 	}
 
 	@PutMapping(value = "/{id}")
-	public ResponseEntity<Consulta> update(@PathVariable UUID id, @RequestBody Consulta consulta) {
-		consulta = consultaService.update(id, consulta);
+	public ResponseEntity<Consulta> update(@PathVariable UUID id, @RequestBody @Valid ConsultaUpdateDTO dto) {
+		Consulta consulta = consultaService.update(id, dto);
 		return ResponseEntity.ok().body(consulta);
 	}
 

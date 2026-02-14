@@ -1,6 +1,7 @@
 package com.clinica.service;
 
 import com.clinica.dto.ConsultaDTO;
+import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.model.Consulta;
 import com.clinica.model.Medico;
 import com.clinica.model.Paciente;
@@ -55,10 +56,10 @@ public class ConsultaService {
 
 		LocalDateTime dataHoje = LocalDateTime.now();
 
-		Paciente paciente = pacienteRepository.findById(dto.getPacienteId()).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
-		Medico medico = medicoRepository.findById(dto.getMedicoId()).orElseThrow(() -> new RuntimeException("Medico não encontrado"));
+		Paciente paciente = pacienteRepository.findById(dto.pacienteId()).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+		Medico medico = medicoRepository.findById(dto.medicoId()).orElseThrow(() -> new RuntimeException("Medico não encontrado"));
 
-		LocalTime horario = dto.getDataHora().toLocalTime();
+		LocalTime horario = dto.dataHora().toLocalTime();
 
 		boolean isHorarioAtendimento = (horario.isAfter(inicio) && horario.isBefore(fim));
 
@@ -74,7 +75,7 @@ public class ConsultaService {
 			throw new RuntimeException("Fora do horario de atendimento!");
 		}
 
-		if(!dto.getDataHora().isAfter(dataHoje)){
+		if(!dto.dataHora().isAfter(dataHoje)){
 			throw new RuntimeException("Data de atendimento deve ser futura!");
 		}
 
@@ -82,9 +83,9 @@ public class ConsultaService {
 		consulta.setPaciente(paciente);
 		consulta.setMedico(medico);
 		consulta.setStatus(StatusConsulta.AGENDADA);
-		consulta.setDataHora(dto.getDataHora());
+		consulta.setDataHora(dto.dataHora());
 
-		boolean conflito = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.getDataHora());
+		boolean conflito = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora());
 
 		if(conflito){
 			throw new RuntimeException("Já existe uma consulta para esse médico nesse horário");
@@ -137,10 +138,12 @@ public class ConsultaService {
 		return consultaRepository.save(consulta);
 	}
 
-	public Consulta update(UUID id, Consulta consulta) {
-		Consulta entity = consultaRepository.getReferenceById(id);
-		entity.setDataHora(consulta.getDataHora());
-		return consultaRepository.save(entity);
+	public Consulta update(UUID id, ConsultaUpdateDTO dto) {
+		Consulta consulta = consultaRepository.getReferenceById(id);
+
+		consulta.setDataHora(dto.dataHora());
+
+		return consultaRepository.save(consulta);
 	}
 
 	public void delete(UUID id) {
