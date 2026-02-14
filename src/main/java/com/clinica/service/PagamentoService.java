@@ -24,7 +24,7 @@ public class PagamentoService {
 
 	public Pagamento insert(PagamentoDTO dto){
 
-		Consulta consulta = consultaRepository.findById(dto.getConsultaId())
+		Consulta consulta = consultaRepository.findById(dto.consultaId())
 				.orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
 
 		if (consulta.getStatus() != StatusConsulta.REALIZADA) {
@@ -32,7 +32,7 @@ public class PagamentoService {
 		}
 
 		if (pagamentoRepository.existsByConsultaIdAndStatusPagamento(
-				dto.getConsultaId(),
+				dto.consultaId(),
 				StatusPagamento.PAGO
 		)) {
 			throw new RuntimeException("Essa consulta já foi paga!");
@@ -40,11 +40,11 @@ public class PagamentoService {
 
 		Pagamento pagamento = new Pagamento();
 		pagamento.setConsulta(consulta);
-		pagamento.setDataPagamento(dto.getDataPagamento());
-		pagamento.setValor(dto.getValor());
-		pagamento.setTipoPagamento(dto.getTipoPagamento());
-		pagamento.setFormaPagamento(dto.getFormaPagamento());
-		pagamento.setStatusPagamento(StatusPagamento.PAGO); // sistema decide
+		pagamento.setDataPagamento(dto.dataPagamento());
+		pagamento.setValor(dto.valor());
+		pagamento.setTipoPagamento(dto.tipoPagamento());
+		pagamento.setFormaPagamento(dto.formaPagamento());
+		pagamento.setStatusPagamento(StatusPagamento.PENDENTE);
 
 		return pagamentoRepository.save(pagamento);
 	}
@@ -57,16 +57,29 @@ public class PagamentoService {
 		return pagamentoRepository.findById(id).get();
 	}
 
-	public Pagamento update(UUID id, Pagamento pagamento) {
-		Pagamento entity = pagamentoRepository.getReferenceById(id);
-		entity.setStatusPagamento(pagamento.getStatusPagamento());
-		return pagamentoRepository.save(entity);
+	public Pagamento update(UUID id, PagamentoDTO dto) {
+		Pagamento pagamento = pagamentoRepository.getReferenceById(id);
+		pagamento.setTipoPagamento(dto.tipoPagamento());
+		pagamento.setFormaPagamento(dto.formaPagamento());
+
+		return pagamentoRepository.save(pagamento);
 	}
 
 	public void delete(UUID id) {
 		pagamentoRepository.deleteById(id);
 	}
 
+	public Pagamento confirmarPagamento(UUID id){
+		Pagamento pagamento = pagamentoRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Pagamento não encontrado!"));
 
+		if(pagamento.getStatusPagamento() == StatusPagamento.PAGO){
+			throw new RuntimeException("Pagamento já foi confirmado!");
+		}
+
+		pagamento.setStatusPagamento(StatusPagamento.PAGO);
+
+		return pagamentoRepository.save(pagamento);
+	}
 
 }

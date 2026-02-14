@@ -2,8 +2,8 @@ package com.clinica.controller;
 
 import com.clinica.dto.PagamentoDTO;
 import com.clinica.model.Pagamento;
-import com.clinica.model.enums.StatusPagamento;
 import com.clinica.service.PagamentoService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,16 +33,15 @@ public class PagamentoController {
 	}
 
 	@PostMapping
-	public ResponseEntity<Pagamento> insert(@RequestBody PagamentoDTO dto) {
+	public ResponseEntity<Pagamento> insert(@RequestBody @Valid PagamentoDTO dto) {
 		Pagamento pagamento = pagamentoService.insert(dto);
 		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(pagamento.getId()).toUri();
-		pagamento.setStatusPagamento(StatusPagamento.PAGO);
 		return ResponseEntity.created(uri).body(pagamento);
 	}
 
 	@PutMapping(value = "/{id}")
-	public ResponseEntity<Pagamento> update(@PathVariable UUID id,@RequestBody Pagamento pagamento) {
-		pagamento = pagamentoService.update(id, pagamento);
+	public ResponseEntity<Pagamento> update(@PathVariable UUID id,@RequestBody @Valid PagamentoDTO dto) {
+		Pagamento pagamento = pagamentoService.update(id, dto);
 		return ResponseEntity.ok().body(pagamento);
 	}
 
@@ -50,6 +49,12 @@ public class PagamentoController {
 	public ResponseEntity<Pagamento> delete(@PathVariable UUID id) {
 		pagamentoService.delete(id);
 		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping(value = "/{id}/confirmar")
+	public ResponseEntity<Pagamento> confirmarPagamento(@PathVariable UUID id){
+		Pagamento pagamento = pagamentoService.confirmarPagamento(id);
+		return ResponseEntity.ok(pagamento);
 	}
 
 

@@ -1,6 +1,5 @@
 package com.clinica.dto;
 
-import com.clinica.model.enums.StatusConsulta;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotNull;
 
