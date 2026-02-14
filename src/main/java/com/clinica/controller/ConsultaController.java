@@ -11,6 +11,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = ("/consultas"))
@@ -26,7 +27,7 @@ public class ConsultaController {
 	}
 
 	@GetMapping(value = "/{id}")
-	public ResponseEntity<Consulta> findById(@PathVariable Integer id){
+	public ResponseEntity<Consulta> findById(@PathVariable UUID id){
 		Consulta consulta = consultaService.findById(id);
 		return ResponseEntity.ok().body(consulta);
 	}
@@ -49,19 +50,19 @@ public class ConsultaController {
 	}
 
 	@DeleteMapping(value = "/{id}")
-	public ResponseEntity<Consulta> delete(@PathVariable Integer id) {
+	public ResponseEntity<Consulta> delete(@PathVariable UUID id) {
 		consultaService.delete(id);
 		return ResponseEntity.noContent().build();
 	}
 
 	@PutMapping(value = "/{id}")
-	public ResponseEntity<Consulta> update(@PathVariable Integer id, @RequestBody Consulta consulta) {
+	public ResponseEntity<Consulta> update(@PathVariable UUID id, @RequestBody Consulta consulta) {
 		consulta = consultaService.update(id, consulta);
 		return ResponseEntity.ok().body(consulta);
 	}
 
 	@PutMapping(value = "/{id}/cancelar")
-	public ResponseEntity<Consulta> cancelar(@PathVariable Integer id) {
+	public ResponseEntity<Consulta> cancelar(@PathVariable UUID id) {
 		Consulta consultaCancelada = consultaService.cancelar(id);
 		return ResponseEntity.ok(consultaCancelada);
 	}

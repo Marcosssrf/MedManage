@@ -1,18 +1,22 @@
 package com.clinica.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Past;
+import org.hibernate.validator.constraints.br.CPF;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "paciente")
 public class Paciente {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 	private String nome;
 	@Column(nullable = false,  unique = true)
 	private String cpf;
@@ -27,7 +31,7 @@ public class Paciente {
 	public Paciente() {
 	}
 
-	public Paciente(Integer id, String nome, String cpf, LocalDate dataNascimento, String telefone, String email, Boolean ativo) {
+	public Paciente(UUID id, String nome, String cpf, LocalDate dataNascimento, String telefone, String email, Boolean ativo) {
 		this.id = id;
 		this.nome = nome;
 		this.cpf = cpf;
@@ -37,11 +41,11 @@ public class Paciente {
 		this.ativo = ativo;
 	}
 
-	public Integer getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 

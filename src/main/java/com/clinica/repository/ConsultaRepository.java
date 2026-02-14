@@ -7,12 +7,13 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
-public interface ConsultaRepository extends JpaRepository<Consulta, Integer> {
+public interface ConsultaRepository extends JpaRepository<Consulta, UUID> {
 
 	List<Consulta> findByPacienteNomeContainingIgnoreCase(String nome);
 	List<Consulta> findByMedicoNomeContainingIgnoreCase(String nome);
-	boolean existsByMedicoIdAndDataHora(Integer idMedico, LocalDateTime dataHora);
+	boolean existsByMedicoIdAndDataHora(UUID idMedico, LocalDateTime dataHora);
 	List<Consulta> findByStatus(StatusConsulta status);
 
 	@Query("""

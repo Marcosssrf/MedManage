@@ -10,6 +10,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "/medicos")
@@ -25,7 +26,7 @@ public class MedicoController {
 	}
 
 	@GetMapping(value = "/{id}")
-	public ResponseEntity<Medico> findById(@PathVariable Integer id){
+	public ResponseEntity<Medico> findById(@PathVariable UUID id){
 		Medico medico = medicoService.findById(id);
 		return ResponseEntity.ok().body(medico);
 	}
@@ -38,13 +39,13 @@ public class MedicoController {
 	}
 
 	@DeleteMapping(value = "/{id}")
-	public ResponseEntity<Medico> delete(@PathVariable Integer id) {
+	public ResponseEntity<Medico> delete(@PathVariable UUID id) {
 		medicoService.delete(id);
 		return ResponseEntity.noContent().build();
 	}
 
 	@PutMapping(value = "/{id}")
-	public ResponseEntity<Medico> update(@PathVariable Integer id, @RequestBody Medico medico) {
+	public ResponseEntity<Medico> update(@PathVariable UUID id, @RequestBody Medico medico) {
 		medico = medicoService.update(id, medico);
 		return ResponseEntity.ok().body(medico);
 	}

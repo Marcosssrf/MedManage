@@ -11,6 +11,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "/pagamentos")
@@ -26,7 +27,7 @@ public class PagamentoController {
 	}
 
 	@GetMapping(value = "/{id}")
-	public ResponseEntity<Pagamento> findById(@PathVariable Integer id){
+	public ResponseEntity<Pagamento> findById(@PathVariable UUID id){
 		Pagamento pagamento = pagamentoService.findById(id);
 		return ResponseEntity.ok().body(pagamento);
 	}
@@ -40,13 +41,13 @@ public class PagamentoController {
 	}
 
 	@PutMapping(value = "/{id}")
-	public ResponseEntity<Pagamento> update(@PathVariable Integer id,@RequestBody Pagamento pagamento) {
+	public ResponseEntity<Pagamento> update(@PathVariable UUID id,@RequestBody Pagamento pagamento) {
 		pagamento = pagamentoService.update(id, pagamento);
 		return ResponseEntity.ok().body(pagamento);
 	}
 
 	@DeleteMapping(value = "/{id}")
-	public ResponseEntity<Pagamento> delete(@PathVariable Integer id) {
+	public ResponseEntity<Pagamento> delete(@PathVariable UUID id) {
 		pagamentoService.delete(id);
 		return ResponseEntity.noContent().build();
 	}

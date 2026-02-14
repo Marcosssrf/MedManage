@@ -6,14 +6,15 @@ import jakarta.validation.Constraint;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "consulta")
 public class Consulta {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 	private LocalDateTime dataHora;
 
 	@Enumerated(EnumType.STRING)
@@ -33,7 +34,7 @@ public class Consulta {
 	public Consulta() {
 	}
 
-	public Consulta(Integer id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico) {
+	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico) {
 		this.id = id;
 		this.dataHora = dataHora;
 		this.status = status;
@@ -41,11 +42,11 @@ public class Consulta {
 		this.medico = medico;
 	}
 
-	public Integer getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 

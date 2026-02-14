@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class PagamentoService {
@@ -52,17 +53,17 @@ public class PagamentoService {
 		return pagamentoRepository.findAll();
 	}
 
-	public Pagamento findById(Integer id) {
+	public Pagamento findById(UUID id) {
 		return pagamentoRepository.findById(id).get();
 	}
 
-	public Pagamento update(Integer id, Pagamento pagamento) {
+	public Pagamento update(UUID id, Pagamento pagamento) {
 		Pagamento entity = pagamentoRepository.getReferenceById(id);
 		entity.setStatusPagamento(pagamento.getStatusPagamento());
 		return pagamentoRepository.save(entity);
 	}
 
-	public void delete(Integer id) {
+	public void delete(UUID id) {
 		pagamentoRepository.deleteById(id);
 	}
 

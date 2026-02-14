@@ -5,21 +5,22 @@ import com.clinica.model.enums.StatusPagamento;
 import com.clinica.model.enums.TipoPagamento;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 public class PagamentoDTO {
 
-	private Integer consultaId;
+	private UUID consultaId;
 	private TipoPagamento tipoPagamento;
 	private FormaPagamento formaPagamento;
 	private LocalDate dataPagamento;
 	private Double valor;
 	private StatusPagamento statusPagamento;
 
-	public Integer getConsultaId() {
+	public UUID getConsultaId() {
 		return consultaId;
 	}
 
-	public void setConsultaId(Integer consultaId) {
+	public void setConsultaId(UUID consultaId) {
 		this.consultaId = consultaId;
 	}
 

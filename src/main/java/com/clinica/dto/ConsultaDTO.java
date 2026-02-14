@@ -3,12 +3,13 @@ package com.clinica.dto;
 import com.clinica.model.enums.StatusConsulta;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class ConsultaDTO {
 
 	private LocalDateTime dataHora;
-	private Integer pacienteId;
-	private Integer medicoId;
+	private UUID pacienteId;
+	private UUID medicoId;
 	private StatusConsulta status;
 
 	public LocalDateTime getDataHora() {
@@ -19,19 +20,19 @@ public class ConsultaDTO {
 		this.dataHora = dataHora;
 	}
 
-	public Integer getPacienteId() {
+	public UUID getPacienteId() {
 		return pacienteId;
 	}
 
-	public void setPacienteId(Integer pacienteId) {
+	public void setPacienteId(UUID pacienteId) {
 		this.pacienteId = pacienteId;
 	}
 
-	public Integer getMedicoId() {
+	public UUID getMedicoId() {
 		return medicoId;
 	}
 
-	public void setMedicoId(Integer medicoId) {
+	public void setMedicoId(UUID medicoId) {
 		this.medicoId = medicoId;
 	}
 

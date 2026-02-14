@@ -7,14 +7,15 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 @Entity
 @Table(name = "pagamento")
 public class Pagamento {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 
 	@Enumerated(EnumType.STRING)
 	private TipoPagamento tipoPagamento;
@@ -37,7 +38,7 @@ public class Pagamento {
 	public Pagamento() {
 	}
 
-	public Pagamento(Integer id, TipoPagamento tipoPagamento,FormaPagamento formaPagamento,LocalDate dataPagamento ,Double valor, StatusPagamento statusPagamento, Consulta consulta) {
+	public Pagamento(UUID id, TipoPagamento tipoPagamento,FormaPagamento formaPagamento,LocalDate dataPagamento ,Double valor, StatusPagamento statusPagamento, Consulta consulta) {
 		this.id = id;
 		this.tipoPagamento = tipoPagamento;
 		this.formaPagamento = formaPagamento;
@@ -47,11 +48,11 @@ public class Pagamento {
 		this.consulta = consulta;
 	}
 
-	public Integer getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 

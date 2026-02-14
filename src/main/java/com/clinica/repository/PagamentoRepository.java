@@ -6,10 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.UUID;
 
-public interface PagamentoRepository extends JpaRepository<Pagamento, Integer> {
+public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
 
-	boolean existsByConsultaIdAndStatusPagamento(Integer consultaId, StatusPagamento statusPagamento);
+	boolean existsByConsultaIdAndStatusPagamento(UUID consultaId, StatusPagamento statusPagamento);
 
 	List<Pagamento> findByStatusPagamento(StatusPagamento statusPagamento);
 

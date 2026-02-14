@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class MedicoService {
@@ -16,17 +17,17 @@ public class MedicoService {
 
 	public List<Medico> findAll() { return medicoRepository.findAll();}
 
-	public Medico findById(Integer id) { return medicoRepository.findById(id).get();}
+	public Medico findById(UUID id) { return medicoRepository.findById(id).get();}
 
 	public Medico insert(Medico medico){ return medicoRepository.save(medico);}
 
-	public Medico update(Integer id, Medico medico) {
+	public Medico update(UUID id, Medico medico) {
 		Medico entity = medicoRepository.getReferenceById(id);
 		entity.setNome(medico.getNome());
 		return medicoRepository.save(entity);
 	}
 
-	public void delete(Integer id) {
+	public void delete(UUID id) {
 		medicoRepository.deleteById(id);
 	}
 

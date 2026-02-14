@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ConsultaService {
@@ -106,7 +107,7 @@ public class ConsultaService {
 		}
 	}
 
-	public Consulta cancelar(Integer id){
+	public Consulta cancelar(UUID id){
 		Consulta consulta = consultaRepository.findById(id).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
 
 		LocalDateTime agora = LocalDateTime.now();
@@ -130,19 +131,19 @@ public class ConsultaService {
 		return consultaRepository.saveAll(consultas);
 	}
 
-	public Consulta findById(Integer id) {
+	public Consulta findById(UUID id) {
 		Consulta consulta = consultaRepository.findById(id).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
 		atualizarStatus(consulta);
 		return consultaRepository.save(consulta);
 	}
 
-	public Consulta update(Integer id, Consulta consulta) {
+	public Consulta update(UUID id, Consulta consulta) {
 		Consulta entity = consultaRepository.getReferenceById(id);
 		entity.setDataHora(consulta.getDataHora());
 		return consultaRepository.save(entity);
 	}
 
-	public void delete(Integer id) {
+	public void delete(UUID id) {
 		consultaRepository.deleteById(id);
 	}
 

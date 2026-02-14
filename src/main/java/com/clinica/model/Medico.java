@@ -6,14 +6,15 @@ import jakarta.persistence.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Entity
 @Table(name = "medico")
 public class Medico {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Integer id;
+	@GeneratedValue(strategy = GenerationType.UUID)
+	private UUID id;
 	private String nome;
 	@Column(nullable = false,  unique = true)
 	private String crm;
@@ -26,7 +27,7 @@ public class Medico {
 
 	public Medico() {}
 
-	public Medico(Integer id, String nome, String crm, String especialidade,  Boolean ativo) {
+	public Medico(UUID id, String nome, String crm, String especialidade,  Boolean ativo) {
 		this.id = id;
 		this.nome = nome;
 		this.crm = crm;
@@ -34,11 +35,11 @@ public class Medico {
 		this.ativo = ativo;
 	}
 
-	public Integer getId() {
+	public UUID getId() {
 		return id;
 	}
 
-	public void setId(Integer id) {
+	public void setId(UUID id) {
 		this.id = id;
 	}
 

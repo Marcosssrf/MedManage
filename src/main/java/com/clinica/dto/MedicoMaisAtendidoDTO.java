@@ -1,18 +1,20 @@
 package com.clinica.dto;
 
+import java.util.UUID;
+
 public class MedicoMaisAtendidoDTO {
 
-	private Integer medicoId;
+	private UUID medicoId;
 	private String nome;
 	private Long totalConsultas;
 
-	public MedicoMaisAtendidoDTO(Integer medicoId, String nome, Long totalConsultas) {
+	public MedicoMaisAtendidoDTO(UUID medicoId, String nome, Long totalConsultas) {
 		this.medicoId = medicoId;
 		this.nome = nome;
 		this.totalConsultas = totalConsultas;
 	}
 
-	public Integer getMedicoId() {
+	public UUID getMedicoId() {
 		return medicoId;
 	}
 
