@@ -1,14 +1,22 @@
 package com.clinica.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
 @Table(name = "paciente")
+@EntityListeners(AuditingEntityListener.class)
 public class Paciente {
 
 	@Id
@@ -17,18 +25,34 @@ public class Paciente {
 	private String nome;
 	@Column(nullable = false,  unique = true)
 	private String cpf;
+	@Column(nullable = false)
 	private LocalDate dataNascimento;
+	@Column(nullable = false)
 	private String telefone;
+	@Column(nullable = false)
 	private String email;
 	private Boolean ativo;
 
 	@OneToMany(mappedBy = "paciente")
 	private List<Consulta> consultas;
 
+
+	@CreatedDate
+	@Column(name = "data_cadastro")
+	private LocalDateTime dataCadastro;
+
+	@LastModifiedDate
+	@Column(name = "data_atualizacao")
+	private LocalDateTime dataAtualizacao;
+
+
+	@Column(name = "id_usuario")
+	private UUID idUsuario;
+
 	public Paciente() {
 	}
 
-	public Paciente(UUID id, String nome, String cpf, LocalDate dataNascimento, String telefone, String email, Boolean ativo) {
+	public Paciente(UUID id, String nome, String cpf, LocalDate dataNascimento, String telefone, String email, Boolean ativo, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, UUID idUsuario) {
 		this.id = id;
 		this.nome = nome;
 		this.cpf = cpf;
@@ -36,6 +60,9 @@ public class Paciente {
 		this.telefone = telefone;
 		this.email = email;
 		this.ativo = ativo;
+		this.dataCadastro = dataCadastro;
+		this.dataAtualizacao = dataAtualizacao;
+		this.idUsuario = idUsuario;
 	}
 
 	public UUID getId() {
@@ -94,6 +121,29 @@ public class Paciente {
 		this.ativo = ativo;
 	}
 
+	public LocalDateTime getDataCadastro() {
+		return dataCadastro;
+	}
+
+	public void setDataCadastro(LocalDateTime dataCadastro) {
+		this.dataCadastro = dataCadastro;
+	}
+
+	public LocalDateTime getDataAtualizacao() {
+		return dataAtualizacao;
+	}
+
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+		this.dataAtualizacao = dataAtualizacao;
+	}
+
+	public UUID getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(UUID idUsuario) {
+		this.idUsuario = idUsuario;
+	}
 
 	@Override
 	public boolean equals(Object o) {

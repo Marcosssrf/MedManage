@@ -1,13 +1,20 @@
 package com.clinica.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 @Entity
 @Table(name = "medico")
+@EntityListeners(AuditingEntityListener.class)
 public class Medico {
 
 	@Id
@@ -23,14 +30,29 @@ public class Medico {
 	@OneToMany(mappedBy = "medico")
 	private List<Consulta> consultas;
 
+	@CreatedDate
+	@Column(name = "data_cadastro")
+	private LocalDateTime dataCadastro;
+
+	@LastModifiedDate
+	@Column(name = "data_atualizacao")
+	private LocalDateTime dataAtualizacao;
+
+
+	@Column(name = "id_usuario")
+	private UUID idUsuario;
+
 	public Medico() {}
 
-	public Medico(UUID id, String nome, String crm, String especialidade,  Boolean ativo) {
+	public Medico(UUID id, String nome, String crm, String especialidade,  Boolean ativo, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, UUID idUsuario) {
 		this.id = id;
 		this.nome = nome;
 		this.crm = crm;
 		this.especialidade = especialidade;
 		this.ativo = ativo;
+		this.dataCadastro = dataCadastro;
+		this.dataAtualizacao = dataAtualizacao;
+		this.idUsuario = idUsuario;
 	}
 
 	public UUID getId() {
@@ -71,6 +93,30 @@ public class Medico {
 
 	public void setAtivo(Boolean ativo) {
 		this.ativo = ativo;
+	}
+
+	public LocalDateTime getDataCadastro() {
+		return dataCadastro;
+	}
+
+	public void setDataCadastro(LocalDateTime dataCadastro) {
+		this.dataCadastro = dataCadastro;
+	}
+
+	public LocalDateTime getDataAtualizacao() {
+		return dataAtualizacao;
+	}
+
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+		this.dataAtualizacao = dataAtualizacao;
+	}
+
+	public UUID getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(UUID idUsuario) {
+		this.idUsuario = idUsuario;
 	}
 
 	@Override

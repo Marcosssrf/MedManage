@@ -2,6 +2,11 @@ package com.clinica.model;
 
 import com.clinica.model.enums.StatusConsulta;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,6 +14,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "consulta")
+@EntityListeners(AuditingEntityListener.class)
 public class Consulta {
 
 	@Id
@@ -30,15 +36,30 @@ public class Consulta {
 	@OneToMany(mappedBy = "consulta")
 	private List<Pagamento> pagamentos;
 
+	@CreatedDate
+	@Column(name = "data_cadastro")
+	private LocalDateTime dataCadastro;
+
+	@LastModifiedDate
+	@Column(name = "data_atualizacao")
+	private LocalDateTime dataAtualizacao;
+
+
+	@Column(name = "id_usuario")
+	private UUID idUsuario;
+
 	public Consulta() {
 	}
 
-	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico) {
+	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, UUID idUsuario) {
 		this.id = id;
 		this.dataHora = dataHora;
 		this.status = status;
 		this.paciente = paciente;
 		this.medico = medico;
+		this.dataCadastro = dataCadastro;
+		this.dataAtualizacao = dataAtualizacao;
+		this.idUsuario = idUsuario;
 	}
 
 	public UUID getId() {
@@ -79,5 +100,29 @@ public class Consulta {
 
 	public void setMedico(Medico medico) {
 		this.medico = medico;
+	}
+
+	public LocalDateTime getDataCadastro() {
+		return dataCadastro;
+	}
+
+	public void setDataCadastro(LocalDateTime dataCadastro) {
+		this.dataCadastro = dataCadastro;
+	}
+
+	public LocalDateTime getDataAtualizacao() {
+		return dataAtualizacao;
+	}
+
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+		this.dataAtualizacao = dataAtualizacao;
+	}
+
+	public UUID getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(UUID idUsuario) {
+		this.idUsuario = idUsuario;
 	}
 }

@@ -5,12 +5,19 @@ import com.clinica.model.enums.StatusPagamento;
 import com.clinica.model.enums.TipoPagamento;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "pagamento")
+@EntityListeners(AuditingEntityListener.class)
 public class Pagamento {
 
 	@Id
@@ -35,10 +42,22 @@ public class Pagamento {
 	@JsonBackReference
 	private Consulta consulta;
 
+	@CreatedDate
+	@Column(name = "data_cadastro")
+	private LocalDateTime dataCadastro;
+
+	@LastModifiedDate
+	@Column(name = "data_atualizacao")
+	private LocalDateTime dataAtualizacao;
+
+
+	@Column(name = "id_usuario")
+	private UUID idUsuario;
+
 	public Pagamento() {
 	}
 
-	public Pagamento(UUID id, TipoPagamento tipoPagamento,FormaPagamento formaPagamento,LocalDate dataPagamento ,Double valor, StatusPagamento statusPagamento, Consulta consulta) {
+	public Pagamento(UUID id, TipoPagamento tipoPagamento,FormaPagamento formaPagamento,LocalDate dataPagamento ,Double valor, StatusPagamento statusPagamento, Consulta consulta, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, UUID idUsuario) {
 		this.id = id;
 		this.tipoPagamento = tipoPagamento;
 		this.formaPagamento = formaPagamento;
@@ -46,6 +65,9 @@ public class Pagamento {
 		this.valor = valor;
 		this.statusPagamento = statusPagamento;
 		this.consulta = consulta;
+		this.dataCadastro = dataCadastro;
+		this.dataAtualizacao = dataAtualizacao;
+		this.idUsuario = idUsuario;
 	}
 
 	public UUID getId() {
@@ -103,4 +125,29 @@ public class Pagamento {
 	public void setConsulta(Consulta consulta) {
 		this.consulta = consulta;
 	}
+
+	public LocalDateTime getDataCadastro() {
+		return dataCadastro;
+	}
+
+	public void setDataCadastro(LocalDateTime dataCadastro) {
+		this.dataCadastro = dataCadastro;
+	}
+
+	public LocalDateTime getDataAtualizacao() {
+		return dataAtualizacao;
+	}
+
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+		this.dataAtualizacao = dataAtualizacao;
+	}
+
+	public UUID getIdUsuario() {
+		return idUsuario;
+	}
+
+	public void setIdUsuario(UUID idUsuario) {
+		this.idUsuario = idUsuario;
+	}
+
 }
