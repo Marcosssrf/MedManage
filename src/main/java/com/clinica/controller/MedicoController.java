@@ -44,22 +44,22 @@ public class MedicoController {
 		return ResponseEntity.created(uri).body(medico);
 	}
 
-	@DeleteMapping(value = "/{id}")
-	public ResponseEntity<Medico> delete(@PathVariable UUID id) {
-		medicoService.delete(id);
-		return ResponseEntity.noContent().build();
-	}
-
-	@PutMapping(value = "/{id}")
-	public ResponseEntity<Medico> update(@PathVariable UUID id, @RequestBody @Valid MedicoDTO dto) {
-		Medico medico = medicoService.update(id, dto);
-		return ResponseEntity.ok().body(medico);
-	}
-
 	@PatchMapping(value = "/{id}")
 	public ResponseEntity<Medico> patch(@PathVariable UUID id, @RequestBody @Valid MedicoUpdateDTO dto){
 		return ResponseEntity.ok(medicoService.patch(id,dto));
 	}
+
+//	@PutMapping(value = "/{id}")
+//	public ResponseEntity<Medico> update(@PathVariable UUID id, @RequestBody @Valid MedicoDTO dto) {
+//		Medico medico = medicoService.update(id, dto);
+//		return ResponseEntity.ok().body(medico);
+//	}
+
+//	@DeleteMapping(value = "/{id}")
+//	public ResponseEntity<Medico> delete(@PathVariable UUID id) {
+//		medicoService.delete(id);
+//		return ResponseEntity.noContent().build();
+//	}
 
 
 }

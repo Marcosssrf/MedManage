@@ -18,9 +18,6 @@ public record PagamentoDTO(
 		@NotNull
 		FormaPagamento formaPagamento,
 		@NotNull
-		@PastOrPresent
-		LocalDate dataPagamento,
-		@NotNull
 		@Positive
 		Double valor,
 		@NotNull

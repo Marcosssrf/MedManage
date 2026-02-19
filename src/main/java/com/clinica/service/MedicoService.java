@@ -32,20 +32,6 @@ public class MedicoService {
 		return medicoRepository.save(medico);
 	}
 
-	public Medico update(UUID id, MedicoDTO dto) {
-		Medico medico = medicoRepository.getReferenceById(id);
-
-		medico.setNome(dto.nome());
-		medico.setEspecialidade(dto.especialidade());
-		medico.setAtivo(dto.ativo());
-
-		return medicoRepository.save(medico);
-	}
-
-	public void delete(UUID id) {
-		medicoRepository.deleteById(id);
-	}
-
 	public Medico patch(UUID id, MedicoUpdateDTO dto){
 		Medico medico = medicoRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Medico não encontrado!"));
@@ -60,4 +46,17 @@ public class MedicoService {
 		return medicoRepository.save(medico);
 	}
 
+//	public Medico update(UUID id, MedicoDTO dto) {
+//		Medico medico = medicoRepository.getReferenceById(id);
+//
+//		medico.setNome(dto.nome());
+//		medico.setEspecialidade(dto.especialidade());
+//		medico.setAtivo(dto.ativo());
+//
+//		return medicoRepository.save(medico);
+//	}
+//
+//	public void delete(UUID id) {
+//		medicoRepository.deleteById(id);
+//	}
 }

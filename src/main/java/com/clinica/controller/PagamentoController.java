@@ -39,17 +39,6 @@ public class PagamentoController {
 		return ResponseEntity.created(uri).body(pagamento);
 	}
 
-	@PutMapping(value = "/{id}")
-	public ResponseEntity<Pagamento> update(@PathVariable UUID id,@RequestBody @Valid PagamentoDTO dto) {
-		Pagamento pagamento = pagamentoService.update(id, dto);
-		return ResponseEntity.ok().body(pagamento);
-	}
-
-	@DeleteMapping(value = "/{id}")
-	public ResponseEntity<Pagamento> delete(@PathVariable UUID id) {
-		pagamentoService.delete(id);
-		return ResponseEntity.noContent().build();
-	}
 
 	@PatchMapping(value = "/{id}/confirmar")
 	public ResponseEntity<Pagamento> confirmarPagamento(@PathVariable UUID id){
@@ -57,6 +46,16 @@ public class PagamentoController {
 		return ResponseEntity.ok(pagamento);
 	}
 
+//	@PutMapping(value = "/{id}")
+//	public ResponseEntity<Pagamento> update(@PathVariable UUID id,@RequestBody @Valid PagamentoDTO dto) {
+//		Pagamento pagamento = pagamentoService.update(id, dto);
+//		return ResponseEntity.ok().body(pagamento);
+//	}
 
-
+//	@DeleteMapping(value = "/{id}")
+//	public ResponseEntity<Pagamento> delete(@PathVariable UUID id) {
+//		pagamentoService.delete(id);
+//		return ResponseEntity.noContent().build();
+//	}
+//
 }

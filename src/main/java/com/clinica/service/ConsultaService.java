@@ -138,18 +138,6 @@ public class ConsultaService {
 		return consultaRepository.save(consulta);
 	}
 
-	public Consulta update(UUID id, ConsultaUpdateDTO dto) {
-		Consulta consulta = consultaRepository.getReferenceById(id);
-
-		consulta.setDataHora(dto.dataHora());
-
-		return consultaRepository.save(consulta);
-	}
-
-	public void delete(UUID id) {
-		consultaRepository.deleteById(id);
-	}
-
 	public List<Consulta> findByPaciente(String nome){
 		List<Consulta> consultas = consultaRepository.findByPacienteNomeContainingIgnoreCase(nome);
 		consultas.forEach(this::atualizarStatus);
@@ -161,5 +149,17 @@ public class ConsultaService {
 		consultas.forEach(this::atualizarStatus);
 		return consultaRepository.saveAll(consultas);
 	}
+
+//	public Consulta update(UUID id, ConsultaUpdateDTO dto) {
+//		Consulta consulta = consultaRepository.getReferenceById(id);
+//
+//		consulta.setDataHora(dto.dataHora());
+//
+//		return consultaRepository.save(consulta);
+//	}
+
+//	public void delete(UUID id) {
+//		consultaRepository.deleteById(id);
+//	}
 
 }

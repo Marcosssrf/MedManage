@@ -36,21 +36,6 @@ public class PacienteService {
 		return pacienteRepository.save(paciente);
 	}
 
-	public Paciente update(UUID id, PacienteDTO dto) {
-		Paciente paciente = pacienteRepository.getReferenceById(id);
-
-		paciente.setNome(dto.nome());
-		paciente.setEmail(dto.email());
-		paciente.setTelefone(dto.telefone());
-		paciente.setAtivo(dto.ativo());
-
-		return pacienteRepository.save(paciente);
-	}
-
-	public void delete(UUID id) {
-		pacienteRepository.deleteById(id);
-	}
-
 	public Paciente patch(UUID id, PacienteUpdateDTO dto){
 		Paciente paciente = pacienteRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Paciente não encontrado!"));
@@ -73,4 +58,18 @@ public class PacienteService {
 		return pacienteRepository.save(paciente);
 	}
 
+//	public Paciente update(UUID id, PacienteDTO dto) {
+//		Paciente paciente = pacienteRepository.getReferenceById(id);
+//
+//		paciente.setNome(dto.nome());
+//		paciente.setEmail(dto.email());
+//		paciente.setTelefone(dto.telefone());
+//		paciente.setAtivo(dto.ativo());
+//
+//		return pacienteRepository.save(paciente);
+//	}
+//
+//	public void delete(UUID id) {
+//		pacienteRepository.deleteById(id);
+//	}
 }

@@ -50,21 +50,20 @@ public class ConsultaController {
 		return ResponseEntity.created(uri).body(consulta);
 	}
 
-	@DeleteMapping(value = "/{id}")
-	public ResponseEntity<Consulta> delete(@PathVariable UUID id) {
-		consultaService.delete(id);
-		return ResponseEntity.noContent().build();
-	}
-
-	@PutMapping(value = "/{id}")
-	public ResponseEntity<Consulta> update(@PathVariable UUID id, @RequestBody @Valid ConsultaUpdateDTO dto) {
-		Consulta consulta = consultaService.update(id, dto);
-		return ResponseEntity.ok().body(consulta);
-	}
-
 	@PutMapping(value = "/{id}/cancelar")
 	public ResponseEntity<Consulta> cancelar(@PathVariable UUID id) {
 		Consulta consultaCancelada = consultaService.cancelar(id);
 		return ResponseEntity.ok(consultaCancelada);
 	}
+
+//	@PutMapping(value = "/{id}")
+//	public ResponseEntity<Consulta> update(@PathVariable UUID id, @RequestBody @Valid ConsultaUpdateDTO dto) {
+//		Consulta consulta = consultaService.update(id, dto);
+//		return ResponseEntity.ok().body(consulta);
+//	}
+//	@DeleteMapping(value = "/{id}")
+//	public ResponseEntity<Consulta> delete(@PathVariable UUID id) {
+//		consultaService.delete(id);
+//		return ResponseEntity.noContent().build();
+//	}
 }

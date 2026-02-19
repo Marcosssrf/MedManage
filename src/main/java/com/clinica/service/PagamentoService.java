@@ -10,6 +10,7 @@ import com.clinica.repository.PagamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,7 +41,7 @@ public class PagamentoService {
 
 		Pagamento pagamento = new Pagamento();
 		pagamento.setConsulta(consulta);
-		pagamento.setDataPagamento(dto.dataPagamento());
+		pagamento.setDataPagamento(LocalDate.now());
 		pagamento.setValor(dto.valor());
 		pagamento.setTipoPagamento(dto.tipoPagamento());
 		pagamento.setFormaPagamento(dto.formaPagamento());
@@ -57,18 +58,6 @@ public class PagamentoService {
 		return pagamentoRepository.findById(id).get();
 	}
 
-	public Pagamento update(UUID id, PagamentoDTO dto) {
-		Pagamento pagamento = pagamentoRepository.getReferenceById(id);
-		pagamento.setTipoPagamento(dto.tipoPagamento());
-		pagamento.setFormaPagamento(dto.formaPagamento());
-
-		return pagamentoRepository.save(pagamento);
-	}
-
-	public void delete(UUID id) {
-		pagamentoRepository.deleteById(id);
-	}
-
 	public Pagamento confirmarPagamento(UUID id){
 		Pagamento pagamento = pagamentoRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Pagamento não encontrado!"));
@@ -81,5 +70,17 @@ public class PagamentoService {
 
 		return pagamentoRepository.save(pagamento);
 	}
+
+//	public Pagamento update(UUID id, PagamentoDTO dto) {
+//		Pagamento pagamento = pagamentoRepository.getReferenceById(id);
+//		pagamento.setTipoPagamento(dto.tipoPagamento());
+//		pagamento.setFormaPagamento(dto.formaPagamento());
+//
+//		return pagamentoRepository.save(pagamento);
+//	}
+//
+//	public void delete(UUID id) {
+//		pagamentoRepository.deleteById(id);
+//	}
 
 }

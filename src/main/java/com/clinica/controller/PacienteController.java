@@ -44,21 +44,21 @@ public class PacienteController {
 		return ResponseEntity.created(uri).body(paciente);
 	}
 
-	@DeleteMapping(value = "/{id}")
-	public ResponseEntity<Paciente> delete(@PathVariable UUID id) {
-		pacienteService.delete(id);
-		return ResponseEntity.noContent().build();
-	}
-
-	@PutMapping(value = "/{id}")
-	public ResponseEntity<Paciente> update(@PathVariable UUID id, @RequestBody @Valid PacienteDTO dto) {
-		Paciente paciente  = pacienteService.update(id, dto);
-		return ResponseEntity.ok().body(paciente);
-	}
-
 	@PatchMapping(value = "/{id}")
 	public ResponseEntity<Paciente> patch(@PathVariable UUID id, @RequestBody @Valid PacienteUpdateDTO dto){
 		return ResponseEntity.ok(pacienteService.patch(id,dto));
 	}
+
+//	@DeleteMapping(value = "/{id}")
+//	public ResponseEntity<Paciente> delete(@PathVariable UUID id) {
+//		pacienteService.delete(id);
+//		return ResponseEntity.noContent().build();
+//	}
+
+	//	@PutMapping(value = "/{id}")
+//	public ResponseEntity<Paciente> update(@PathVariable UUID id, @RequestBody @Valid PacienteDTO dto) {
+//		Paciente paciente  = pacienteService.update(id, dto);
+//		return ResponseEntity.ok().body(paciente);
+//	}
 
 }
