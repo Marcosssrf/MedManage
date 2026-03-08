@@ -2,7 +2,7 @@ spring:
   application:
     name: sistemaClinica
   datasource:
-    url: jdbc:postgresql://localhost:5433/clinica
+    url: jdbc:postgresql://localhost:5434/clinica
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -10,3 +10,6 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false

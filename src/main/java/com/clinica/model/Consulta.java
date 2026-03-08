@@ -1,6 +1,9 @@
 package com.clinica.model;
 
 import com.clinica.model.enums.StatusConsulta;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -25,10 +28,12 @@ public class Consulta {
 
 	@ManyToOne
 	@JoinColumn(name = "paciente_id", nullable = false)
+	@JsonIgnoreProperties({"dataCadastro","dataAtualizacao","createdBy"})
 	private Paciente paciente;
 
 	@ManyToOne
 	@JoinColumn(name = "medico_id", nullable = false)
+	@JsonIgnoreProperties({"dataCadastro","dataAtualizacao","createdBy"})
 	private Medico medico;
 
 	@OneToMany(mappedBy = "consulta")
@@ -42,14 +47,15 @@ public class Consulta {
 	@Column(name = "data_atualizacao")
 	private LocalDateTime dataAtualizacao;
 
-
-	@Column(name = "id_usuario")
-	private UUID idUsuario;
+	@ManyToOne
+	@JsonIgnore
+	@JoinColumn(name = "id_usuario")
+	private User usuario;
 
 	public Consulta() {
 	}
 
-	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, UUID idUsuario) {
+	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User Usuario) {
 		this.id = id;
 		this.dataHora = dataHora;
 		this.status = status;
@@ -57,7 +63,12 @@ public class Consulta {
 		this.medico = medico;
 		this.dataCadastro = dataCadastro;
 		this.dataAtualizacao = dataAtualizacao;
-		this.idUsuario = idUsuario;
+		this.usuario = Usuario;
+	}
+
+	@JsonProperty("createdBy")
+	public String getCreatedBy() {
+		return usuario != null ? usuario.getUsername() : null;
 	}
 
 	public UUID getId() {
@@ -116,11 +127,11 @@ public class Consulta {
 		this.dataAtualizacao = dataAtualizacao;
 	}
 
-	public UUID getIdUsuario() {
-		return idUsuario;
+	public User getUsuario() {
+		return usuario;
 	}
 
-	public void setIdUsuario(UUID idUsuario) {
-		this.idUsuario = idUsuario;
+	public void setUsuario(User usuario) {
+		this.usuario = usuario;
 	}
 }

@@ -3,7 +3,9 @@ package com.clinica.service;
 import com.clinica.dto.MedicoDTO;
 import com.clinica.dto.update.MedicoUpdateDTO;
 import com.clinica.model.Medico;
+import com.clinica.model.User;
 import com.clinica.repository.MedicoRepository;
+import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,8 @@ public class MedicoService {
 
 	@Autowired
 	MedicoRepository medicoRepository;
+	@Autowired
+	SecurityService securityService;
 
 	public List<Medico> findAll() { return medicoRepository.findAll();}
 
@@ -28,6 +32,9 @@ public class MedicoService {
 		medico.setCrm(dto.crm());
 		medico.setEspecialidade(dto.especialidade());
 		medico.setAtivo(true);
+
+		User user = securityService.obterUsuarioLogado();
+		medico.setUsuario(user);
 
 		return medicoRepository.save(medico);
 	}

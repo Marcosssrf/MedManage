@@ -1,21 +1,32 @@
 package com.clinica.service;
 
 import com.clinica.dto.ConsultaDTO;
+import com.clinica.dto.resposta.ConsultaResponseDTO;
+import com.clinica.dto.resposta.MedicoConsultaDTO;
+import com.clinica.dto.resposta.PacienteConsultaDTO;
 import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.model.Consulta;
 import com.clinica.model.Medico;
 import com.clinica.model.Paciente;
+import com.clinica.model.User;
 import com.clinica.model.enums.StatusConsulta;
 import com.clinica.repository.ConsultaRepository;
 import com.clinica.repository.MedicoRepository;
 import com.clinica.repository.PacienteRepository;
+import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
+
+import static com.clinica.repository.specs.ConsultaSpecs.*;
 
 @Service
 public class ConsultaService {
@@ -31,6 +42,8 @@ public class ConsultaService {
 
 	LocalTime inicio = LocalTime.of(8, 0);
 	LocalTime fim = LocalTime.of(18, 0);
+    @Autowired
+	SecurityService securityService;
 
 
 
@@ -52,7 +65,7 @@ public class ConsultaService {
 	relatorios (faturamento por mes, medico mais atendido)
 	*/
 
-	public Consulta insert(ConsultaDTO dto){
+	public ConsultaResponseDTO insert(ConsultaDTO dto){
 
 		LocalDateTime dataHoje = LocalDateTime.now();
 
@@ -61,7 +74,7 @@ public class ConsultaService {
 
 		LocalTime horario = dto.dataHora().toLocalTime();
 
-		boolean isHorarioAtendimento = (horario.isAfter(inicio) && horario.isBefore(fim));
+		boolean isHorarioAtendimento = !horario.isBefore(inicio) && !horario.isAfter(fim);
 
 		if (paciente.getAtivo() == false){
 			throw new RuntimeException("Paciente inativo");
@@ -91,24 +104,41 @@ public class ConsultaService {
 			throw new RuntimeException("Já existe uma consulta para esse médico nesse horário");
 		}
 
-		return consultaRepository.save(consulta);
+		User user = securityService.obterUsuarioLogado();
+		consulta.setUsuario(user);
+
+		Consulta consultaSalva = consultaRepository.save(consulta);
+		return toDTO(consultaSalva);
 	}
 
-	public void atualizarStatus(Consulta consulta){
-		LocalDateTime agora = LocalDateTime.now();
+	public void atualizarStatus(Consulta consulta) {
 
-		if (consulta.getStatus() == StatusConsulta.REALIZADA) {
+		if (consulta.getStatus() == StatusConsulta.CANCELADA || consulta.getStatus() == StatusConsulta.REALIZADA) {
 			return;
 		}
+
+		LocalDateTime agora = LocalDateTime.now();
+
 		if (consulta.getDataHora().isBefore(agora)) {
 			consulta.setStatus(StatusConsulta.REALIZADA);
 		}
 		else if (consulta.getDataHora().isBefore(agora.plusHours(24))) {
 			consulta.setStatus(StatusConsulta.CONFIRMADA);
 		}
+
+		consultaRepository.save(consulta);
 	}
 
-	public Consulta cancelar(UUID id){
+		public ConsultaResponseDTO update(UUID id, ConsultaUpdateDTO dto) {
+		Consulta consulta = consultaRepository.getReferenceById(id);
+
+		consulta.setDataHora(dto.dataHora());
+
+		Consulta consultaAtualizada = consultaRepository.save(consulta);
+		return toDTO(consultaAtualizada);
+	}
+
+	public ConsultaResponseDTO cancelar(UUID id){
 		Consulta consulta = consultaRepository.findById(id).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
 
 		LocalDateTime agora = LocalDateTime.now();
@@ -123,43 +153,78 @@ public class ConsultaService {
 		}
 
 		consulta.setStatus(StatusConsulta.CANCELADA);
-		return consultaRepository.save(consulta);
+		Consulta consultaAtualizada = consultaRepository.save(consulta);
+		return toDTO(consultaAtualizada);
 	}
 
-	public List<Consulta> findAll() {
-		List<Consulta> consultas = consultaRepository.findAll();
-		consultas.forEach(this::atualizarStatus);
-		return consultaRepository.saveAll(consultas);
-	}
-
-	public Consulta findById(UUID id) {
-		Consulta consulta = consultaRepository.findById(id).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+	public ConsultaResponseDTO findById(UUID id) {
+		Consulta consulta = consultaRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
 		atualizarStatus(consulta);
-		return consultaRepository.save(consulta);
+		return toDTO(consulta);
 	}
 
-	public List<Consulta> findByPaciente(String nome){
-		List<Consulta> consultas = consultaRepository.findByPacienteNomeContainingIgnoreCase(nome);
-		consultas.forEach(this::atualizarStatus);
-		return consultaRepository.saveAll(consultas);
+	public Page<ConsultaResponseDTO> findByParams(LocalDateTime dataHora, String paciente, String medico, Integer pagina, Integer tamanhoPagina) {
+		Specification<Consulta> specs = Specification.where((root, query, cb) -> cb.conjunction());
+
+		if(dataHora != null) {
+			specs = specs.and(dataHorarioEqual(dataHora));
+		}
+
+		if(paciente != null) {
+			specs = specs.and(pacienteLike(paciente));
+		}
+
+		if(medico != null) {
+			specs = specs.and(medicoLike(medico));
+		}
+
+		Pageable pageRequest = PageRequest.of(pagina, tamanhoPagina);
+
+		Page<Consulta> paginaResultado = consultaRepository.findAll(specs, pageRequest);
+
+		paginaResultado.forEach(this::atualizarStatus);
+
+		return paginaResultado.map(this::toDTO);
 	}
 
-	public List<Consulta> findByMedico(String nome){
-		List<Consulta> consultas = consultaRepository.findByMedicoNomeContainingIgnoreCase(nome);
-		consultas.forEach(this::atualizarStatus);
-		return consultaRepository.saveAll(consultas);
+	public ConsultaResponseDTO toDTO(Consulta consulta){
+		return new ConsultaResponseDTO(
+				consulta.getId(),
+				consulta.getDataHora(),
+				consulta.getStatus(),
+				new PacienteConsultaDTO(
+						consulta.getPaciente().getNome(),
+						consulta.getPaciente().getDataNascimento()
+				),
+				new MedicoConsultaDTO(
+						consulta.getMedico().getNome(),
+						consulta.getMedico().getEspecialidade()
+				)
+		);
 	}
+}
 
-//	public Consulta update(UUID id, ConsultaUpdateDTO dto) {
-//		Consulta consulta = consultaRepository.getReferenceById(id);
-//
-//		consulta.setDataHora(dto.dataHora());
-//
-//		return consultaRepository.save(consulta);
-//	}
 
 //	public void delete(UUID id) {
 //		consultaRepository.deleteById(id);
 //	}
 
-}
+
+//	public List<Consulta> findByPaciente(String nome){
+//		List<Consulta> consultas = consultaRepository.findByPacienteNomeContainingIgnoreCase(nome);
+//		consultas.forEach(this::atualizarStatus);
+//		return consultaRepository.saveAll(consultas);
+//	}
+//
+//	public List<Consulta> findByMedico(String nome){
+//		List<Consulta> consultas = consultaRepository.findByMedicoNomeContainingIgnoreCase(nome);
+//		consultas.forEach(this::atualizarStatus);
+//		return consultaRepository.saveAll(consultas);
+//	}
+
+//	public List<ConsultaResponseDTO> findAll() {
+//		List<Consulta> consultas = consultaRepository.findAll();
+//		consultas.forEach(this::atualizarStatus);
+//		return consultas.stream().map(this::toDTO).toList();
+//	}

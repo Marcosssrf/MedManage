@@ -6,6 +6,7 @@ import com.clinica.service.PagamentoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -21,18 +22,21 @@ public class PagamentoController {
 	private PagamentoService pagamentoService;
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
 	public ResponseEntity<List<Pagamento>> findAll() {
 		List<Pagamento> pagamentos = pagamentoService.findAll();
 		return ResponseEntity.ok().body(pagamentos);
 	}
 
 	@GetMapping(value = "/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
 	public ResponseEntity<Pagamento> findById(@PathVariable UUID id){
 		Pagamento pagamento = pagamentoService.findById(id);
 		return ResponseEntity.ok().body(pagamento);
 	}
 
 	@PostMapping
+	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
 	public ResponseEntity<Pagamento> insert(@RequestBody @Valid PagamentoDTO dto) {
 		Pagamento pagamento = pagamentoService.insert(dto);
 		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(pagamento.getId()).toUri();
@@ -41,6 +45,7 @@ public class PagamentoController {
 
 
 	@PatchMapping(value = "/{id}/confirmar")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
 	public ResponseEntity<Pagamento> confirmarPagamento(@PathVariable UUID id){
 		Pagamento pagamento = pagamentoService.confirmarPagamento(id);
 		return ResponseEntity.ok(pagamento);

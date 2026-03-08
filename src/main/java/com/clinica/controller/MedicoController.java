@@ -7,6 +7,7 @@ import com.clinica.service.MedicoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -22,18 +23,21 @@ public class MedicoController {
 	MedicoService medicoService;
 
 	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
 	public ResponseEntity<List<Medico>> findAll() {
 		List<Medico> medicos = medicoService.findAll();
 		return ResponseEntity.ok().body(medicos);
 	}
 
 	@GetMapping(value = "/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
 	public ResponseEntity<Medico> findById(@PathVariable UUID id){
 		Medico medico = medicoService.findById(id);
 		return ResponseEntity.ok().body(medico);
 	}
 
 	@PostMapping
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<Medico> insert(@RequestBody @Valid MedicoDTO dto) {
 		Medico medico = medicoService.insert(dto);
 		URI uri = ServletUriComponentsBuilder
@@ -45,6 +49,7 @@ public class MedicoController {
 	}
 
 	@PatchMapping(value = "/{id}")
+	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<Medico> patch(@PathVariable UUID id, @RequestBody @Valid MedicoUpdateDTO dto){
 		return ResponseEntity.ok(medicoService.patch(id,dto));
 	}

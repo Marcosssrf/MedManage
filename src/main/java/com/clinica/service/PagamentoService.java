@@ -3,10 +3,12 @@ package com.clinica.service;
 import com.clinica.dto.PagamentoDTO;
 import com.clinica.model.Consulta;
 import com.clinica.model.Pagamento;
+import com.clinica.model.User;
 import com.clinica.model.enums.StatusConsulta;
 import com.clinica.model.enums.StatusPagamento;
 import com.clinica.repository.ConsultaRepository;
 import com.clinica.repository.PagamentoRepository;
+import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,9 @@ public class PagamentoService {
 
 	@Autowired
 	ConsultaRepository consultaRepository;
+
+	@Autowired
+	SecurityService securityService;
 
 	public Pagamento insert(PagamentoDTO dto){
 
@@ -46,6 +51,9 @@ public class PagamentoService {
 		pagamento.setTipoPagamento(dto.tipoPagamento());
 		pagamento.setFormaPagamento(dto.formaPagamento());
 		pagamento.setStatusPagamento(StatusPagamento.PENDENTE);
+
+		User user = securityService.obterUsuarioLogado();
+		pagamento.setUsuario(user);
 
 		return pagamentoRepository.save(pagamento);
 	}

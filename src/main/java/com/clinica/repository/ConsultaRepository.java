@@ -3,18 +3,20 @@ package com.clinica.repository;
 import com.clinica.model.Consulta;
 import com.clinica.model.enums.StatusConsulta;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-public interface ConsultaRepository extends JpaRepository<Consulta, UUID> {
+public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSpecificationExecutor<Consulta> {
 
 	List<Consulta> findByPacienteNomeContainingIgnoreCase(String nome);
 	List<Consulta> findByMedicoNomeContainingIgnoreCase(String nome);
 	boolean existsByMedicoIdAndDataHora(UUID idMedico, LocalDateTime dataHora);
 	List<Consulta> findByStatus(StatusConsulta status);
+	List<Consulta> findByDataHora(LocalDateTime dataHora);
 
 	@Query("""
         SELECT 

@@ -1,5 +1,7 @@
 package com.clinica.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -42,14 +44,15 @@ public class Paciente {
 	@Column(name = "data_atualizacao")
 	private LocalDateTime dataAtualizacao;
 
-
-	@Column(name = "id_usuario")
-	private UUID idUsuario;
+	@ManyToOne
+	@JsonIgnore
+	@JoinColumn(name = "id_usuario")
+	private User usuario;
 
 	public Paciente() {
 	}
 
-	public Paciente(UUID id, String nome, String cpf, LocalDate dataNascimento, String telefone, String email, Boolean ativo, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, UUID idUsuario) {
+	public Paciente(UUID id, String nome, String cpf, LocalDate dataNascimento, String telefone, String email, Boolean ativo, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User usuario) {
 		this.id = id;
 		this.nome = nome;
 		this.cpf = cpf;
@@ -59,7 +62,12 @@ public class Paciente {
 		this.ativo = ativo;
 		this.dataCadastro = dataCadastro;
 		this.dataAtualizacao = dataAtualizacao;
-		this.idUsuario = idUsuario;
+		this.usuario = usuario;
+	}
+
+	@JsonProperty("createdBy")
+	public String getCreatedBy() {
+		return usuario != null ? usuario.getUsername() : null;
 	}
 
 	public UUID getId() {
@@ -134,12 +142,12 @@ public class Paciente {
 		this.dataAtualizacao = dataAtualizacao;
 	}
 
-	public UUID getIdUsuario() {
-		return idUsuario;
+	public User getUsuario() {
+		return usuario;
 	}
 
-	public void setIdUsuario(UUID idUsuario) {
-		this.idUsuario = idUsuario;
+	public void setUsuario(User usuario) {
+		this.usuario = usuario;
 	}
 
 	@Override
