@@ -55,12 +55,14 @@ public class ConsultaController {
 	}
 
 	@PutMapping(value = "/{id}")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
 	public ResponseEntity<ConsultaResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid ConsultaUpdateDTO dto) {
 		ConsultaResponseDTO consulta = consultaService.update(id, dto);
 		return ResponseEntity.ok().body(consulta);
 	}
 
 	@PutMapping(value = "/{id}/cancelar")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
 	public ResponseEntity<ConsultaResponseDTO> cancelar(@PathVariable UUID id) {
 		ConsultaResponseDTO consultaCancelada = consultaService.cancelar(id);
 		return ResponseEntity.ok(consultaCancelada);
