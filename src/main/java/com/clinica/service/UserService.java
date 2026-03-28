@@ -22,7 +22,8 @@ public class UserService {
     }
 
     public User findByUsername(String username){
-        return repository.findByUsername(username);
+        return repository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
     }
 
 }

@@ -3,7 +3,7 @@ package com.clinica.model.enums;
 public enum FormaPagamento {
 
 	PIX,
-	CARTAO,
+	CARTAO_CREDITO,
+	CARTAO_DEBITO,
 	DINHEIRO
-
 }

@@ -29,8 +29,22 @@ public class MedicoService {
 		Medico medico = new Medico();
 
 		medico.setNome(dto.nome());
+		medico.setDataNascimento(dto.dataNascimento());
+		medico.setSexo(dto.sexo());
+		medico.setEstadoCivil(dto.estadoCivil());
+		medico.setCpf(dto.cpf());
 		medico.setCrm(dto.crm());
+		medico.setCrmEstado(dto.crmEstado());
 		medico.setEspecialidade(dto.especialidade());
+		medico.setTelefone(dto.telefone());
+		medico.setEmail(dto.email());
+		medico.setCep(dto.cep());
+		medico.setLogradouro(dto.logradouro());
+		medico.setNumero(dto.numero());
+		medico.setComplemento(dto.complemento());
+		medico.setBairro(dto.bairro());
+		medico.setCidade(dto.cidade());
+		medico.setUf(dto.uf());
 		medico.setAtivo(true);
 
 		User user = securityService.obterUsuarioLogado();
@@ -39,14 +53,55 @@ public class MedicoService {
 		return medicoRepository.save(medico);
 	}
 
-	public Medico patch(UUID id, MedicoUpdateDTO dto){
+	public Medico patch(UUID id, MedicoUpdateDTO dto) {
 		Medico medico = medicoRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Medico não encontrado!"));
-		if (dto.especialidade() != null){
+				.orElseThrow(() -> new RuntimeException("Médico não encontrado!"));
+
+		if (dto.estadoCivil() != null) {
+			medico.setEstadoCivil(dto.estadoCivil());
+		}
+
+		if (dto.telefone() != null) {
+			medico.setTelefone(dto.telefone());
+		}
+
+		if (dto.email() != null) {
+			medico.setEmail(dto.email());
+		}
+
+		if (dto.cep() != null) {
+			medico.setCep(dto.cep());
+		}
+
+		if (dto.logradouro() != null) {
+			medico.setLogradouro(dto.logradouro());
+		}
+
+		if (dto.numero() != null) {
+			medico.setNumero(dto.numero());
+		}
+
+		if (dto.complemento() != null) {
+			medico.setComplemento(dto.complemento());
+		}
+
+		if (dto.bairro() != null) {
+			medico.setBairro(dto.bairro());
+		}
+
+		if (dto.cidade() != null) {
+			medico.setCidade(dto.cidade());
+		}
+
+		if (dto.uf() != null) {
+			medico.setUf(dto.uf());
+		}
+
+		if (dto.especialidade() != null) {
 			medico.setEspecialidade(dto.especialidade());
 		}
 
-		if(dto.ativo() != null){
+		if (dto.ativo() != null) {
 			medico.setAtivo(dto.ativo());
 		}
 

@@ -10,6 +10,7 @@ public record ConsultaDTO(
 		@Future
 		@NotNull
 		LocalDateTime dataHora,
+		String observacoes,
 		@NotNull
 		UUID pacienteId,
 		@NotNull

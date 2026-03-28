@@ -36,6 +36,9 @@ public class Consulta {
 	@JsonIgnoreProperties({"dataCadastro","dataAtualizacao","createdBy"})
 	private Medico medico;
 
+	@Column
+	private String observacoes;
+
 	@OneToMany(mappedBy = "consulta")
 	private List<Pagamento> pagamentos;
 
@@ -55,12 +58,13 @@ public class Consulta {
 	public Consulta() {
 	}
 
-	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User Usuario) {
+	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico, String observacoes, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User Usuario) {
 		this.id = id;
 		this.dataHora = dataHora;
 		this.status = status;
 		this.paciente = paciente;
 		this.medico = medico;
+		this.observacoes = observacoes;
 		this.dataCadastro = dataCadastro;
 		this.dataAtualizacao = dataAtualizacao;
 		this.usuario = Usuario;
@@ -109,6 +113,14 @@ public class Consulta {
 
 	public void setMedico(Medico medico) {
 		this.medico = medico;
+	}
+
+	public String getObservacoes() {
+		return observacoes;
+	}
+
+	public void setObservacoes(String observacoes) {
+		this.observacoes = observacoes;
 	}
 
 	public LocalDateTime getDataCadastro() {

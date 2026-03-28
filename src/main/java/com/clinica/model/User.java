@@ -1,6 +1,7 @@
 package com.clinica.model;
 
 import com.clinica.model.enums.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -16,13 +17,17 @@ public class User {
     
     @Column
     private String username;
-    
+
     @Column
     private String senha;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private Role role;
+
+    @ManyToOne
+    @JoinColumn(name = "medico_id")
+    private Medico medico;
 
     public User() {
     }
@@ -65,4 +70,9 @@ public class User {
     public void setRole(Role role) {
         this.role = role;
     }
+
+    public Medico getMedico() { return medico; }
+
+    public void setMedico(Medico medico) { this.medico = medico; }
+
 }

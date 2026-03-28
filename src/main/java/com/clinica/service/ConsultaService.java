@@ -15,9 +15,6 @@ import com.clinica.repository.MedicoRepository;
 import com.clinica.repository.PacienteRepository;
 import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -96,6 +93,7 @@ public class ConsultaService {
 		consulta.setPaciente(paciente);
 		consulta.setMedico(medico);
 		consulta.setStatus(StatusConsulta.AGENDADA);
+		consulta.setObservacoes(dto.observacoes());
 		consulta.setDataHora(dto.dataHora());
 
 		boolean conflito = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora());
@@ -164,40 +162,40 @@ public class ConsultaService {
 		return toDTO(consulta);
 	}
 
-	public Page<ConsultaResponseDTO> findByParams(LocalDateTime dataHora, String paciente, String medico, Integer pagina, Integer tamanhoPagina) {
+	public List<ConsultaResponseDTO> findByParams(LocalDateTime dataHora, String paciente, String medico) {
 		Specification<Consulta> specs = Specification.where((root, query, cb) -> cb.conjunction());
 
-		if(dataHora != null) {
+		if (dataHora != null) {
 			specs = specs.and(dataHorarioEqual(dataHora));
 		}
 
-		if(paciente != null) {
+		if (paciente != null) {
 			specs = specs.and(pacienteLike(paciente));
 		}
 
-		if(medico != null) {
+		if (medico != null) {
 			specs = specs.and(medicoLike(medico));
 		}
 
-		Pageable pageRequest = PageRequest.of(pagina, tamanhoPagina);
+		List<Consulta> resultado = consultaRepository.findAll(specs);
 
-		Page<Consulta> paginaResultado = consultaRepository.findAll(specs, pageRequest);
+		resultado.forEach(this::atualizarStatus);
 
-		paginaResultado.forEach(this::atualizarStatus);
-
-		return paginaResultado.map(this::toDTO);
+		return resultado.stream().map(this::toDTO).toList();
 	}
 
 	public ConsultaResponseDTO toDTO(Consulta consulta){
 		return new ConsultaResponseDTO(
 				consulta.getId(),
 				consulta.getDataHora(),
+				consulta.getObservacoes(),
 				consulta.getStatus(),
 				new PacienteConsultaDTO(
 						consulta.getPaciente().getNome(),
 						consulta.getPaciente().getDataNascimento()
 				),
 				new MedicoConsultaDTO(
+						consulta.getMedico().getId(),
 						consulta.getMedico().getNome(),
 						consulta.getMedico().getEspecialidade()
 				)

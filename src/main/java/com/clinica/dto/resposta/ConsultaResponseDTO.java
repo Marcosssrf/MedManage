@@ -8,8 +8,10 @@ import java.util.UUID;
 public record ConsultaResponseDTO(
         UUID id,
         LocalDateTime dataHora,
+        String observacoes,
         StatusConsulta status,
         PacienteConsultaDTO paciente,
         MedicoConsultaDTO medico
+
 ) {
 }

@@ -1,6 +1,7 @@
 package com.clinica.service;
 
 import com.clinica.dto.PagamentoDTO;
+import com.clinica.dto.resposta.PagamentoResponseDTO;
 import com.clinica.model.Consulta;
 import com.clinica.model.Pagamento;
 import com.clinica.model.User;
@@ -28,7 +29,7 @@ public class PagamentoService {
 	@Autowired
 	SecurityService securityService;
 
-	public Pagamento insert(PagamentoDTO dto){
+	public PagamentoResponseDTO insert(PagamentoDTO dto){
 
 		Consulta consulta = consultaRepository.findById(dto.consultaId())
 				.orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
@@ -55,18 +56,20 @@ public class PagamentoService {
 		User user = securityService.obterUsuarioLogado();
 		pagamento.setUsuario(user);
 
-		return pagamentoRepository.save(pagamento);
+		Pagamento saved = pagamentoRepository.save(pagamento);
+		return toDTO(saved);
 	}
 
-	public List<Pagamento> findAll(){
-		return pagamentoRepository.findAll();
+	public List<PagamentoResponseDTO> findAll(){
+		return pagamentoRepository.findAll().stream().map(this::toDTO).toList();
 	}
 
-	public Pagamento findById(UUID id) {
-		return pagamentoRepository.findById(id).get();
+	public PagamentoResponseDTO findById(UUID id) {
+		return toDTO(pagamentoRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Pagamento não encontrado!")));
 	}
 
-	public Pagamento confirmarPagamento(UUID id){
+	public PagamentoResponseDTO confirmarPagamento(UUID id){
 		Pagamento pagamento = pagamentoRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Pagamento não encontrado!"));
 
@@ -76,7 +79,23 @@ public class PagamentoService {
 
 		pagamento.setStatusPagamento(StatusPagamento.PAGO);
 
-		return pagamentoRepository.save(pagamento);
+		return toDTO(pagamentoRepository.save(pagamento));
+	}
+
+	private PagamentoResponseDTO toDTO(Pagamento p) {
+		return new PagamentoResponseDTO(
+				p.getId(),
+				p.getTipoPagamento(),
+				p.getFormaPagamento(),
+				p.getDataPagamento(),
+				p.getValor(),
+				p.getStatusPagamento(),
+				new PagamentoResponseDTO.ConsultaResumoPagamentoDTO(
+						p.getConsulta().getId(),
+						p.getConsulta().getPaciente().getNome(),
+						p.getConsulta().getMedico().getNome()
+				)
+		);
 	}
 
 //	public Pagamento update(UUID id, PagamentoDTO dto) {

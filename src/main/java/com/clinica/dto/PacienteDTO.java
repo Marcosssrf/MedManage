@@ -1,5 +1,6 @@
 package com.clinica.dto;
 
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
@@ -24,6 +25,15 @@ public record PacienteDTO(
         @Past(message = "Não pode ser uma data futura")
         LocalDate dataNascimento,
         String telefone,
+        String sexo,
+        String estadoCivil,
+        String cep,
+        String logradouro,
+        String numero,
+        String complemento,
+        String bairro,
+        String cidade,
+        String uf,
         Boolean ativo
 ) {
 }

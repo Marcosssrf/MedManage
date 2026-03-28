@@ -1,7 +1,7 @@
 package com.clinica.controller;
 
 import com.clinica.dto.PagamentoDTO;
-import com.clinica.model.Pagamento;
+import com.clinica.dto.resposta.PagamentoResponseDTO;
 import com.clinica.service.PagamentoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,32 +23,29 @@ public class PagamentoController {
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
-	public ResponseEntity<List<Pagamento>> findAll() {
-		List<Pagamento> pagamentos = pagamentoService.findAll();
-		return ResponseEntity.ok().body(pagamentos);
+	public ResponseEntity<List<PagamentoResponseDTO>> findAll() {
+		return ResponseEntity.ok(pagamentoService.findAll());
 	}
 
 	@GetMapping(value = "/{id}")
 	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
-	public ResponseEntity<Pagamento> findById(@PathVariable UUID id){
-		Pagamento pagamento = pagamentoService.findById(id);
-		return ResponseEntity.ok().body(pagamento);
+	public ResponseEntity<PagamentoResponseDTO> findById(@PathVariable UUID id){
+		return ResponseEntity.ok().body(pagamentoService.findById(id));
 	}
 
 	@PostMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
-	public ResponseEntity<Pagamento> insert(@RequestBody @Valid PagamentoDTO dto) {
-		Pagamento pagamento = pagamentoService.insert(dto);
-		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(pagamento.getId()).toUri();
+	public ResponseEntity<PagamentoResponseDTO> insert(@RequestBody @Valid PagamentoDTO dto) {
+		PagamentoResponseDTO pagamento = pagamentoService.insert(dto);
+		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(pagamento.id()).toUri();
 		return ResponseEntity.created(uri).body(pagamento);
 	}
 
 
 	@PatchMapping(value = "/{id}/confirmar")
 	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
-	public ResponseEntity<Pagamento> confirmarPagamento(@PathVariable UUID id){
-		Pagamento pagamento = pagamentoService.confirmarPagamento(id);
-		return ResponseEntity.ok(pagamento);
+	public ResponseEntity<PagamentoResponseDTO> confirmarPagamento(@PathVariable UUID id){
+		return ResponseEntity.ok(pagamentoService.confirmarPagamento(id));
 	}
 
 //	@PutMapping(value = "/{id}")

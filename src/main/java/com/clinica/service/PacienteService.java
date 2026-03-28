@@ -36,6 +36,15 @@ public class PacienteService {
 		paciente.setCpf(dto.cpf());
 		paciente.setDataNascimento(dto.dataNascimento());
 		paciente.setTelefone(dto.telefone());
+		paciente.setSexo(dto.sexo());
+		paciente.setEstadoCivil(dto.estadoCivil());
+		paciente.setCep(dto.cep());
+		paciente.setLogradouro(dto.logradouro());
+		paciente.setNumero(dto.numero());
+		paciente.setComplemento(dto.complemento());
+		paciente.setBairro(dto.bairro());
+		paciente.setCidade(dto.cidade());
+		paciente.setUf(dto.uf());
 		paciente.setAtivo(true);
 
 		User user = securityService.obterUsuarioLogado();
@@ -44,22 +53,55 @@ public class PacienteService {
 		return pacienteRepository.save(paciente);
 	}
 
-	public Paciente patch(UUID id, PacienteUpdateDTO dto){
+	public Paciente patch(UUID id, PacienteUpdateDTO dto) {
 		Paciente paciente = pacienteRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Paciente não encontrado!"));
-		if (dto.nome() != null){
+
+		if (dto.nome() != null) {
 			paciente.setNome(dto.nome());
 		}
 
-		if (dto.email() != null){
+		if (dto.email() != null) {
 			paciente.setEmail(dto.email());
 		}
 
-		if (dto.telefone() != null){
+		if (dto.telefone() != null) {
 			paciente.setTelefone(dto.telefone());
 		}
 
-		if(dto.ativo() != null){
+		if (dto.estadoCivil() != null) {
+			paciente.setEstadoCivil(dto.estadoCivil());
+		}
+
+		if (dto.cep() != null) {
+			paciente.setCep(dto.cep());
+		}
+
+		if (dto.logradouro() != null) {
+			paciente.setLogradouro(dto.logradouro());
+		}
+
+		if (dto.numero() != null) {
+			paciente.setNumero(dto.numero());
+		}
+
+		if (dto.complemento() != null) {
+			paciente.setComplemento(dto.complemento());
+		}
+
+		if (dto.bairro() != null) {
+			paciente.setBairro(dto.bairro());
+		}
+
+		if (dto.cidade() != null) {
+			paciente.setCidade(dto.cidade());
+		}
+
+		if (dto.uf() != null) {
+			paciente.setUf(dto.uf());
+		}
+
+		if (dto.ativo() != null) {
 			paciente.setAtivo(dto.ativo());
 		}
 
