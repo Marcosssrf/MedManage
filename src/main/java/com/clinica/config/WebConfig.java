@@ -10,7 +10,12 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:*") // Permite qualquer porta do localhost
+                .allowedOrigins(
+                        "http://localhost:3000",   // Se for React/Next
+                        "http://localhost:5173",   // Se for Vite
+                        "http://localhost:5500",   // Se for Live Server (HTML/JS puro)
+                        "http://127.0.0.1:5500"    // Variação comum do Live Server
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true);

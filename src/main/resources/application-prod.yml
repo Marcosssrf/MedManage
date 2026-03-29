@@ -1,3 +1,6 @@
+server:
+  port: 5000
+
 spring:
   datasource:
     url: jdbc:postgresql://aws-1-us-east-1.pooler.supabase.com:6543/postgres
@@ -8,9 +11,6 @@ spring:
     show-sql: false
     hibernate:
       ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
   jackson:
     serialization:
       write-dates-as-timestamps: false
