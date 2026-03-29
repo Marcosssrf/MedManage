@@ -111,6 +111,10 @@ const btnPrimaryStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+interface Props {
+  onSuccess?: () => void;
+}
+
 const Campo = ({ id, label, required, error, children }: CampoProps) => (
   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
     <label htmlFor={id} style={{ fontSize: 13, color: "#666" }}>
@@ -121,7 +125,7 @@ const Campo = ({ id, label, required, error, children }: CampoProps) => (
   </div>
 );
 
-export const FormCadastroPaciente = () => {
+export const FormCadastroPaciente = ({ onSuccess }: Props) => {
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -133,6 +137,7 @@ export const FormCadastroPaciente = () => {
       queryClient.invalidateQueries({ queryKey: ["pacientes"] });
       setForm(initialForm);
       toast.success("Paciente cadastrado com sucesso!");
+      onSuccess?.();
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao cadastrar paciente");

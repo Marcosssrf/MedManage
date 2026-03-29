@@ -1,18 +1,18 @@
-const BASE_URL = "http://localhost:8080";
+import { authService } from "./auth";
 
-async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
+const BASE_URL = "https://medmanage-production.up.railway.app";
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const credentials = authService.getCredentials();
+    const res = await fetch(`${BASE_URL}${path}`, {
+        ...options,
         headers: {
             "Content-Type": "application/json",
-            Authorization: "Basic " + btoa("admin:123"),
-            ...options?.headers
+            ...(credentials ? { Authorization: `Basic ${credentials}` } : {}),
+            ...options.headers,
         },
-        ...options,
     });
-    if (!res.ok) {
-        const error = await res.text().catch(() => "Erro desconhecido");
-        throw new Error(error);
-    }
+    if (!res.ok) throw new Error(`Erro ${res.status}`);
     return res.json();
 }
 
@@ -72,4 +72,127 @@ export const medicosApi = {
             body: JSON.stringify(data),
         })
 
+};
+
+export interface Consulta {
+    id?: string | number;
+    pacienteId: string | number;
+    medicoId: string | number;
+    pacienteNome?: string;
+    medicoNome?: string;
+    data: string;
+    horario: string;
+    status: string;
+    observacoes?: string;
+}
+
+export const consultasApi = {
+    listar: async () => {
+        const res = await request<any[]>("/consultas");
+
+        return res.map((c) => {
+            const [data, horario] = (c.dataHora || "").split("T");
+            const dataBr = data ? data.split("-").reverse().join("/") : "";
+
+            return {
+                id: c.id,
+                pacienteId: c.pacienteId ?? "",
+                medicoId: c.medicoId ?? c.medico?.id ?? "",
+                pacienteNome: c.paciente?.nome,
+                medicoNome: c.medico?.nome,
+                data: dataBr,
+                horario: horario,
+                status: c.status,
+                observacoes: c.observacoes,
+            } as Consulta;
+        });
+    },
+
+    agendar: async (
+        data: Omit<Consulta, "id" | "status" | "pacienteNome" | "medicoNome">,
+    ) => {
+        const dataIso = data.data.includes("/")
+            ? data.data.split("/").reverse().join("-")
+            : data.data;
+
+        const dataHora = `${dataIso}T${data.horario}`;
+
+        const body = {
+            pacienteId: data.pacienteId,
+            medicoId: data.medicoId,
+            dataHora: dataHora,
+            observacoes: data.observacoes,
+        };
+
+        return request<Consulta>("/consultas", {
+            method: "POST",
+            body: JSON.stringify(body),
+        });
+    },
+
+    cancelar: (id: string | number) =>
+        request(`/consultas/${id}/cancelar`, {
+            method: "PUT",
+        }),
+};
+
+
+export interface Pagamento {
+    id?: string | number;
+    consultaId: string | number;
+    pacienteNome?: string;
+    medicoNome?: string;
+    valor: number;
+    formaPagamento: string;
+    tipoPagamento: string;
+    status: string;
+    data: string;
+}
+
+
+export const pagamentosApi = {
+    listar: async () => {
+        const res = await request<any[]>("/pagamentos");
+
+        return res.map((p) => ({
+            id: p.id,
+            consultaId: p.consulta?.id ?? "",
+            pacienteNome: p.consulta?.pacienteNome,
+            medicoNome: p.consulta?.medicoNome,
+            valor: p.valor,
+            formaPagamento: p.formaPagamento,
+            tipoPagamento: p.tipoPagamento,
+            status: p.statusPagamento,
+            data: p.dataPagamento,
+        } as Pagamento));
+    },
+
+    registrar: (data: Omit<Pagamento, "id" | "status" | "pacienteNome" | "medicoNome">) => {
+        const body = {
+            consultaId: data.consultaId,
+            valor: data.valor,
+            formaPagamento: data.formaPagamento,
+            tipoPagamento: data.tipoPagamento,
+            dataPagamento: `${data.data}T00:00:00`,
+        };
+
+        return request<Pagamento>("/pagamentos", {
+            method: "POST",
+            body: JSON.stringify(body),
+        });
+    },
+
+    confirmar: (id: string | number) => {
+        return request(`/pagamentos/${id}/confirmar`, {
+            method: "PATCH",
+        });
+    }
+};
+
+export const relatoriosApi = {
+    faturamentoPorMes: (ano: number) =>
+        request<Record<string, number>>(`/relatorios/faturamento?ano=${ano}`),
+
+    medicoMaisAtendido: () =>
+        request<{ nome: string; totalConsultas: number }>("/relatorios/medico-mais-atendido"),
 };

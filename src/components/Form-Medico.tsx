@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 interface FormData {
     nome: string;
-    nascimento: string;
+    dataNascimento: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;
@@ -105,7 +105,7 @@ const ESPECIALIDADES: string[] = [
 ];
 
 const initialForm: FormData = {
-    nome: "", nascimento: "", sexo: "", estadoCivil: "",
+    nome: "", dataNascimento: "", sexo: "", estadoCivil: "",
     cpf: "", crm: "", crmEstado: "", especialidade: "",
     email: "", telefone: "",
     cep: "", logradouro: "", numero: "", complemento: "",
@@ -182,7 +182,11 @@ const Campo = ({ id, label, required, error, children }: CampoProps) => (
     </div>
 );
 
-export const FormCadastroMedico = () => {
+interface Props {
+    onSuccess?: () => void;
+}
+
+export const FormCadastroMedico = ({ onSuccess }: Props) => {
     const [form, setForm] = useState<FormData>(initialForm);
     const [errors, setErrors] = useState<FormErrors>({});
     const [buscandoCep, setBuscandoCep] = useState(false);
@@ -195,6 +199,7 @@ export const FormCadastroMedico = () => {
             queryClient.invalidateQueries({ queryKey: ["medicos"] });
             setForm(initialForm);
             toast.success("Medico Cadastrado com Sucesso!");
+            onSuccess?.();
         },
         onError: (error: Error) => {
             toast.error(error.message || "Erro ao cadastrar medico");
@@ -247,7 +252,7 @@ export const FormCadastroMedico = () => {
     const validate = (): FormErrors => {
         const erros: FormErrors = {};
         if (!form.nome.trim()) erros.nome = "Campo obrigatório";
-        if (!form.nascimento) erros.nascimento = "Campo obrigatório";
+        if (!form.dataNascimento) erros.dataNascimento = "Campo obrigatório";
         if (!form.sexo) erros.sexo = "Campo obrigatório";
         if (!form.estadoCivil) erros.estadoCivil = "Campo obrigatório";
         if (!form.cpf || form.cpf.replace(/\D/g, "").length !== 11)
@@ -297,10 +302,10 @@ export const FormCadastroMedico = () => {
                             </Campo>
                         </div>
 
-                        <Campo id="nascimento" label="Data de Nascimento" required error={errors.nascimento}>
+                        <Campo id="dataNascimento" label="Data de Nascimento" required error={errors.dataNascimento}>
                             <input
-                                id="nascimento" name="nascimento" type="date" value={form.nascimento} onChange={handleChange}
-                                style={inputStyle("nascimento")}
+                                id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento} onChange={handleChange}
+                                style={inputStyle("dataNascimento")}
                             />
                         </Campo>
 
