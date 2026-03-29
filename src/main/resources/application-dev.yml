@@ -1,14 +1,11 @@
 spring:
-  port: ${PORT:8080}
-  application:
-    name: sistemaClinica
   datasource:
-    url: ${DB_URL}
-    username: postgres
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: update
   jackson:
