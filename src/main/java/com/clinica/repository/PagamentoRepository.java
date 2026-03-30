@@ -37,4 +37,14 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
         ORDER BY YEAR(p.dataPagamento), MONTH(p.dataPagamento)
     """)
 	List<Object[]> faturamentoPorMes();
+
+	@Query("""
+        SELECT SUM(p.valor)
+        FROM Pagamento p 
+        WHERE p.statusPagamento = com.clinica.model.enums.StatusPagamento.PAGO 
+        AND MONTH(p.dataPagamento) = MONTH(CURRENT_DATE) 
+        AND YEAR(p.dataPagamento) = YEAR(CURRENT_DATE)
+    """)
+	java.math.BigDecimal sumFaturamentoMesAtual();
+
 }

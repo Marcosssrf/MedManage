@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +19,9 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	@Override
 	@EntityGraph(attributePaths = {"medico", "paciente"})
 	List<Consulta> findAll();
+
+	@Query("SELECT COUNT(c) FROM Consulta c WHERE c.dataHora >= :inicioDoDia AND c.dataHora < :fimDoDia")
+	Long countConsultasHoje(@Param("inicioDoDia") java.time.LocalDateTime inicioDoDia, @Param("fimDoDia") java.time.LocalDateTime fimDoDia);
 
 	// 2. MATANDO O N+1 DOS SEUS FILTROS PERSONALIZADOS
 	@EntityGraph(attributePaths = {"medico", "paciente"})
