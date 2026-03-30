@@ -23,10 +23,7 @@ public record PacienteDTO(
         @NotNull
         LocalDate dataNascimento,
         @NotBlank
-        @Pattern(
-                regexp = "[14689][1-9]|2[12478]|3[1234578]|5[1345]|7[134579]",
-                message = "Telefone Invalido"
-        )
+        @Pattern(regexp = "^\\(\\d{2}\\) \\d{4,5}-\\d{4}$", message = "Telefone Inválido. O formato deve ser (XX) XXXXX-XXXX")
         String telefone,
         @NotBlank
         String sexo,
