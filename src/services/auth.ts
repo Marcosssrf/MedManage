@@ -1,6 +1,6 @@
 // const BASE_URL = "https://medmanage-production.up.railway.app";
-// const BASE_URL = "https://medmanage-api.onrender.com";
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = "https://medmanage-api.onrender.com";
+// const BASE_URL = "http://localhost:8080";
 
 export interface AuthUser {
     id: string;

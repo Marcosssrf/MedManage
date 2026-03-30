@@ -1,8 +1,8 @@
 import { authService } from "./auth";
 
 // const BASE_URL = "https://medmanage-production.up.railway.app";
-// const BASE_URL = "https://medmanage-api.onrender.com";
-const BASE_URL = "http://localhost:8080";
+const BASE_URL = "https://medmanage-api.onrender.com";
+// const BASE_URL = "http://localhost:8080";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const credentials = authService.getCredentials();
