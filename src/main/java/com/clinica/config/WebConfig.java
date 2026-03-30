@@ -10,7 +10,13 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:*") // Permite qualquer porta do localhost
+                .allowedOriginPatterns(
+                        "http://localhost:*",
+                        "http://172.20.10.*:*",  // ← IP da sua rede local
+                        "https://*.ngrok-free.app",  // ← ngrok
+                        "https://*.ngrok-free.dev",
+                        "https://*.railway.app"
+                )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true);
