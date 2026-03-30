@@ -1,6 +1,8 @@
 import { authService } from "./auth";
 
-const BASE_URL = "https://medmanage-production.up.railway.app";
+// const BASE_URL = "https://medmanage-production.up.railway.app";
+// const BASE_URL = "https://medmanage-api.onrender.com";
+const BASE_URL = "http://localhost:8080";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const credentials = authService.getCredentials();
@@ -8,6 +10,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         ...options,
         headers: {
             "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
             ...(credentials ? { Authorization: `Basic ${credentials}` } : {}),
             ...options.headers,
         },
@@ -19,7 +22,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export interface Paciente {
     id?: string | number;
     nome: string;
-    nascimento: string;
+    dataNascimento: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;
@@ -36,17 +39,24 @@ export interface Paciente {
 
 export const pacientesApi = {
     listar: () => request<Paciente[]>("/pacientes"),
+
     cadastrar: (data: Omit<Paciente, "id">) =>
         request<Paciente>("/pacientes", {
             method: "POST",
             body: JSON.stringify(data),
+        }),
+
+    atualizar: (id: string | number, dados: Partial<Paciente>) =>
+        request<Paciente>(`/pacientes/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(dados),
         }),
 };
 
 export interface Medico {
     id?: string | number;
     nome: string;
-    nascimento: string;
+    dataNascimento: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;
@@ -66,10 +76,17 @@ export interface Medico {
 
 export const medicosApi = {
     listar: () => request<Medico[]>("/medicos"),
+
     cadastrar: (data: Omit<Medico, "id">) =>
         request<Medico>("/medicos", {
             method: "POST",
             body: JSON.stringify(data),
+        }),
+
+    atualizar: (id: string | number, dados: Partial<Medico>) =>
+        request<Medico>(`/medicos/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(dados),
         })
 
 };
@@ -80,6 +97,7 @@ export interface Consulta {
     medicoId: string | number;
     pacienteNome?: string;
     medicoNome?: string;
+    medicoEspecialidade?: string;
     data: string;
     horario: string;
     status: string;
@@ -100,6 +118,7 @@ export const consultasApi = {
                 medicoId: c.medicoId ?? c.medico?.id ?? "",
                 pacienteNome: c.paciente?.nome,
                 medicoNome: c.medico?.nome,
+                medicoEspecialidade: c.medico?.especialidade,
                 data: dataBr,
                 horario: horario,
                 status: c.status,
@@ -134,6 +153,20 @@ export const consultasApi = {
         request(`/consultas/${id}/cancelar`, {
             method: "PUT",
         }),
+
+    atualizar: (id: string | number, dados: { data: string; horario: string; observacoes?: string }) => {
+        const dataIso = dados.data.includes("/")
+            ? dados.data.split("/").reverse().join("-")
+            : dados.data;
+
+        return request(`/consultas/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                dataHora: `${dataIso}T${dados.horario}`,
+                observacoes: dados.observacoes,
+            }),
+        });
+    },
 };
 
 

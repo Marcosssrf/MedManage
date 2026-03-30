@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Search, CreditCard, TrendingUp, Clock, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "../hooks/usePermissions";
+import { usePagination } from "../hooks/usePagination";
+import Pagination from "../components/Pagination";
 
 const FORMA_PAGAMENTO = ["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO", "DINHEIRO", "TRANSFERENCIA"];
 const TIPO_PAGAMENTO = ["PARTICULAR", "CONVENIO", "PLANO_SAUDE"];
@@ -221,6 +223,8 @@ export default function Pagamentos() {
         )
         .sort((a, b) => b.data.localeCompare(a.data));
 
+    const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);
+
     const total = pagamentos.reduce((acc, p) => acc + (p.valor ?? 0), 0);
     const pago = pagamentos.filter((p) => p.status === "PAGO");
     const pendentes = pagamentos.filter((p) => p.status === "PENDENTE");
@@ -328,7 +332,7 @@ export default function Pagamentos() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((p, i) => (
+                                {paginated.map((p, i) => (
                                     <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                                         <td className="py-3 px-4 text-muted-foreground">{i + 1}</td>
                                         <td className="py-3 px-4">
@@ -367,6 +371,15 @@ export default function Pagamentos() {
                                 ))}
                             </tbody>
                         </table>
+                        <Pagination
+                            page={page}
+                            totalPages={totalPages}
+                            onNext={next}
+                            onPrev={prev}
+                            onGoTo={goTo}
+                            total={filtered?.length ?? 0}
+                            perPage={10}
+                        />
                         <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
                             {filtered.length} pagamento{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
                         </div>

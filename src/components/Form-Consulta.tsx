@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { consultasApi, pacientesApi, medicosApi } from "../services/api";
+import { consultasApi, pacientesApi, medicosApi, type Consulta } from "../services/api";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 
 interface Props {
     onSuccess?: () => void;
+    initialData?: Consulta;
 }
 
 interface ItemSelecionado {
@@ -96,25 +97,36 @@ function Autocomplete({
     );
 }
 
-export function FormCadastroConsulta({ onSuccess }: Props) {
+export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
     const queryClient = useQueryClient();
     const { isAdmin, isSecretaria } = usePermissions();
     const { user } = useAuth();
+    const isEditing = !!initialData;
 
     const [pacienteSearch, setPacienteSearch] = useState("");
-    const [pacienteSelecionado, setPacienteSelecionado] = useState<ItemSelecionado | null>(null);
+    const [pacienteSelecionado, setPacienteSelecionado] = useState<ItemSelecionado | null>(
+        initialData ? { id: initialData.pacienteId, nome: initialData.pacienteNome ?? "" } : null
+    );
 
     const [medicoSearch, setMedicoSearch] = useState("");
     const [medicoSelecionado, setMedicoSelecionado] = useState<ItemSelecionado | null>(() => {
+        if (initialData) return { id: initialData.medicoId, nome: initialData.medicoNome ?? "", detalhe: initialData.medicoEspecialidade };
         if (user?.role === "MEDICO" && user.medico?.id) {
             return { id: user.medico.id, nome: user.medico.nome, detalhe: user.medico.especialidade };
         }
         return null;
     });
+    // Data vem em dd/MM/yyyy do backend — converte para yyyy-MM-dd pro input type="date"
+    const toInputDate = (dataBr: string) => {
+        if (!dataBr) return "";
+        if (dataBr.includes("/")) return dataBr.split("/").reverse().join("-");
+        return dataBr;
+    };
 
-    const [data, setData] = useState("");
-    const [horario, setHorario] = useState("");
-    const [observacoes, setObservacoes] = useState("");
+    const [data, setData] = useState(initialData ? toInputDate(initialData.data) : "");
+    const [horario, setHorario] = useState(initialData ? (initialData.horario?.slice(0, 5) ?? "") : "");
+    const [observacoes, setObservacoes] = useState(initialData?.observacoes ?? "");
+
 
     const { data: pacientes = [] } = useQuery({
         queryKey: ["pacientes"],
@@ -138,18 +150,20 @@ export function FormCadastroConsulta({ onSuccess }: Props) {
         .map((m) => ({ id: m.id!, nome: m.nome, detalhe: m.especialidade }));
 
     const mutation = useMutation({
-        mutationFn: consultasApi.agendar,
+        mutationFn: (payload: Parameters<typeof consultasApi.agendar>[0]) =>
+            isEditing
+                ? consultasApi.atualizar(initialData!.id!, { data, horario: `${horario}:00`, observacoes })
+                : consultasApi.agendar(payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["consultas"] });
-            toast.success("Consulta agendada com sucesso!");
+            toast.success(isEditing ? "Consulta atualizada com sucesso!" : "Consulta agendada com sucesso!");
             onSuccess?.();
         },
-        onError: () => toast.error("Erro ao agendar consulta."),
+        onError: () => toast.error(isEditing ? "Erro ao atualizar consulta." : "Erro ao agendar consulta."),
     });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!pacienteSelecionado) return toast.error("Selecione um paciente.");
         if (!medicoSelecionado) return toast.error("Selecione um médico.");
         if (!data || !horario) return toast.error("Informe data e horário.");
@@ -163,6 +177,7 @@ export function FormCadastroConsulta({ onSuccess }: Props) {
         });
     };
 
+
     return (
         <form onSubmit={handleSubmit} className="space-y-5 pt-2">
 
@@ -175,6 +190,8 @@ export function FormCadastroConsulta({ onSuccess }: Props) {
                 suggestions={pacienteSuggestions}
                 search={pacienteSearch}
                 onSearchChange={setPacienteSearch}
+                disabled={isEditing}
+                disabledValue={initialData?.pacienteNome}
             />
 
             <Autocomplete
@@ -186,10 +203,13 @@ export function FormCadastroConsulta({ onSuccess }: Props) {
                 suggestions={medicoSuggestions}
                 search={medicoSearch}
                 onSearchChange={setMedicoSearch}
-                disabled={user?.role === "MEDICO"}
-                disabledValue={user?.medico ? `${user.medico.nome} — ${user.medico.especialidade}` : ""}
+                disabled={isEditing || user?.role === "MEDICO"}
+                disabledValue={isEditing
+                    ? `${initialData?.medicoNome} — ${initialData?.medicoEspecialidade}`
+                    : user?.medico ? `${user.medico.nome} — ${user.medico.especialidade}` : ""}
             />
 
+            {/* Data e horário — editáveis */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium">Data <span className="text-destructive">*</span></label>
@@ -222,7 +242,9 @@ export function FormCadastroConsulta({ onSuccess }: Props) {
 
             <div className="flex justify-end pt-2">
                 <Button type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending ? "Agendando..." : "Agendar consulta"}
+                    {mutation.isPending
+                        ? (isEditing ? "Salvando..." : "Agendando...")
+                        : (isEditing ? "Salvar alterações" : "Agendar consulta")}
                 </Button>
             </div>
         </form>

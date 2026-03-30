@@ -1,4 +1,6 @@
-const BASE_URL = "https://medmanage-production.up.railway.app";
+// const BASE_URL = "https://medmanage-production.up.railway.app";
+// const BASE_URL = "https://medmanage-api.onrender.com";
+const BASE_URL = "http://localhost:8080";
 
 export interface AuthUser {
     id: string;
@@ -18,6 +20,7 @@ export const authService = {
         const res = await fetch(`${BASE_URL}/usuarios/me`, {
             headers: {
                 Authorization: `Basic ${credentials}`,
+                "ngrok-skip-browser-warning": "true",
                 "Content-Type": "application/json",
             },
         });

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { pacientesApi } from "../services/api";
+import { pacientesApi, type Paciente } from "../services/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -111,8 +111,10 @@ const btnPrimaryStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+// ── Props agora aceita initialData para modo edição ──────────────────────────
 interface Props {
   onSuccess?: () => void;
+  initialData?: Paciente;
 }
 
 const Campo = ({ id, label, required, error, children }: CampoProps) => (
@@ -125,22 +127,48 @@ const Campo = ({ id, label, required, error, children }: CampoProps) => (
   </div>
 );
 
-export const FormCadastroPaciente = ({ onSuccess }: Props) => {
-  const [form, setForm] = useState<FormData>(initialForm);
+export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
+  const isEditing = !!initialData;
+
+  // Pré-preenche o form com os dados do paciente quando em modo edição
+  const [form, setForm] = useState<FormData>(() =>
+    initialData
+      ? {
+        nome: initialData.nome ?? "",
+        dataNascimento: initialData.dataNascimento ?? "",
+        sexo: initialData.sexo ?? "",
+        estadoCivil: initialData.estadoCivil ?? "",
+        cpf: initialData.cpf ?? "",
+        email: initialData.email ?? "",
+        telefone: initialData.telefone ?? "",
+        cep: initialData.cep ?? "",
+        logradouro: initialData.logradouro ?? "",
+        numero: initialData.numero ?? "",
+        complemento: initialData.complemento ?? "",
+        bairro: initialData.bairro ?? "",
+        cidade: initialData.cidade ?? "",
+        uf: initialData.uf ?? "",
+      }
+      : initialForm
+  );
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [buscandoCep, setBuscandoCep] = useState(false);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: pacientesApi.cadastrar,
+    mutationFn: (data: FormData) =>
+      isEditing
+        ? pacientesApi.atualizar(initialData!.id!, data)
+        : pacientesApi.cadastrar(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pacientes"] });
-      setForm(initialForm);
-      toast.success("Paciente cadastrado com sucesso!");
+      if (!isEditing) setForm(initialForm);
+      toast.success(isEditing ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
       onSuccess?.();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Erro ao cadastrar paciente");
+      toast.error(error.message || (isEditing ? "Erro ao atualizar paciente" : "Erro ao cadastrar paciente"));
     },
   });
 
@@ -248,11 +276,7 @@ export const FormCadastroPaciente = ({ onSuccess }: Props) => {
             </Campo>
 
             <Campo id="sexo" label="Sexo biológico" required error={errors.sexo}>
-              <select
-                id="sexo" name="sexo"
-                value={form.sexo} onChange={handleChange}
-                style={selectStyle("sexo")}
-              >
+              <select id="sexo" name="sexo" value={form.sexo} onChange={handleChange} style={selectStyle("sexo")}>
                 <option value="">Selecione</option>
                 <option value="masculino">Masculino</option>
                 <option value="feminino">Feminino</option>
@@ -261,11 +285,7 @@ export const FormCadastroPaciente = ({ onSuccess }: Props) => {
             </Campo>
 
             <Campo id="estadoCivil" label="Estado civil" required error={errors.estadoCivil}>
-              <select
-                id="estadoCivil" name="estadoCivil"
-                value={form.estadoCivil} onChange={handleChange}
-                style={selectStyle("estadoCivil")}
-              >
+              <select id="estadoCivil" name="estadoCivil" value={form.estadoCivil} onChange={handleChange} style={selectStyle("estadoCivil")}>
                 <option value="">Selecione</option>
                 <option value="solteiro">Solteiro(a)</option>
                 <option value="casado">Casado(a)</option>
@@ -279,9 +299,10 @@ export const FormCadastroPaciente = ({ onSuccess }: Props) => {
               <input
                 id="cpf" name="cpf" type="text"
                 value={form.cpf} onChange={handleChange}
-                style={inputStyle("cpf")}
+                style={{ ...inputStyle("cpf"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
                 inputMode="numeric" maxLength={14}
                 placeholder="000.000.000-00"
+                disabled={isEditing}
               />
             </Campo>
           </div>
@@ -290,12 +311,11 @@ export const FormCadastroPaciente = ({ onSuccess }: Props) => {
         <fieldset style={fieldsetStyle}>
           <legend style={legendStyle}>Contato</legend>
           <div style={grid2}>
-
             <Campo id="email" label="E-mail" required error={errors.email}>
               <input
                 id="email" name="email" type="email"
                 value={form.email} onChange={handleChange}
-                style={inputStyle("email")} placeholder="examplo@email.com"
+                style={inputStyle("email")} placeholder="exemplo@email.com"
                 inputMode="email" autoComplete="email"
               />
             </Campo>
@@ -325,10 +345,7 @@ export const FormCadastroPaciente = ({ onSuccess }: Props) => {
                   placeholder="00000-000"
                 />
               </Campo>
-              <button
-                type="button" onClick={buscarCep}
-                disabled={buscandoCep} style={btnSecStyle}
-              >
+              <button type="button" onClick={buscarCep} disabled={buscandoCep} style={btnSecStyle}>
                 {buscandoCep ? "Buscando..." : "Buscar endereço"}
               </button>
             </div>
@@ -363,25 +380,13 @@ export const FormCadastroPaciente = ({ onSuccess }: Props) => {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px", gap: 12 }}>
               <Campo id="bairro" label="Bairro" error={errors.bairro}>
-                <input
-                  id="bairro" name="bairro" type="text"
-                  value={form.bairro} onChange={handleChange}
-                  style={inputStyle("bairro")}
-                />
+                <input id="bairro" name="bairro" type="text" value={form.bairro} onChange={handleChange} style={inputStyle("bairro")} />
               </Campo>
               <Campo id="cidade" label="Cidade" error={errors.cidade}>
-                <input
-                  id="cidade" name="cidade" type="text"
-                  value={form.cidade} onChange={handleChange}
-                  style={inputStyle("cidade")}
-                />
+                <input id="cidade" name="cidade" type="text" value={form.cidade} onChange={handleChange} style={inputStyle("cidade")} />
               </Campo>
               <Campo id="uf" label="UF" error={errors.uf}>
-                <select
-                  id="uf" name="uf"
-                  value={form.uf} onChange={handleChange}
-                  style={selectStyle("uf")}
-                >
+                <select id="uf" name="uf" value={form.uf} onChange={handleChange} style={selectStyle("uf")}>
                   <option value="">—</option>
                   {ESTADOS_BR.map((uf) => (
                     <option key={uf} value={uf}>{uf}</option>
@@ -389,13 +394,19 @@ export const FormCadastroPaciente = ({ onSuccess }: Props) => {
                 </select>
               </Campo>
             </div>
-
           </div>
         </fieldset>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-          <button type="submit" style={{ ...btnPrimaryStyle, opacity: mutation.isPending ? 0.6 : 1, cursor: mutation.isPending ? "not-allowed" : "pointer" }} disabled={mutation.isPending}>
-            {mutation.isPending ? "Cadastrando..." : "Cadastrar paciente"}
+          <button
+            type="submit"
+            style={{ ...btnPrimaryStyle, opacity: mutation.isPending ? 0.6 : 1, cursor: mutation.isPending ? "not-allowed" : "pointer" }}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending
+              ? (isEditing ? "Salvando..." : "Cadastrando...")
+              : (isEditing ? "Salvar alterações" : "Cadastrar paciente")
+            }
           </button>
         </div>
 

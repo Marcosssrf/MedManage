@@ -118,7 +118,7 @@ export default function Dashboard() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-semibold">
-                    Olá, {user?.medico?.nome?.split(" ")[0] ?? user?.username} 👋
+                    Olá, {user?.medico?.nome?.split(" ")[0] ?? (user?.username ? user.username.charAt(0).toUpperCase() + user.username.slice(1) : "")} 👋
                 </h1>
                 <p className="text-muted-foreground text-sm mt-1">
                     {DAYS_PT[new Date().getDay()]}, {new Date().getDate()} de {MONTHS_PT[mesAtual]} de {anoAtual}

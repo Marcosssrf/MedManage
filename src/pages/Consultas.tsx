@@ -5,7 +5,7 @@ import PageHeader from "../components/PageHeader";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
-import { Plus, ChevronLeft, ChevronRight, CalendarDays, Clock, User, Stethoscope, X } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarDays, Clock, Stethoscope, X, Pencil, FileText } from "lucide-react";
 import { toast } from "sonner";
 import type { Consulta } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -31,7 +31,7 @@ const HOURS = Array.from({ length: 11 }, (_, i) => i + 8);
 
 const STATUS_COLORS: Record<string, string> = {
     AGENDADA: "bg-primary/20 border-primary text-primary",
-    CONFIRMADA: "bg-green-500/20 border-green-500 text-green-600",
+    CONFIRMADA: "bg-blue-500/10 border-blue-600 text-blue-600",
     REALIZADA: "bg-green-500/20 border-green-500 text-green-600",
     CANCELADA: "bg-destructive/20 border-destructive text-destructive",
 };
@@ -44,6 +44,7 @@ export default function Consultas() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { canAddConsulta, canCancelarConsulta } = usePermissions();
+    const [editingConsulta, setEditingConsulta] = useState<Consulta | null>(null);
 
     const { data: consultas = [], isLoading } = useQuery({
         queryKey: ["consultas"],
@@ -219,8 +220,12 @@ export default function Consultas() {
                     Agendada
                 </div>
                 <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm bg-blue-500/10 border-l-2 border-blue-600" />
+                    Confirmada
+                </div>
+                <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm bg-green-500/20 border-l-2 border-green-500" />
-                    Confirmada / Realizada
+                    Realizada
                 </div>
                 <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm bg-destructive/20 border-l-2 border-destructive" />
@@ -232,17 +237,35 @@ export default function Consultas() {
             <Dialog open={!!selectedConsulta} onOpenChange={(o) => !o && setSelectedConsulta(null)}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Detalhes da Consulta</DialogTitle>
+                        <div className="flex items-center justify-between pr-6">
+                            <DialogTitle>Detalhes da Consulta</DialogTitle>
+
+                            {canAddConsulta && selectedConsulta?.status !== "REALIZADA" && selectedConsulta?.status !== "CANCELADA" && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setEditingConsulta(selectedConsulta);
+                                        setSelectedConsulta(null);
+                                    }}
+                                >
+                                    <Pencil className="w-4 h-4 mr-1" />
+                                    Editar
+                                </Button>
+                            )}
+                        </div>
                     </DialogHeader>
                     {selectedConsulta && (
                         <div className="space-y-4">
                             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+
                                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                                     {selectedConsulta.pacienteNome?.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
                                     <p className="font-medium">{selectedConsulta.pacienteNome}</p>
                                     <p className="text-xs text-muted-foreground">Paciente</p>
+
                                 </div>
                             </div>
 
@@ -250,6 +273,8 @@ export default function Consultas() {
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Stethoscope className="w-4 h-4" />
                                     <span>{selectedConsulta.medicoNome ?? "Médico não informado"}</span>
+                                    <span className="mx-1"> | </span>
+                                    <span>{selectedConsulta.medicoEspecialidade}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <CalendarDays className="w-4 h-4" />
@@ -261,7 +286,7 @@ export default function Consultas() {
                                 </div>
                                 {selectedConsulta.observacoes && (
                                     <div className="flex items-start gap-2 text-muted-foreground">
-                                        <User className="w-4 h-4 mt-0.5" />
+                                        <FileText className="w-4 h-4 mt-0.5" />
                                         <span>{selectedConsulta.observacoes}</span>
                                     </div>
                                 )}
@@ -287,6 +312,19 @@ export default function Consultas() {
                                 )}
                             </div>
                         </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+            <Dialog open={!!editingConsulta} onOpenChange={(o) => !o && setEditingConsulta(null)}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Editar Consulta</DialogTitle>
+                    </DialogHeader>
+                    {editingConsulta && (
+                        <FormCadastroConsulta
+                            initialData={editingConsulta}
+                            onSuccess={() => setEditingConsulta(null)}
+                        />
                     )}
                 </DialogContent>
             </Dialog>

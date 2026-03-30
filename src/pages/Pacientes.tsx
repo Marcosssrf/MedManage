@@ -8,13 +8,16 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
-import { Plus, Search, Users, User, Phone, Mail, MapPin, Calendar, Heart } from "lucide-react";
+import { Plus, Search, Users, User, Phone, Mail, MapPin, Calendar, Heart, Pencil } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
+import { usePagination } from "../hooks/usePagination";
+import Pagination from "../components/Pagination";
 
 export default function Pacientes() {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null);
+    const [editingPaciente, setEditingPaciente] = useState<Paciente | null>(null);
 
     const { canAddPaciente } = usePermissions();
 
@@ -26,6 +29,8 @@ export default function Pacientes() {
     const filtered = pacientes
         ?.filter((p) => p.nome.toLowerCase().includes(search.toLowerCase()))
         .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);
 
     return (
         <div className="animate-fade-in space-y-6">
@@ -101,7 +106,7 @@ export default function Pacientes() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((p, i) => (
+                                {paginated.map((p, i) => (
                                     <tr
                                         key={p.id}
                                         className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
@@ -124,6 +129,15 @@ export default function Pacientes() {
                                 ))}
                             </tbody>
                         </table>
+                        <Pagination
+                            page={page}
+                            totalPages={totalPages}
+                            onNext={next}
+                            onPrev={prev}
+                            onGoTo={goTo}
+                            total={filtered?.length ?? 0}
+                            perPage={10}
+                        />
                         <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
                             {filtered.length} paciente{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
                         </div>
@@ -135,7 +149,23 @@ export default function Pacientes() {
             <Dialog open={!!selectedPaciente} onOpenChange={(o) => !o && setSelectedPaciente(null)}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Dados do Paciente</DialogTitle>
+                        <div className="flex items-center justify-between pr-6">
+                            <DialogTitle>Dados do Paciente</DialogTitle>
+                            {/* BOTÃO EDITAR */}
+                            {canAddPaciente && selectedPaciente && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setEditingPaciente(selectedPaciente);
+                                        setSelectedPaciente(null);
+                                    }}
+                                >
+                                    <Pencil className="w-4 h-4 mr-1" />
+                                    Editar
+                                </Button>
+                            )}
+                        </div>
                     </DialogHeader>
                     {selectedPaciente && (
                         <div className="space-y-5">
@@ -212,6 +242,21 @@ export default function Pacientes() {
                                 </div>
                             )}
                         </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* ✏️ Dialog de EDIÇÃO do paciente */}
+            <Dialog open={!!editingPaciente} onOpenChange={(o) => !o && setEditingPaciente(null)}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Editar Paciente</DialogTitle>
+                    </DialogHeader>
+                    {editingPaciente && (
+                        <FormCadastroPaciente
+                            initialData={editingPaciente}
+                            onSuccess={() => setEditingPaciente(null)}
+                        />
                     )}
                 </DialogContent>
             </Dialog>

@@ -7,7 +7,7 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 export default defineConfig({
   server: {
     port: 5173,
-    host: "::"
+    host: true
   },
   plugins: [
     tsconfigPaths(),

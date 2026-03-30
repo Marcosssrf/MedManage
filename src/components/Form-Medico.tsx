@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { medicosApi } from "../services/api";
+import { medicosApi, type Medico } from "../services/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -184,25 +184,49 @@ const Campo = ({ id, label, required, error, children }: CampoProps) => (
 
 interface Props {
     onSuccess?: () => void;
+    initialData?: Medico;
 }
 
-export const FormCadastroMedico = ({ onSuccess }: Props) => {
-    const [form, setForm] = useState<FormData>(initialForm);
+export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
+    const isEditing = !!initialData;
+
+    const [form, setForm] = useState<FormData>(initialForm ? {
+        nome: initialData?.nome ?? "",
+        dataNascimento: initialData?.dataNascimento ?? "",
+        sexo: initialData?.sexo ?? "",
+        estadoCivil: initialData?.estadoCivil ?? "",
+        cpf: initialData?.cpf ?? "",
+        crm: initialData?.crm ?? "",
+        crmEstado: initialData?.crmEstado ?? "",
+        especialidade: initialData?.especialidade ?? "",
+        email: initialData?.email ?? "",
+        telefone: initialData?.telefone ?? "",
+        cep: initialData?.cep ?? "",
+        logradouro: initialData?.logradouro ?? "",
+        numero: initialData?.numero ?? "",
+        complemento: initialData?.complemento ?? "",
+        bairro: initialData?.bairro ?? "",
+        cidade: initialData?.cidade ?? "",
+        uf: initialData?.uf ?? "",
+    } : initialForm
+    );
     const [errors, setErrors] = useState<FormErrors>({});
     const [buscandoCep, setBuscandoCep] = useState(false);
     const [sucesso, setSucesso] = useState(false);
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        mutationFn: medicosApi.cadastrar,
+        mutationFn: (data: FormData) =>
+            isEditing ? medicosApi.atualizar(initialData!.id!, data) :
+                medicosApi.cadastrar(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["medicos"] });
-            setForm(initialForm);
-            toast.success("Medico Cadastrado com Sucesso!");
+            if (isEditing) setForm(initialForm);
+            toast.success(isEditing ? "Medico Atualizado com Sucesso!" : "Medico Cadastrado com Sucesso!");
             onSuccess?.();
         },
         onError: (error: Error) => {
-            toast.error(error.message || "Erro ao cadastrar medico");
+            toast.error(error.message || (isEditing ? "Erro ao atualizar medico" : "Erro ao cadastrar medico"));
         }
     });
 
@@ -341,9 +365,10 @@ export const FormCadastroMedico = ({ onSuccess }: Props) => {
                             <input
                                 id="cpf" name="cpf" type="text"
                                 value={form.cpf} onChange={handleChange}
-                                style={inputStyle("cpf")}
+                                style={{ ...inputStyle("cpf"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
                                 inputMode="numeric" maxLength={14}
                                 placeholder="000.000.000-00"
+                                disabled={isEditing}
                             />
                         </Campo>
                     </div>
@@ -357,9 +382,10 @@ export const FormCadastroMedico = ({ onSuccess }: Props) => {
                             <input
                                 id="crm" name="crm" type="text"
                                 value={form.crm} onChange={handleChange}
-                                style={inputStyle("crm")}
+                                style={{ ...inputStyle("crm"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
                                 inputMode="numeric" maxLength={6}
                                 placeholder="000000"
+                                disabled={isEditing}
                             />
                         </Campo>
 
@@ -367,7 +393,8 @@ export const FormCadastroMedico = ({ onSuccess }: Props) => {
                             <select
                                 id="crmEstado" name="crmEstado"
                                 value={form.crmEstado} onChange={handleChange}
-                                style={selectStyle("crmEstado")}
+                                style={{ ...selectStyle("crmEstado"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
+                                disabled={isEditing}
                             >
                                 <option value="">Selecione</option>
                                 {ESTADOS_BR.map((uf) => (
@@ -402,7 +429,7 @@ export const FormCadastroMedico = ({ onSuccess }: Props) => {
                             <input
                                 id="email" name="email" type="email"
                                 value={form.email} onChange={handleChange}
-                                style={inputStyle("email")} placeholder="examplo@email.com"
+                                style={inputStyle("email")} placeholder="exemplo@email.com"
                                 inputMode="email" autoComplete="email"
                             />
                         </Campo>
@@ -501,14 +528,16 @@ export const FormCadastroMedico = ({ onSuccess }: Props) => {
                 </fieldset>
 
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-                    <button type="submit" style={btnPrimaryStyle}>
-                        Cadastrar médico
+                    <button
+                        type="submit"
+                        style={{ ...btnPrimaryStyle, opacity: mutation.isPending ? 0.6 : 1, cursor: mutation.isPending ? "not-allowed" : "pointer" }}
+                        disabled={mutation.isPending}
+                    >
+                        {mutation.isPending
+                            ? (isEditing ? "Salvando..." : "Cadastrando...")
+                            : (isEditing ? "Salvar alterações" : "Cadastrar médicos")
+                        }
                     </button>
-                    {sucesso && (
-                        <span style={{ fontSize: 13, color: "green" }}>
-                            Médico cadastrado com sucesso!
-                        </span>
-                    )}
                 </div>
 
             </form>
