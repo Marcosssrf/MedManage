@@ -15,7 +15,10 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://172.20.10.*:*",  // ← IP da sua rede local
                         "https://*.ngrok-free.app",  // ← ngrok
                         "https://*.ngrok-free.dev",
-                        "https://*.railway.app"
+                        "https://*.railway.app",
+                        "https://medmanage-api.onrender.com",
+                        "https://marcosssrf.dev", // ← Seu novo domínio do Name.com
+                        "https://www.marcosssrf.dev" // ← A versão com www
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")

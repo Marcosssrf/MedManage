@@ -127,13 +127,18 @@ public class ConsultaService {
 		consultaRepository.save(consulta);
 	}
 
-		public ConsultaResponseDTO update(UUID id, ConsultaUpdateDTO dto) {
-		Consulta consulta = consultaRepository.getReferenceById(id);
+		public Consulta patch(UUID id, ConsultaUpdateDTO dto) {
+		Consulta consulta = consultaRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Consulta não encontrada!"));
 
-		consulta.setDataHora(dto.dataHora());
+		if(dto.dataHora() != null){
+			consulta.setDataHora(dto.dataHora());
+		}
+		if(dto.observacoes() != null){
+			consulta.setObservacoes(dto.observacoes());
+		}
 
-		Consulta consultaAtualizada = consultaRepository.save(consulta);
-		return toDTO(consultaAtualizada);
+		return consultaRepository.save(consulta);
 	}
 
 	public ConsultaResponseDTO cancelar(UUID id){

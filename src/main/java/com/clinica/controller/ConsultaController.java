@@ -54,11 +54,11 @@ public class ConsultaController {
 		return ResponseEntity.created(uri).body(consulta);
 	}
 
-	@PutMapping(value = "/{id}")
+	@PatchMapping(value = "/{id}")
 	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
-	public ResponseEntity<ConsultaResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid ConsultaUpdateDTO dto) {
-		ConsultaResponseDTO consulta = consultaService.update(id, dto);
-		return ResponseEntity.ok().body(consulta);
+	public ResponseEntity<Consulta> patch(@PathVariable UUID id, @RequestBody @Valid ConsultaUpdateDTO dto) {
+//		ConsultaResponseDTO consulta = consultaService.update(id, dto);
+		return ResponseEntity.ok(consultaService.patch(id, dto));
 	}
 
 	@PutMapping(value = "/{id}/cancelar")

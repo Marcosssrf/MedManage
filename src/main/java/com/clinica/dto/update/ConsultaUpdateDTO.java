@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record ConsultaUpdateDTO(
         @Future
-        LocalDateTime dataHora
+        LocalDateTime dataHora,
+        String observacoes
 ) {
 }
