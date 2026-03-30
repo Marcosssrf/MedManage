@@ -18,7 +18,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "https://*.railway.app",
                         "https://medmanage-api.onrender.com",
                         "https://marcosssrf.dev", // ← Seu novo domínio do Name.com
-                        "https://www.marcosssrf.dev" // ← A versão com www
+                        "https://www.marcosssrf.dev",
+                        "https://*.azurewebsites.net"// ← A versão com www
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
