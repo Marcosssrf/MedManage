@@ -2,8 +2,8 @@ spring:
   application:
     name: sistemaClinica
   datasource:
-    url: ${DB_URL}
-    username: postgres
+    url: ${DB_URL_POOLER}
+    username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:

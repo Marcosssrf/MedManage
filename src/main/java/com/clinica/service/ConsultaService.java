@@ -162,7 +162,7 @@ public class ConsultaService {
 		return toDTO(consulta);
 	}
 
-	public List<ConsultaResponseDTO> findByParams(LocalDateTime dataHora, String paciente, String medico) {
+	public List<Consulta> findByParams(LocalDateTime dataHora, String paciente, String medico) {
 		Specification<Consulta> specs = Specification.where((root, query, cb) -> cb.conjunction());
 
 		if (dataHora != null) {
@@ -181,7 +181,7 @@ public class ConsultaService {
 
 		resultado.forEach(this::atualizarStatus);
 
-		return resultado.stream().map(this::toDTO).toList();
+		return resultado;
 	}
 
 	public ConsultaResponseDTO toDTO(Consulta consulta){

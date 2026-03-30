@@ -21,6 +21,7 @@ public class Paciente {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
+	@Column(nullable = false)
 	private String nome;
 	@Column(nullable = false,  unique = true)
 	private String cpf;
@@ -30,9 +31,9 @@ public class Paciente {
 	private String telefone;
 	@Column(nullable = false)
 	private String email;
-	@Column
+	@Column(nullable = false)
 	private String sexo;
-	@Column
+	@Column(nullable = false)
 	private String estadoCivil;
 	@Column
 	private String cep;

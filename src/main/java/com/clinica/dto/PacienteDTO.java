@@ -1,10 +1,7 @@
 package com.clinica.dto;
 
 import jakarta.persistence.Column;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import org.hibernate.validator.constraints.br.CPF;
 
 import java.time.LocalDate;
@@ -23,9 +20,17 @@ public record PacienteDTO(
         @CPF(message = "CPF inválido")
         String cpf,
         @Past(message = "Não pode ser uma data futura")
+        @NotNull
         LocalDate dataNascimento,
+        @NotBlank
+        @Pattern(
+                regexp = "[14689][1-9]|2[12478]|3[1234578]|5[1345]|7[134579]",
+                message = "Telefone Invalido"
+        )
         String telefone,
+        @NotBlank
         String sexo,
+        @NotBlank
         String estadoCivil,
         String cep,
         String logradouro,

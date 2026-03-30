@@ -1,8 +1,6 @@
 package com.clinica.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import org.hibernate.validator.constraints.br.CPF;
 
 import java.time.LocalDate;
@@ -10,12 +8,19 @@ import java.time.LocalDate;
 public record MedicoDTO(
         @NotBlank(message = "O nome é obrigatório")
         String nome,
+        @Past(message = "Não pode ser uma data futura")
+        @NotNull
         LocalDate dataNascimento,
+        @NotBlank
         String sexo,
+        @NotBlank
         String estadoCivil,
+        @NotBlank
         @CPF(message = "CPF inválido")
         String cpf,
+        @NotBlank
         String crm,
+        @NotBlank
         String crmEstado,
 
         @NotBlank(message = "A especialidade é obrigatória")

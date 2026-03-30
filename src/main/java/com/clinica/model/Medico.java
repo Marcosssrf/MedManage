@@ -21,24 +21,25 @@ public class Medico {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
+	@Column(nullable = false)
 	private String nome;
-	@Column
+	@Column(nullable = false)
 	private LocalDate dataNascimento;
-	@Column
+	@Column(nullable = false)
 	private String sexo;
-	@Column
+	@Column(nullable = false)
 	private String estadoCivil;
-	@Column(unique = true)
+	@Column(nullable = false,unique = true)
 	private String cpf;
 	@Column(nullable = false,  unique = true)
 	private String crm;
-	@Column
+	@Column(nullable = false)
 	private String crmEstado;
 	@Column(nullable = false)
 	private String especialidade;
-	@Column
+	@Column(nullable = false)
 	private String telefone;
-	@Column
+	@Column(nullable = false)
 	private String email;
 	@Column
 	private String cep;

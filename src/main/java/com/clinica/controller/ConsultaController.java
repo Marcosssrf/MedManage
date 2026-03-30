@@ -27,14 +27,14 @@ public class ConsultaController {
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-	public ResponseEntity<List<ConsultaResponseDTO>> findByParams(
+	public ResponseEntity<List<Consulta>> findByParams(
 			@RequestParam(value = "dataHora", required = false)LocalDateTime dataHora,
 			@RequestParam(value = "paciente", required = false)String paciente,
 			@RequestParam(value = "medico", required = false)String medico
 //			@RequestParam(value = "pagina", defaultValue = "0") Integer pagina,
 //			@RequestParam(value = "tamanho-pagina", defaultValue = "10") Integer tamanhoPagina
 	){
-		List<ConsultaResponseDTO> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);
+		List<Consulta> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);
 
 		return ResponseEntity.ok(paginaResultado);
 	}
