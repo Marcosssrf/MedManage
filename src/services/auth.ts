@@ -1,6 +1,4 @@
-// const BASE_URL = "https://medmanage-production.up.railway.app";
-const BASE_URL = "https://medmanage-api.onrender.com";
-// const BASE_URL = "http://localhost:8080";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export interface AuthUser {
     id: string;
@@ -17,7 +15,7 @@ export interface AuthUser {
 export const authService = {
     login: async (username: string, senha: string): Promise<AuthUser> => {
         const credentials = btoa(`${username}:${senha}`);
-        const res = await fetch(`${BASE_URL}/usuarios/me`, {
+        const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
             headers: {
                 Authorization: `Basic ${credentials}`,
                 "ngrok-skip-browser-warning": "true",

@@ -54,10 +54,15 @@ export default function Dashboard() {
     const mesAtual = new Date().getMonth();
     const anoAtual = new Date().getFullYear();
 
-    const { data: pacientes = [] } = useQuery({ queryKey: ["pacientes"], queryFn: pacientesApi.listar });
-    const { data: medicos = [] } = useQuery({ queryKey: ["medicos"], queryFn: medicosApi.listar });
+    // const { data: pacientes = [] } = useQuery({ queryKey: ["pacientes"], queryFn: pacientesApi.listar });
+    // const { data: medicos = [] } = useQuery({ queryKey: ["medicos"], queryFn: medicosApi.listar });
     const { data: consultas = [] } = useQuery({ queryKey: ["consultas"], queryFn: consultasApi.listar });
-    const { data: pagamentos = [] } = useQuery({ queryKey: ["pagamentos"], queryFn: pagamentosApi.listar });
+    // const { data: pagamentos = [] } = useQuery({ queryKey: ["pagamentos"], queryFn: pagamentosApi.listar });
+
+    const { data: resumo } = useQuery({
+        queryKey: ["dashboard-resumo"],
+        queryFn: relatoriosApi.resumo,
+    });
 
     const { data: faturamento } = useQuery({
         queryKey: ["faturamento", anoAtual],
@@ -129,11 +134,11 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {user?.role !== "MEDICO" && (
                     <>
-                        <StatCard icon={Users} label="Total de pacientes" value={pacientes.length} color="bg-primary/10 text-primary" />
-                        <StatCard icon={Stethoscope} label="Total de médicos" value={medicos.length} color="bg-blue-500/10 text-blue-500" />
+                        <StatCard icon={Users} label="Total de pacientes" value={resumo?.totalPacientes} color="bg-primary/10 text-primary" />
+                        <StatCard icon={Stethoscope} label="Total de médicos" value={resumo?.totalMedicos} color="bg-blue-500/10 text-blue-500" />
                     </>
                 )}
-                <StatCard icon={CalendarDays} label="Consultas hoje" value={consultasHoje.length} color="bg-amber-500/10 text-amber-500" />
+                <StatCard icon={CalendarDays} label="Consultas hoje" value={resumo?.consultasHoje} color="bg-amber-500/10 text-amber-500" />
                 {user?.role === "ADMIN" && (
                     <StatCard icon={TrendingUp} label="Faturamento do mês" value={formatValor(faturamentoMes)} color="bg-green-500/10 text-green-500" />
                 )}
