@@ -88,7 +88,7 @@ export default function Usuarios() {
                 usuariosApi.listar(),
                 medicosApi.listar()
             ]);
-            setUsers(usersData);
+            setUsers(usersData as unknown as UserRecord[]);
             setMedicos(medicosData);
         } catch (err) {
             toast.error("Não foi possível carregar os dados.");
