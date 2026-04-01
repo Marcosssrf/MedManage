@@ -141,7 +141,6 @@ export default function Usuarios() {
         }
         // Validação extra: se escolheu médico, tem que selecionar um médico
         if (form.role === "MEDICO" && !form.medicoId) {
-            payload.medico = { id: form.medicoId };
             toast.error("Por favor, selecione qual médico deseja vincular.");
             return;
         }
