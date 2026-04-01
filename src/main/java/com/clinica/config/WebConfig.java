@@ -17,6 +17,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "https://*.ngrok-free.dev",
                         "https://*.railway.app",
                         "https://medmanage-api.onrender.com",
+                        "https://medmanagefront-production.up.railway.app",
                         "https://marcosssrf.dev", // ← Seu novo domínio do Name.com
                         "https://www.marcosssrf.dev",
                         "https://*.azurewebsites.net"// ← A versão com www

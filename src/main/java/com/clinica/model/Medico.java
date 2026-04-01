@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -282,16 +283,14 @@ public class Medico {
 		this.usuario = usuario;
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass()) return false;
-
-		Medico medico = (Medico) o;
-		return Objects.equals(nome, medico.nome);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(nome);
+	@Transient
+	public String getIdade(){
+		if(this.dataNascimento == null){
+			return "Data não informada";
+		}
+		Period periodo = Period.between(this.dataNascimento, LocalDate.now());
+		return periodo.getYears() + " anos, "+
+				periodo.getMonths() + " meses e "+
+				periodo.getDays() + " dias";
 	}
 }
