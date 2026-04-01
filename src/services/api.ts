@@ -1,3 +1,4 @@
+import { da } from "date-fns/locale";
 import { authService } from "./auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -17,10 +18,23 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return res.json();
 }
 
+const formatDateToBr = (dateString: string) => {
+    if (!dateString) return "";
+    if (dateString.includes("/")) return dateString;
+    return dateString.split("-").reverse().join("/");
+}
+
+const formatDateToIso = (dateString?: string) => {
+    if (!dateString) return undefined;
+    if (dateString.includes("-")) return dateString; // Já está no formato ISO
+    return dateString.split("/").reverse().join("-");
+};
+
 export interface Paciente {
     id?: string | number;
     nome: string;
     dataNascimento: string;
+    idade: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;
@@ -36,7 +50,13 @@ export interface Paciente {
 }
 
 export const pacientesApi = {
-    listar: () => request<Paciente[]>("/pacientes"),
+    listar: async () => {
+        const res = await request<Paciente[]>("/pacientes");
+        return res.map(p => ({
+            ...p,
+            dataNascimento: formatDateToBr(p.dataNascimento)
+        }));
+    },
 
     cadastrar: (data: Omit<Paciente, "id">) =>
         request<Paciente>("/pacientes", {
@@ -55,6 +75,7 @@ export interface Medico {
     id?: string | number;
     nome: string;
     dataNascimento: string;
+    idade: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;
@@ -73,7 +94,13 @@ export interface Medico {
 }
 
 export const medicosApi = {
-    listar: () => request<Medico[]>("/medicos"),
+    listar: async () => {
+        const res = await request<Medico[]>("/medicos");
+        return res.map(m => ({
+            ...m,
+            dataNascimento: formatDateToBr(m.dataNascimento)
+        }));
+    },
 
     cadastrar: (data: Omit<Medico, "id">) =>
         request<Medico>("/medicos", {
@@ -198,7 +225,7 @@ export const pagamentosApi = {
             formaPagamento: p.formaPagamento,
             tipoPagamento: p.tipoPagamento,
             status: p.statusPagamento,
-            data: p.dataPagamento,
+            data: formatDateToBr(p.dataPagamento),
         } as Pagamento));
     },
 
@@ -246,6 +273,11 @@ export interface Usuario {
     role: string;
     ativo: boolean;
     senha?: string;
+    medico?: {
+        id: string;
+        nome?: string;
+
+    } | null;
 }
 
 export const usuariosApi = {
@@ -257,6 +289,7 @@ export const usuariosApi = {
             username: u.username,
             role: u.role ?? u.role,
             ativo: u.ativo,
+            medico: u.medico || null,
         } as Usuario));
     },
 

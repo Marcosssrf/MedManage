@@ -220,7 +220,8 @@ export default function Pagamentos() {
     const filtered = pagamentos
         .filter((p) =>
             (p.pacienteNome ?? "").toLowerCase().includes(search.toLowerCase()) ||
-            (p.medicoNome ?? "").toLowerCase().includes(search.toLowerCase())
+            (p.medicoNome ?? "").toLowerCase().includes(search.toLowerCase()) ||
+            (p.data ?? "").toLowerCase().includes(search.toLowerCase())
         )
         .sort((a, b) => b.data.localeCompare(a.data));
 
@@ -292,7 +293,7 @@ export default function Pagamentos() {
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                    placeholder="Buscar por paciente ou médico..."
+                    placeholder="Buscar por paciente, médico ou data..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-9"

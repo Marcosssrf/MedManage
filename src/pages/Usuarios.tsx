@@ -120,7 +120,8 @@ export default function Usuarios() {
         setForm({
             username: u.username,
             senha: "",
-            role: u.role
+            role: u.role,
+            medicoId: u.medico?.id || ""
         });
         setModalOpen(true);
     };
@@ -137,6 +138,7 @@ export default function Usuarios() {
         }
         // Validação extra: se escolheu médico, tem que selecionar um médico
         if (form.role === "MEDICO" && !form.medicoId) {
+            payload.medico = { id: form.medicoId };
             toast.error("Por favor, selecione qual médico deseja vincular.");
             return;
         }
@@ -368,8 +370,8 @@ export default function Usuarios() {
 
                         {/* Aparece APENAS se a função for MEDICO */}
                         {form.role === "MEDICO" && (
-                            <div className="flex flex-col gap-1.5 p-3 mt-2 border border-blue-100 bg-blue-50/50 rounded-md">
-                                <Label htmlFor="medico" className="text-blue-800">Vincular ao Perfil do Médico</Label>
+                            <div>
+                                <Label htmlFor="medico">Vincular ao Perfil do Médico</Label>
                                 <Select
                                     value={form.medicoId}
                                     onValueChange={(v) => setForm((f) => ({ ...f, medicoId: v }))}

@@ -8,7 +8,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
-import { Plus, Search, Users, User, Phone, Mail, MapPin, Calendar, Heart, Pencil } from "lucide-react";
+import { Plus, Search, Users, User, Phone, Mail, MapPin, Calendar, Heart, Pencil, Cake, Hourglass } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
@@ -27,7 +27,7 @@ export default function Pacientes() {
     });
 
     const filtered = pacientes
-        ?.filter((p) => p.nome.toLowerCase().includes(search.toLowerCase()))
+        ?.filter((p) => p.nome.toLowerCase().includes(search.toLowerCase()) || p.cpf.includes(search) || p.email.toLowerCase().includes(search.toLowerCase()) || p.telefone.includes(search))
         .sort((a, b) => a.nome.localeCompare(b.nome));
 
     const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);
@@ -72,7 +72,7 @@ export default function Pacientes() {
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                    placeholder="Buscar paciente por nome..."
+                    placeholder="Buscar paciente por nome, CPF, email ou telefone..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pl-9"
@@ -189,6 +189,13 @@ export default function Pacientes() {
                                         <div>
                                             <p className="text-xs text-muted-foreground">Nascimento</p>
                                             <p>{selectedPaciente.dataNascimento ?? "—"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <Cake className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Idade</p>
+                                            <p>{selectedPaciente.idade ?? "—"}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm">
