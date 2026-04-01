@@ -19,8 +19,8 @@ export default function Login() {
         try {
             await login(username, senha);
             navigate("/");
-        } catch {
-            toast.error("Usuário ou senha inválidos");
+        } catch (error: any) {
+            toast.error(error.message);
         } finally {
             setLoading(false);
         }

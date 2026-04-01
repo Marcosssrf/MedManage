@@ -96,6 +96,7 @@ export interface Consulta {
     pacienteNome?: string;
     medicoNome?: string;
     medicoEspecialidade?: string;
+    tipoConsulta: string;
     data: string;
     horario: string;
     status: string;
@@ -117,6 +118,7 @@ export const consultasApi = {
                 pacienteNome: c.paciente?.nome,
                 medicoNome: c.medico?.nome,
                 medicoEspecialidade: c.medico?.especialidade,
+                tipoConsulta: c.tipoConsulta,
                 data: dataBr,
                 horario: horario,
                 status: c.status,
@@ -138,6 +140,7 @@ export const consultasApi = {
             pacienteId: data.pacienteId,
             medicoId: data.medicoId,
             dataHora: dataHora,
+            tipoConsulta: data.tipoConsulta,
             observacoes: data.observacoes,
         };
 
@@ -234,4 +237,42 @@ export const relatoriosApi = {
             consultasHoje: number;
             faturamentoMensal: number;
         }>("/dashboard/resumo"),
+};
+
+export interface Usuario {
+    id?: string | number;
+    username: string;
+    role: string;
+    ativo: boolean;
+    senha?: string;
+}
+
+export const usuariosApi = {
+    listar: async () => {
+        const res = await request<any[]>("/usuarios");
+
+        return res.map((u) => ({
+            id: u.id,
+            username: u.username,
+            role: u.role ?? u.role,
+            ativo: u.ativo,
+        } as Usuario));
+    },
+
+    cadastrar: (data: Omit<Usuario, "id" | "ativo">) =>
+        request<Usuario>("/usuarios", {
+            method: "POST",
+            body: JSON.stringify(data),
+        }),
+
+    atualizar: (id: string | number, dados: Partial<Usuario>) =>
+        request<Usuario>(`/usuarios/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(dados),
+        }),
+
+    deletar: (id: string | number) =>
+        request(`/usuarios/${id}`, {
+            method: "DELETE",
+        }),
 };

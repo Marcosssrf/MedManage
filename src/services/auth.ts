@@ -4,12 +4,13 @@ export interface AuthUser {
     id: string;
     username: string;
     role: "ADMIN" | "MEDICO" | "SECRETARIA";
-    medico?: {
-        id: string;
-        nome: string;
-        crm: string;
-        especialidade: string;
-    };
+    ativo?: boolean;
+    // medico?: {
+    //     id: string;
+    //     nome: string;
+    //     crm: string;
+    //     especialidade: string;
+    // };
 }
 
 export const authService = {
@@ -22,8 +23,17 @@ export const authService = {
                 "Content-Type": "application/json",
             },
         });
+
         if (!res.ok) throw new Error("Usuário ou senha inválidos");
+
         const user: AuthUser = await res.json();
+
+        if (user.ativo === false) {
+            localStorage.removeItem("auth_credentials");
+            localStorage.removeItem("auth_user");
+            throw new Error("Usuário inativo. Contate o administrador.");
+        }
+
         localStorage.setItem("auth_credentials", credentials);
         localStorage.setItem("auth_user", JSON.stringify(user));
         return user;

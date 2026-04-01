@@ -80,7 +80,9 @@ export default function Dashboard() {
         ? consultas.filter((c) => String(c.medicoId) === String(user.medico?.id))
         : consultas;
 
-    const consultasHoje = consultasFiltradas.filter((c) => c.data === today);
+    const consultasHoje = consultasFiltradas.filter((c) =>
+        c.data?.startsWith(today)
+    );
 
     const proximasConsultas = consultasFiltradas
         .filter((c) => {

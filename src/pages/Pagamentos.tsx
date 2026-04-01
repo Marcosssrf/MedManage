@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
+import { Navigate } from "react-router";
+import { useAuth } from "@/context/AuthContext";
 
 const FORMA_PAGAMENTO = ["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO", "DINHEIRO", "TRANSFERENCIA"];
 const TIPO_PAGAMENTO = ["PARTICULAR", "CONVENIO", "PLANO_SAUDE"];
@@ -31,7 +33,6 @@ function FormPagamento({ onSuccess }: { onSuccess: () => void }) {
     const [formaPagamento, setFormaPagamento] = useState("");
     const [tipoPagamento, setTipoPagamento] = useState("");
     const [data, setData] = useState(new Date().toISOString().split("T")[0]);
-
     const { data: pagamentos = [] } = useQuery({
         queryKey: ["pagamentos"],
         queryFn: pagamentosApi.listar,

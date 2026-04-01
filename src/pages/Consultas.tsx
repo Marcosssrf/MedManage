@@ -5,7 +5,7 @@ import PageHeader from "../components/PageHeader";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
 import { Badge } from "../components/ui/badge";
-import { Plus, ChevronLeft, ChevronRight, CalendarDays, Clock, Stethoscope, X, Pencil, FileText } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarDays, Clock, Stethoscope, X, Pencil, FileText, Tag } from "lucide-react";
 import { toast } from "sonner";
 import type { Consulta } from "../services/api";
 import { useAuth } from "../context/AuthContext";
@@ -270,6 +270,16 @@ export default function Consultas() {
                             </div>
 
                             <div className="space-y-2 text-sm">
+                                {/* NOVO CAMPO: Tipo de Consulta */}
+                                <div className="flex items-center gap-2 text-muted-foreground font-medium text-foreground">
+                                    <Tag className="w-4 h-4" /> {/* Não esqueça de importar o Tag do lucide-react */}
+                                    <span className="capitalize">
+                                        {selectedConsulta.tipoConsulta
+                                            ? selectedConsulta.tipoConsulta.replace('_', ' ').toLowerCase()
+                                            : "Tipo não informado"}
+                                    </span>
+                                </div>
+
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Stethoscope className="w-4 h-4" />
                                     <span>{selectedConsulta.medicoNome ?? "Médico não informado"}</span>
@@ -299,11 +309,11 @@ export default function Consultas() {
                                 >
                                     {selectedConsulta.status}
                                 </Badge>
-                                {canCancelarConsulta && (
+                                {canCancelarConsulta && selectedConsulta.status !== "CANCELADA" && selectedConsulta.status !== "REALIZADA" && selectedConsulta.status !== "CONFIRMADA" && (
                                     <Button
                                         variant="destructive"
                                         size="sm"
-                                        disabled={selectedConsulta.status === "CANCELADA" || cancelarMutation.isPending}
+                                        disabled={selectedConsulta.status === "CANCELADA" || selectedConsulta.status === "REALIZADA" || cancelarMutation.isPending}
                                         onClick={() => cancelarMutation.mutate(selectedConsulta.id!)}
                                     >
                                         <X className="w-4 h-4 mr-1" />

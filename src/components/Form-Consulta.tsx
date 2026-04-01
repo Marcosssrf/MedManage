@@ -116,7 +116,7 @@ export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
         }
         return null;
     });
-    // Data vem em dd/MM/yyyy do backend — converte para yyyy-MM-dd pro input type="date"
+
     const toInputDate = (dataBr: string) => {
         if (!dataBr) return "";
         if (dataBr.includes("/")) return dataBr.split("/").reverse().join("-");
@@ -126,7 +126,7 @@ export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
     const [data, setData] = useState(initialData ? toInputDate(initialData.data) : "");
     const [horario, setHorario] = useState(initialData ? (initialData.horario?.slice(0, 5) ?? "") : "");
     const [observacoes, setObservacoes] = useState(initialData?.observacoes ?? "");
-
+    const [tipoConsulta, setTipoConsulta] = useState(initialData?.tipoConsulta ?? "PRIMEIRA_CONSULTA");
 
     const { data: pacientes = [] } = useQuery({
         queryKey: ["pacientes"],
@@ -150,9 +150,9 @@ export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
         .map((m) => ({ id: m.id!, nome: m.nome, detalhe: m.especialidade }));
 
     const mutation = useMutation({
-        mutationFn: (payload: Parameters<typeof consultasApi.agendar>[0]) =>
+        mutationFn: (payload: any) =>
             isEditing
-                ? consultasApi.atualizar(initialData!.id!, { data, horario: `${horario}:00`, observacoes })
+                ? consultasApi.atualizar(initialData!.id!, { data, horario: `${horario}:00`, observacoes, tipoConsulta })
                 : consultasApi.agendar(payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["consultas"] });
@@ -167,6 +167,7 @@ export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
         if (!pacienteSelecionado) return toast.error("Selecione um paciente.");
         if (!medicoSelecionado) return toast.error("Selecione um médico.");
         if (!data || !horario) return toast.error("Informe data e horário.");
+        if (!tipoConsulta) return toast.error("Informe o tipo de consulta.");
 
         mutation.mutate({
             pacienteId: pacienteSelecionado.id,
@@ -174,9 +175,9 @@ export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
             data,
             horario: `${horario}:00`,
             observacoes,
+            tipoConsulta,
         });
     };
-
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5 pt-2">
@@ -209,7 +210,22 @@ export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
                     : user?.medico ? `${user.medico.nome} — ${user.medico.especialidade}` : ""}
             />
 
-            {/* Data e horário — editáveis */}
+            {/*Tipo de Consulta */}
+            <div className="space-y-1.5">
+                <label className="text-sm font-medium">Tipo de Consulta <span className="text-destructive">*</span></label>
+                <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={tipoConsulta}
+                    onChange={(e) => setTipoConsulta(e.target.value)}
+                >
+                    <option value="PRIMEIRA_CONSULTA">Primeira Consulta</option>
+                    <option value="RETORNO">Retorno</option>
+                    <option value="EXAME">Exame</option>
+                    <option value="ROTINA">Rotina</option>
+                </select>
+            </div>
+
+            {/* Data e horário */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium">Data <span className="text-destructive">*</span></label>
