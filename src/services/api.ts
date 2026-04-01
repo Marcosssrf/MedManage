@@ -155,7 +155,7 @@ export const consultasApi = {
             method: "PUT",
         }),
 
-    atualizar: (id: string | number, dados: { data: string; horario: string; observacoes?: string }) => {
+    atualizar: (id: string | number, dados: { data: string; horario: string; observacoes?: string; tipoConsulta?: string }) => {
         const dataIso = dados.data.includes("/")
             ? dados.data.split("/").reverse().join("-")
             : dados.data;
@@ -165,6 +165,7 @@ export const consultasApi = {
             body: JSON.stringify({
                 dataHora: `${dataIso}T${dados.horario}`,
                 observacoes: dados.observacoes,
+                tipoConsulta: dados.tipoConsulta,
             }),
         });
     },

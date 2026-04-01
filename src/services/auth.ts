@@ -5,12 +5,12 @@ export interface AuthUser {
     username: string;
     role: "ADMIN" | "MEDICO" | "SECRETARIA";
     ativo?: boolean;
-    // medico?: {
-    //     id: string;
-    //     nome: string;
-    //     crm: string;
-    //     especialidade: string;
-    // };
+    medico?: {
+        id: string;
+        nome: string;
+        crm: string;
+        especialidade: string;
+    };
 }
 
 export const authService = {

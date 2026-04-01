@@ -39,7 +39,6 @@ interface UserRecord {
     id: string;
     username: string;
     role: "ADMIN" | "MEDICO" | "SECRETARIA";
-    created_at: string;
     ativo?: boolean;
 }
 
@@ -143,7 +142,7 @@ export default function Usuarios() {
 
         setSaving(true);
         try {
-            const payload: Record<string, any> = {
+            const payload: any = {
                 username: form.username.trim(),
                 role: form.role,
             };
@@ -184,7 +183,7 @@ export default function Usuarios() {
             await usuariosApi.deletar(deleteTarget.id);
             toast.success("Usuário removido.");
             setDeleteTarget(null);
-            fetchUsers();
+            fetchData();
         } catch {
             toast.error("Não foi possível remover o usuário.");
         } finally {
@@ -283,7 +282,7 @@ export default function Usuarios() {
                                     <div className="flex-1 min-w-0">
                                         <p className="font-medium text-foreground text-sm truncate">{u.username}</p>
                                         <div className="mt-1">
-                                            <RoleBadge roles={u.roles} />
+                                            <RoleBadge role={u.role} />
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
