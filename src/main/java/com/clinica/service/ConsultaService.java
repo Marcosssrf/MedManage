@@ -14,6 +14,7 @@ import com.clinica.repository.ConsultaRepository;
 import com.clinica.repository.MedicoRepository;
 import com.clinica.repository.PacienteRepository;
 import com.clinica.security.SecurityService;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -95,6 +96,7 @@ public class ConsultaService {
 		consulta.setStatus(StatusConsulta.AGENDADA);
 		consulta.setObservacoes(dto.observacoes());
 		consulta.setDataHora(dto.dataHora());
+		consulta.setTipoConsulta(dto.tipoConsulta());
 
 		boolean conflito = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora());
 
@@ -168,7 +170,14 @@ public class ConsultaService {
 	}
 
 	public List<Consulta> findByParams(LocalDateTime dataHora, String paciente, String medico) {
-		Specification<Consulta> specs = Specification.where((root, query, cb) -> cb.conjunction());
+
+		Specification<Consulta> specs = Specification.where((root, query, cb) -> {
+			if (Long.class != query.getResultType() && long.class != query.getResultType()) {
+				root.fetch("paciente", JoinType.LEFT);
+				root.fetch("medico", JoinType.LEFT);
+			}
+			return cb.conjunction();
+		});
 
 		if (dataHora != null) {
 			specs = specs.and(dataHorarioEqual(dataHora));
@@ -193,6 +202,7 @@ public class ConsultaService {
 		return new ConsultaResponseDTO(
 				consulta.getId(),
 				consulta.getDataHora(),
+				consulta.getTipoConsulta(),
 				consulta.getObservacoes(),
 				consulta.getStatus(),
 				new PacienteConsultaDTO(
@@ -202,6 +212,7 @@ public class ConsultaService {
 				new MedicoConsultaDTO(
 						consulta.getMedico().getId(),
 						consulta.getMedico().getNome(),
+						consulta.getMedico().getCrm(),
 						consulta.getMedico().getEspecialidade()
 				)
 		);

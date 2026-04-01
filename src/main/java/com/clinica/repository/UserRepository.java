@@ -1,8 +1,8 @@
 package com.clinica.repository;
 
+import com.clinica.model.User;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import com.clinica.model.User;
 
 import java.util.List;
 import java.util.Optional;

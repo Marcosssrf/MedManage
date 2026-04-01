@@ -57,6 +57,7 @@ public class Medico {
 	private String uf;
 	private Boolean ativo;
 
+	@JsonIgnore
 	@OneToMany(mappedBy = "medico")
 	private List<Consulta> consultas;
 
@@ -68,8 +69,7 @@ public class Medico {
 	@Column(name = "data_atualizacao")
 	private LocalDateTime dataAtualizacao;
 
-
-	@ManyToOne
+	@OneToOne
 	@JsonIgnore
 	@JoinColumn(name = "id_usuario")
 	private User usuario;

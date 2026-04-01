@@ -20,6 +20,12 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	@EntityGraph(attributePaths = {"medico", "paciente"})
 	List<Consulta> findAll();
 
+	@Query("SELECT c FROM Consulta c " +
+			"JOIN FETCH c.medico m " +
+			"JOIN FETCH c.paciente p " +
+			"WHERE upper(m.nome) LIKE upper(concat('%', :nomeMedico, '%'))")
+	List<Consulta> buscarConsultasPorMedico(String nomeMedico);
+
 	@Query("SELECT COUNT(c) FROM Consulta c WHERE c.dataHora >= :inicioDoDia AND c.dataHora < :fimDoDia")
 	Long countConsultasHoje(@Param("inicioDoDia") java.time.LocalDateTime inicioDoDia, @Param("fimDoDia") java.time.LocalDateTime fimDoDia);
 
@@ -52,4 +58,5 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
     """)
 	List<Object[]> medicoMaisAtendido();
 
+	long countByMedicoIdAndDataHoraBetween(UUID medicoId, LocalDateTime inicio, LocalDateTime fim);
 }

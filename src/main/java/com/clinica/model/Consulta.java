@@ -23,6 +23,9 @@ public class Consulta {
 	private UUID id;
 	private LocalDateTime dataHora;
 
+	@Column/*(nullable = false)*/
+	private String tipoConsulta;
+
 	@Enumerated(EnumType.STRING)
 	private StatusConsulta status;
 
@@ -58,9 +61,10 @@ public class Consulta {
 	public Consulta() {
 	}
 
-	public Consulta(UUID id, LocalDateTime dataHora, StatusConsulta status, Paciente paciente, Medico medico, String observacoes, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User Usuario) {
+	public Consulta(UUID id, LocalDateTime dataHora, String tipoConsulta ,StatusConsulta status, Paciente paciente, Medico medico, String observacoes, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User Usuario) {
 		this.id = id;
 		this.dataHora = dataHora;
+		this.tipoConsulta = tipoConsulta;
 		this.status = status;
 		this.paciente = paciente;
 		this.medico = medico;
@@ -89,6 +93,14 @@ public class Consulta {
 
 	public void setDataHora(LocalDateTime dataHora) {
 		this.dataHora = dataHora;
+	}
+
+	public String getTipoConsulta() {
+		return tipoConsulta;
+	}
+
+	public void setTipoConsulta(String tipoConsulta) {
+		this.tipoConsulta = tipoConsulta;
 	}
 
 	public StatusConsulta getStatus() {

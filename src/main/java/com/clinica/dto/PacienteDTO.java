@@ -1,6 +1,5 @@
 package com.clinica.dto;
 
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.*;
 import org.hibernate.validator.constraints.br.CPF;
 

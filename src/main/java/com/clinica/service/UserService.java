@@ -1,11 +1,21 @@
 package com.clinica.service;
 
 import com.clinica.dto.UserDTO;
+import com.clinica.dto.resposta.MedicoConsultaDTO;
+import com.clinica.dto.update.UserUpdateDTO;
+import com.clinica.model.Medico;
 import com.clinica.model.User;
+import com.clinica.model.enums.Role;
+import com.clinica.repository.MedicoRepository;
 import com.clinica.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -14,16 +24,104 @@ public class UserService {
     private UserRepository repository;
     @Autowired
     private PasswordEncoder encoder;
+    @Autowired
+    private MedicoRepository medicoRepository;
 
-    public void insert(User user){
+    @Transactional
+    public User insert(User user){
+        if(user.getRole() == Role.MEDICO && user.getMedico() != null && user.getMedico().getId() != null){
+            Medico medicoVinculado = medicoRepository.findById(user.getMedico().getId())
+                    .orElseThrow(() -> new RuntimeException("Médico não encontrado."));
+            user.setMedico(medicoVinculado);
+        }else{
+            user.setMedico(null);
+        }
         var senha = user.getSenha();
+        if (user.getSenha() == null || user.getSenha().isBlank()) {
+            throw new RuntimeException("Senha é obrigatória");
+        }
         user.setSenha(encoder.encode(senha));
-        repository.save(user);
+        user.setAtivo(true);
+        return repository.save(user);
     }
 
-    public User findByUsername(String username){
+    public UserDTO findByUsername(String username){
+        User user = findEntityByUsername(username);
+        return converterParaDTO(user);
+    }
+
+    public User findEntityByUsername(String username){
         return repository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+    }
+
+    public List<UserDTO> findAll(){
+        return repository.findAll()
+                .stream()
+                .map(this::converterParaDTO)
+                .collect(Collectors.toList());
+    }
+
+    public UserDTO patch(UUID id, UserUpdateDTO dto){
+        User user = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        if(dto.username() != null){
+            user.setUsername(dto.username());
+        }
+        if(dto.senha() != null && !dto.senha().isBlank()){
+            user.setSenha(encoder.encode(dto.senha()));
+        }
+        if(dto.role() != null){
+            user.setRole(Role.valueOf(dto.role()));
+        }
+        if (dto.medico() != null && dto.medico().id() != null) {
+            if (user.getRole() == Role.MEDICO) {
+                Medico medicoVinculado = medicoRepository.findById(dto.medico().id())
+                        .orElseThrow(() -> new RuntimeException("Médico não encontrado."));
+
+                user.setMedico(medicoVinculado);
+            }
+        }
+        if (user.getRole() != Role.MEDICO) {
+            user.setMedico(null);
+        }
+
+        repository.save(user);
+
+        return converterParaDTO(user);
+    }
+
+    public UserDTO delete(UUID id){
+        User user = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        user.setAtivo(false);
+        repository.save(user);
+
+        return converterParaDTO(user);
+    }
+
+    public UserDTO converterParaDTO(User user) {
+        if (user == null) return null;
+
+        // Converte o médico de forma segura, sem carregar listas ou o usuário de volta
+        MedicoConsultaDTO medicoDTO = null;
+        if (user.getMedico() != null) {
+            medicoDTO = new MedicoConsultaDTO(
+                    user.getMedico().getId(),
+                    user.getMedico().getNome(),
+                    user.getMedico().getCrm(),
+                    user.getMedico().getEspecialidade()
+            );
+        }
+
+        return new UserDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getRole(),
+                medicoDTO,
+                user.getAtivo()
+        );
     }
 
 }

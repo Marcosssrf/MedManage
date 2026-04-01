@@ -11,21 +11,19 @@ import java.util.UUID;
 
 public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
 
-	// 1. MATANDO O N+1 DA LISTAGEM GERAL
-	// Sobrescrevemos o findAll padrão para carregar a Consulta de uma vez só
 	@Override
-	@EntityGraph(attributePaths = {"consulta"})
+	@EntityGraph(attributePaths = {
+			"consulta",
+			"consulta.paciente",
+			"consulta.medico"
+	})
 	List<Pagamento> findAll();
 
-	// 2. MATANDO O N+1 NA BUSCA POR STATUS
-	@EntityGraph(attributePaths = {"consulta"})
+	@EntityGraph(attributePaths = {"consulta.paciente", "consulta.medico"})
 	List<Pagamento> findByStatusPagamento(StatusPagamento statusPagamento);
 
-	// Métodos de validação (exists) não trazem entidades, então não sofrem de N+1
 	boolean existsByConsultaIdAndStatusPagamento(UUID consultaId, StatusPagamento statusPagamento);
 
-	// A sua query de faturamento já é perfeita! Como ela retorna Object[] com
-	// a soma (SUM) direta do banco, o Hibernate não faz N+1 aqui.
 	@Query("""
         SELECT
             YEAR(p.dataPagamento),

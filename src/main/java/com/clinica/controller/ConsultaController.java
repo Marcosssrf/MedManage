@@ -4,12 +4,15 @@ import com.clinica.dto.ConsultaDTO;
 import com.clinica.dto.resposta.ConsultaResponseDTO;
 import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.model.Consulta;
+import com.clinica.security.SecurityService;
 import com.clinica.service.ConsultaService;
+import com.clinica.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
@@ -24,6 +27,10 @@ public class ConsultaController {
 
 	@Autowired
 	ConsultaService consultaService;
+	@Autowired
+	UserService userService;
+	@Autowired
+	SecurityService securityService;
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
@@ -34,8 +41,16 @@ public class ConsultaController {
 //			@RequestParam(value = "pagina", defaultValue = "0") Integer pagina,
 //			@RequestParam(value = "tamanho-pagina", defaultValue = "10") Integer tamanhoPagina
 	){
-		List<Consulta> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);
 
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String role = authentication.getAuthorities().iterator().next().getAuthority();
+		String username = authentication.getName();
+
+		if (role.equals("ROLE_MEDICO")) {
+            medico = userService.findEntityByUsername(username).getUsername();
+		}
+
+		List<Consulta> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);
 		return ResponseEntity.ok(paginaResultado);
 	}
 

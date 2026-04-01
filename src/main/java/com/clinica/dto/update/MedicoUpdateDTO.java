@@ -1,6 +1,9 @@
 package com.clinica.dto.update;
 
+import java.util.UUID;
+
 public record MedicoUpdateDTO(
+        UUID id,
         String estadoCivil,
         String telefone,
         String email,

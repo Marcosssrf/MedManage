@@ -18,7 +18,7 @@ public class SecurityService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String username = userDetails.getUsername();
-        return userService.findByUsername(username);
+        return userService.findEntityByUsername(username);
     }
 
 }

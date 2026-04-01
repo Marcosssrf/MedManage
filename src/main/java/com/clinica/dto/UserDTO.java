@@ -1,8 +1,9 @@
 package com.clinica.dto;
 
+import com.clinica.dto.resposta.MedicoConsultaDTO;
 import com.clinica.model.enums.Role;
 
-import java.util.List;
+import java.util.UUID;
 
-public record UserDTO (String username, String senha, List<Role> roles){
+public record UserDTO (UUID id, String username, Role role, MedicoConsultaDTO medico, Boolean ativo){
 }

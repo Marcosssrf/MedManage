@@ -1,10 +1,8 @@
 package com.clinica.model;
 
 import com.clinica.model.enums.Role;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -21,6 +19,9 @@ public class User {
     @Column
     private String senha;
 
+    @Column
+    private Boolean ativo;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private Role role;
@@ -32,10 +33,11 @@ public class User {
     public User() {
     }
 
-    public User(UUID id, String username, String senha, Role role) {
+    public User(UUID id, String username, String senha, String email ,Boolean ativo, Role role) {
         this.id = id;
         this.username = username;
         this.senha = senha;
+        this.ativo = ativo;
         this.role = role;
     }
 
@@ -61,6 +63,14 @@ public class User {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public Boolean getAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(Boolean ativo) {
+        this.ativo = ativo;
     }
 
     public Role getRole() {
