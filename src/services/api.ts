@@ -33,7 +33,7 @@ export interface Paciente {
     id?: string | number;
     nome: string;
     dataNascimento: string;
-    // idade: string;
+    idade?: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;
@@ -74,7 +74,7 @@ export interface Medico {
     id?: string | number;
     nome: string;
     dataNascimento: string;
-    // idade: string;
+    idade?: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;
