@@ -54,11 +54,13 @@ public class UserController {
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserDTO> patch(@PathVariable UUID id, @RequestBody UserUpdateDTO dto) {
         return ResponseEntity.ok(service.patch(id, dto));
     }
 
     @DeleteMapping(value = "/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<User> delete(@PathVariable UUID id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
