@@ -6,6 +6,7 @@ import { toast } from "sonner";
 interface FormData {
     nome: string;
     dataNascimento: string;
+    idade?: string;
     sexo: string;
     estadoCivil: string;
     cpf: string;

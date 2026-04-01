@@ -154,7 +154,6 @@ export default function Usuarios() {
                 payload.senha = form.senha.trim();
             }
 
-            // O SEGREDO: Se for médico, manda o ID em formato de objeto
             if (form.role === "MEDICO" && form.medicoId) {
                 payload.medico = { id: form.medicoId };
             } else {

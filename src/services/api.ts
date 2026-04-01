@@ -275,7 +275,6 @@ export interface Usuario {
     medico?: {
         id: string;
         nome?: string;
-
     } | null;
 }
 
