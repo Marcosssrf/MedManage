@@ -1,4 +1,3 @@
-import { da } from "date-fns/locale";
 import { authService } from "./auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
@@ -268,7 +267,7 @@ export const relatoriosApi = {
 };
 
 export interface Usuario {
-    id?: string;
+    id: string;
     username: string;
     role: string;
     ativo: boolean;
