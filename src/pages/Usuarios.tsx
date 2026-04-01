@@ -40,6 +40,7 @@ interface UserRecord {
     username: string;
     role: "ADMIN" | "MEDICO" | "SECRETARIA";
     ativo?: boolean;
+    medicoId?: string | null;
 }
 
 interface UserForm {
