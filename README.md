@@ -1,314 +1,247 @@
-# 🏥 MedManage — Sistema de Gestão de Clínica Médica
+# 🏥 MedManage
 
-> Sistema backend desenvolvido em **Java + Spring Boot** para gerenciar o fluxo operacional completo de uma clínica médica: cadastro de pacientes e médicos, agendamento de consultas com regras de negócio robustas, controle financeiro e geração de relatórios de desempenho.
-
----
-
-## 📑 Índice
-
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
-- [Arquitetura do Projeto](#-arquitetura-do-projeto)
-- [Funcionalidades Detalhadas](#-funcionalidades-detalhadas)
-  - [Gestão de Médicos](#-gestão-de-médicos)
-  - [Gestão de Pacientes](#-gestão-de-pacientes)
-  - [Agendamento de Consultas](#-agendamento-de-consultas)
-  - [Gestão Financeira e Pagamentos](#-gestão-financeira-e-pagamentos)
-  - [Relatórios Estatísticos](#-relatórios-estatísticos)
-- [Regras de Negócio](#-regras-de-negócio)
-- [Endpoints da API](#-endpoints-da-api)
-- [Como Executar](#-como-executar)
-- [Executando com Docker](#-executando-com-docker)
-- [Banco de Dados H2](#-banco-de-dados-h2)
-- [Perfis de Configuração](#-perfis-de-configuração)
-- [Estrutura de Pastas](#-estrutura-de-pastas)
+API REST completa para gerenciamento de clínicas médicas, desenvolvida com Spring Boot. O sistema cobre todo o fluxo clínico: do cadastro de pacientes e médicos ao agendamento de consultas, anamnese, prescrições e pagamentos.
 
 ---
 
-## 📌 Sobre o Projeto
+## 📋 Índice
 
-O **MedManage** é uma API RESTful construída com foco em **boas práticas de desenvolvimento**, **validação rigorosa de regras de negócio** e **organização em camadas**. O sistema resolve problemas reais de uma clínica médica, como:
-
-- Evitar conflitos de horário entre agendamentos
-- Garantir que somente profissionais e pacientes ativos participem de consultas
-- Controlar o status do ciclo de vida de cada consulta automaticamente
-- Registrar pagamentos de forma segura, sem duplicidades
-- Fornecer relatórios financeiros e de desempenho profissional
-
----
-
-## 🚀 Tecnologias Utilizadas
-
-| Tecnologia | Versão | Finalidade |
-|---|---|---|
-| Java | 21 | Linguagem principal |
-| Spring Boot | 4.0.1 | Framework base da aplicação |
-| Spring Web (MVC) | — | Criação dos endpoints REST |
-| Spring Data JPA | — | Abstração da camada de persistência |
-| Hibernate | — | ORM para mapeamento objeto-relacional |
-| H2 Database | — | Banco de dados em memória para testes |
-| Bean Validation (Jakarta) | — | Validação de DTOs e entidades |
-| Maven | — | Gerenciamento de dependências e build |
-| Docker | — | Conteinerização da aplicação |
+- [Tecnologias](#tecnologias)
+- [Funcionalidades](#funcionalidades)
+- [Regras de Negócio](#regras-de-negócio)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Como Rodar](#como-rodar)
+- [Variáveis de Ambiente](#variáveis-de-ambiente)
+- [Endpoints](#endpoints)
+- [Autenticação](#autenticação)
+- [Perfis de Acesso](#perfis-de-acesso)
 
 ---
 
-## 🏗️ Arquitetura do Projeto
+## 🚀 Tecnologias
 
-O projeto segue o padrão de **arquitetura em camadas**, amplamente utilizado em aplicações Spring Boot:
-
-```
-Controller  →  Service  →  Repository  →  Database
-     ↑              ↑
-    DTO           Domain (Entities)
-```
-
-- **Controller**: Recebe as requisições HTTP, valida entrada e delega para o Service.
-- **Service**: Contém toda a lógica de negócio e orquestra as operações.
-- **Repository**: Interface com o banco de dados via Spring Data JPA.
-- **Domain/Model**: Entidades JPA que representam as tabelas do banco.
-- **DTO (Data Transfer Object)**: Objetos usados para entrada e saída de dados na API, evitando expor entidades diretamente.
+- **Java 21**
+- **Spring Boot 3**
+- **Spring Security** — autenticação HTTP Basic + BCrypt
+- **Spring Data JPA** — ORM com Hibernate
+- **PostgreSQL** — banco de dados relacional
+- **Bean Validation** — validações nos DTOs (CPF, CNPJ, email, telefone)
+- **Hibernate Validator** — validações brasileiras (`@CPF`, `@CNPJ`)
 
 ---
 
-## ⚙️ Funcionalidades Detalhadas
+## ✅ Funcionalidades
 
-### 👨‍⚕️ Gestão de Médicos
+### 👤 Pacientes
+- Cadastro completo com dados pessoais, endereço e convênio
+- Validação de CPF, e-mail, telefone e data de nascimento
+- Cálculo automático de idade
+- Vinculação a convênio com número de carteirinha e validade
+- Validação condicional: se informar convênio, carteirinha e vencimento são obrigatórios
 
-- **Cadastro** de médicos com nome, CRM, especialidade e dados de contato.
-- **Listagem** de todos os médicos cadastrados no sistema.
-- **Ativação/Inativação** de médicos — médicos inativos não aparecem em novos agendamentos.
-- Apenas médicos com status **`ATIVO`** podem ser vinculados a consultas.
+### 👨‍⚕️ Médicos
+- Cadastro com CRM, estado do CRM e especialidade
+- Ativação/inativação
+- Vinculação a um usuário do sistema
+
+### 📅 Consultas
+- Agendamento com validação de horário comercial (08h às 18h)
+- Controle de conflito de horário por médico
+- Fluxo de status automático: `AGENDADA → CONFIRMADA → REALIZADA`
+- Cancelamento com regra de 24h de antecedência
+- Filtros por data, nome do paciente e nome do médico
+- Médico autenticado visualiza apenas suas próprias consultas
+
+### 📋 Anamnese
+- Registro clínico vinculado à consulta
+- Campos: queixa principal, história da moléstica, exame físico, hipótese diagnóstica, conduta médica, encaminhamento e CID
+- Criação de prescrições vinculadas na mesma requisição
+
+### 💊 Prescrições
+- Medicamento, dosagem, via de administração, frequência e duração
+- Suporte a 4 tipos de receita: Comum, Controlada B1, Controlada A e Antimicrobiano
+
+### 💳 Pagamentos
+- Registro de pagamento vinculado à consulta **realizada**
+- Formas: PIX, Cartão de Crédito/Débito, Dinheiro, Boleto, Transferência
+- Tipos: Particular ou Convênio
+- Fluxo de status: `PENDENTE → PAGO`
+- Impedimento de pagamento duplicado para a mesma consulta
+
+### 🏥 Convênios
+- Cadastro com CNPJ, registro ANS e prazo de faturamento
+- Vinculação a pacientes
+
+### 📊 Dashboard
+- Total de pacientes e médicos cadastrados
+- Consultas do dia (filtrado por médico se o usuário for médico)
+- Faturamento do mês atual
+
+### 📈 Relatórios
+- Faturamento mensal por ano
+- Médico mais atendido
+
+### 📁 Histórico Clínico
+- Alergias, doenças preexistentes, cirurgias prévias, histórico familiar
+- Medicamentos de uso contínuo, tipo sanguíneo, peso, altura
+- Hábitos: atividade física, tabagismo, etilismo, uso de drogas
 
 ---
 
-### 🧑‍🤝‍🧑 Gestão de Pacientes
+## 📐 Regras de Negócio
 
-- **Cadastro** de pacientes com nome, CPF, data de nascimento e informações de contato.
-- **Listagem** de todos os pacientes do sistema.
-- **Ativação/Inativação** de pacientes — o mesmo controle de status aplicado aos médicos.
-- Apenas pacientes **`ATIVOS`** podem agendar novas consultas.
-
----
-
-### 📅 Agendamento de Consultas
-
-O módulo de agendamento é o núcleo do sistema e contém o maior número de regras de negócio.
-
-**Fluxo de uma consulta:**
-
-```
-AGENDADA  →  CONFIRMADA  →  REALIZADA
-                              ↓
-                          (Pagamento liberado)
-```
-
-O status evolui **automaticamente** com base na data e hora atuais do sistema.
-
-**Operações disponíveis:**
-
-| Operação | Descrição |
+| Regra | Detalhe |
 |---|---|
-| Agendar | Cria um novo agendamento via `POST /consultas` |
-| Cancelar | Cancela uma consulta com no mínimo 24h de antecedência via `PUT /consultas/{id}/cancelar` |
-| Listar | Futuro endpoint para listagem e filtros |
+| Horário de atendimento | 08h00 às 18h00 |
+| Cancelamento de consulta | Apenas com 24h de antecedência |
+| Paciente inativo | Não pode agendar consultas |
+| Médico inativo | Não pode receber consultas |
+| Conflito de horário | Médico não pode ter duas consultas no mesmo horário |
+| Status da consulta | Fluxo unidirecional: AGENDADA → CONFIRMADA → REALIZADA |
+| Pagamento | Apenas consultas com status REALIZADA podem ser pagas |
+| Pagamento duplicado | Uma consulta só pode ter um pagamento com status PAGO |
+| Convênio no paciente | Se informado, carteirinha e vencimento são obrigatórios |
 
 ---
 
-### 💰 Gestão Financeira e Pagamentos
+## 📁 Estrutura do Projeto
 
-O módulo financeiro garante o registro seguro e sem duplicidade dos pagamentos.
-
-**Modalidades de pagamento suportadas:**
-
-- **Tipo:**
-  - `PARTICULAR` — pagamento direto pelo paciente
-  - `CONVÊNIO` — cobertura por plano de saúde
-
-- **Forma de pagamento:**
-  - `PIX`
-  - `CARTÃO`
-  - `DINHEIRO`
-
-**Regras de negócio do pagamento:**
-
-- Somente consultas com status **`REALIZADA`** podem ser pagas.
-- O sistema impede o registro de **mais de um pagamento aprovado** para a mesma consulta.
-- O endpoint `POST /pagamentos` recebe o ID da consulta e os dados do pagamento.
+```
+src/main/java/com/clinica/
+├── config/             # Configurações de segurança e CORS
+├── controller/         # Endpoints REST
+├── dto/
+│   ├── update/         # DTOs para PATCH
+│   └── resposta/       # DTOs de resposta (response)
+├── model/
+│   └── enums/          # Enumerações do domínio
+├── repository/
+│   └── specs/          # Specifications para filtros dinâmicos
+├── security/           # UserDetailsService e SecurityService
+├── service/            # Regras de negócio
+└── validation/         # Anotações e validators customizados
+```
 
 ---
 
-### 📊 Relatórios Estatísticos
-
-O sistema oferece relatórios para tomada de decisão gerencial:
-
-#### Faturamento Mensal
-- **Endpoint:** `GET /relatorios/faturamento?ano=2026`
-- Retorna o **total arrecadado por mês** em um determinado ano.
-- Útil para análise financeira e planejamento da clínica.
-
-#### Desempenho Profissional
-- Identifica o **médico com maior número de consultas realizadas com sucesso** no período.
-- Base para cálculo de bonificações ou avaliação de desempenho.
-
----
-
-## 📏 Regras de Negócio
-
-Um resumo consolidado de todas as regras implementadas no sistema:
-
-| # | Módulo | Regra |
-|---|---|---|
-| 1 | Consultas | Agendamentos somente entre **08:00 e 18:00** |
-| 2 | Consultas | Impedimento de **conflito de horário** para o mesmo médico |
-| 3 | Consultas | Somente médicos e pacientes **ATIVOS** podem participar |
-| 4 | Consultas | Cancelamento exige **mínimo de 24h de antecedência** |
-| 5 | Consultas | Status evolui automaticamente: `AGENDADA → CONFIRMADA → REALIZADA` |
-| 6 | Pagamentos | Pagamento só é permitido para consultas **REALIZADAS** |
-| 7 | Pagamentos | Cada consulta permite **apenas um pagamento aprovado** |
-| 8 | Médicos | Médico **INATIVO** não pode receber novos agendamentos |
-| 9 | Pacientes | Paciente **INATIVO** não pode realizar novos agendamentos |
-
----
-
-## 🔗 Endpoints da API
-
-### Consultas
-
-| Método | Endpoint | Descrição | Body |
-|---|---|---|---|
-| `POST` | `/consultas` | Agenda uma nova consulta | `AgendamentoConsultaDTO` |
-| `PUT` | `/consultas/{id}/cancelar` | Cancela um agendamento existente | — |
-
-### Médicos
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `GET` | `/medicos` | Lista todos os médicos cadastrados |
-
-### Pacientes
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `GET` | `/pacientes` | Lista todos os pacientes cadastrados |
-
-### Pagamentos
-
-| Método | Endpoint | Descrição | Body |
-|---|---|---|---|
-| `POST` | `/pagamentos` | Registra o pagamento de uma consulta realizada | `RegistroPagamentoDTO` |
-
-### Relatórios
-
-| Método | Endpoint | Descrição | Parâmetro |
-|---|---|---|---|
-| `GET` | `/relatorios/faturamento` | Faturamento total por mês do ano | `?ano=2026` |
-
----
-
-## ▶️ Como Executar
+## ⚙️ Como Rodar
 
 ### Pré-requisitos
 
-- [Java 21+](https://adoptium.net/)
-- [Maven 3.8+](https://maven.apache.org/) ou use o wrapper incluído (`./mvnw`)
+- Java 21+
+- PostgreSQL rodando
+- Maven
 
 ### Passos
 
 ```bash
-# 1. Clone o repositório
+# Clone o repositório
 git clone https://github.com/Marcosssrf/MedManage.git
 cd MedManage
 
-# 2. Execute a aplicação com o Maven Wrapper
+# Configure as variáveis de ambiente (veja secção abaixo)
+
+# Rode a aplicação
 ./mvnw spring-boot:run
-
-# No Windows
-mvnw.cmd spring-boot:run
 ```
 
-A aplicação estará disponível em: `http://localhost:8080`
+A API estará disponível em `http://localhost:8080`.
 
 ---
 
-## 🐳 Executando com Docker
+## 🔐 Variáveis de Ambiente
 
-O projeto inclui suporte a Docker. Consulte o arquivo `comandosDocker.txt` na raiz do projeto para os comandos detalhados.
+Crie um arquivo `.env` ou configure as variáveis diretamente no ambiente:
 
-Exemplo básico:
-
-```bash
-# Build da imagem
-docker build -t medmanage .
-
-# Executar o container
-docker run -p 8080:8080 medmanage
-```
-
----
-
-## 🗄️ Banco de Dados H2
-
-No perfil de testes (padrão), o projeto utiliza o **H2**, um banco de dados em memória que não requer instalação.
-
-Acesse o console visual pelo navegador durante a execução:
-
-| Campo | Valor |
-|---|---|
-| URL | `http://localhost:8080/h2-console` |
-| JDBC URL | `jdbc:h2:mem:clinica` |
-| Usuário | `sa` |
-| Senha | *(deixar em branco)* |
-
-> ⚠️ Os dados são **reiniciados a cada vez** que a aplicação é reiniciada, pois o banco é em memória.
-
----
-
-## 🔧 Perfis de Configuração
-
-| Perfil | Banco de Dados | Uso |
+| Variável | Descrição | Exemplo |
 |---|---|---|
-| `test` (padrão) | H2 em memória | Desenvolvimento local e testes |
-| `prod` *(a configurar)* | Banco externo (ex: PostgreSQL/MySQL) | Ambiente de produção |
+| `DB_URL_POOLER` | URL de conexão com o PostgreSQL | `jdbc:postgresql://localhost:5432/clinica` |
+| `DB_USERNAME` | Usuário do banco | `postgres` |
+| `DB_PASSWORD` | Senha do banco | `sua_senha` |
 
-Para ativar um perfil diferente:
+---
 
+## 🌐 Endpoints
+
+### Usuários — `/usuarios`
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| POST | `/usuarios` | Público | Criar usuário |
+| GET | `/usuarios` | ADMIN | Listar usuários |
+| GET | `/usuarios/me` | Autenticado | Dados do usuário logado |
+| PATCH | `/usuarios/{id}` | ADMIN | Atualizar usuário |
+| DELETE | `/usuarios/{id}` | ADMIN | Inativar usuário |
+
+### Pacientes — `/pacientes`
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| GET | `/pacientes` | ADMIN, MEDICO, SECRETARIA | Listar pacientes |
+| GET | `/pacientes/{id}` | ADMIN, MEDICO, SECRETARIA | Buscar por ID |
+| POST | `/pacientes` | ADMIN, SECRETARIA | Cadastrar paciente |
+| PATCH | `/pacientes/{id}` | ADMIN, SECRETARIA | Atualizar paciente |
+
+### Médicos — `/medicos`
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| GET | `/medicos` | ADMIN, MEDICO, SECRETARIA | Listar médicos |
+| GET | `/medicos/{id}` | ADMIN, MEDICO, SECRETARIA | Buscar por ID |
+| POST | `/medicos` | ADMIN | Cadastrar médico |
+| PATCH | `/medicos/{id}` | ADMIN | Atualizar médico |
+
+### Consultas — `/consultas`
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| GET | `/consultas?dataHora=&paciente=&medico=` | ADMIN, MEDICO, SECRETARIA | Filtrar consultas |
+| GET | `/consultas/{id}` | ADMIN, MEDICO, SECRETARIA | Buscar por ID |
+| POST | `/consultas` | ADMIN, SECRETARIA | Agendar consulta |
+| PATCH | `/consultas/{id}` | ADMIN, SECRETARIA | Atualizar consulta |
+| PUT | `/consultas/{id}/cancelar` | ADMIN, SECRETARIA | Cancelar consulta |
+
+### Pagamentos — `/pagamentos`
+| Método | Rota | Acesso | Descrição |
+|---|---|---|---|
+| GET | `/pagamentos` | ADMIN, SECRETARIA | Listar pagamentos |
+| GET | `/pagamentos/{id}` | ADMIN, SECRETARIA | Buscar por ID |
+| POST | `/pagamentos` | ADMIN, SECRETARIA | Registrar pagamento |
+| PATCH | `/pagamentos/{id}/confirmar` | ADMIN, SECRETARIA | Confirmar pagamento |
+
+### Outros endpoints
+| Rota | Acesso | Descrição |
+|---|---|---|
+| GET `/anamneses` | ADMIN, MEDICO | Listar anamneses |
+| POST `/anamneses` | ADMIN, MEDICO | Registrar anamnese + prescrições |
+| GET `/historicosClinicos` | ADMIN, MEDICO, SECRETARIA | Listar históricos |
+| POST `/historicosClinicos` | ADMIN, MEDICO | Cadastrar histórico |
+| PATCH `/historicosClinicos/{id}` | ADMIN, MEDICO | Atualizar histórico |
+| GET `/convenios` | ADMIN, SECRETARIA | Listar convênios |
+| POST `/convenios` | ADMIN | Cadastrar convênio |
+| PATCH `/convenios/{id}` | ADMIN | Atualizar convênio |
+| GET `/cids` | ADMIN, MEDICO, SECRETARIA | Listar CIDs |
+| GET `/dashboard/resumo` | ADMIN, MEDICO, SECRETARIA | Dados do dashboard |
+| GET `/relatorios/faturamento?ano=` | ADMIN | Faturamento por mês |
+| GET `/relatorios/medico-mais-atendido` | ADMIN | Médico mais atendido |
+
+---
+
+## 🔐 Autenticação
+
+A API utiliza **HTTP Basic Authentication**. Envie o header em todas as requisições autenticadas:
+
+```
+Authorization: Basic base64(username:senha)
+```
+
+Exemplo com curl:
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+curl -u admin:senha123 http://localhost:8080/pacientes
 ```
 
 ---
 
-## 📁 Estrutura de Pastas
+## 👥 Perfis de Acesso
 
-```
-MedManage/
-├── src/
-│   ├── main/
-│   │   ├── java/com/medmanage/
-│   │   │   ├── controller/       # Endpoints REST (Controllers)
-│   │   │   ├── service/          # Regras de negócio (Services)
-│   │   │   ├── repository/       # Acesso ao banco (Repositories)
-│   │   │   ├── model/            # Entidades JPA (Domain)
-│   │   │   └── dto/              # Objetos de transferência de dados
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       └── application-test.properties
-│   └── test/                     # Testes unitários e de integração
-├── .mvn/wrapper/                 # Maven Wrapper
-├── comandosDocker.txt            # Comandos úteis para Docker
-├── pom.xml                       # Dependências e configuração Maven
-└── README.md
-```
-
----
-
-## 👨‍💻 Autor
-
-Desenvolvido por **[Marcos](https://github.com/Marcosssrf)** como projeto de estudo e portfólio, com foco em boas práticas de desenvolvimento backend com Java e Spring Boot.
-
----
-
-## 📄 Licença
-
-Este projeto está disponível para fins **acadêmicos e educacionais**.
+| Role | Permissões |
+|---|---|
+| `ADMIN` | Acesso total ao sistema |
+| `MEDICO` | Visualiza consultas próprias, acessa anamneses e históricos clínicos |
+| `SECRETARIA` | Gerencia pacientes, consultas e pagamentos |
