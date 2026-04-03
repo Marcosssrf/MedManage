@@ -1,10 +1,11 @@
 package com.clinica.dto;
 
+import com.clinica.validation.ConvenioValidado;
 import jakarta.validation.constraints.*;
 import org.hibernate.validator.constraints.br.CPF;
 
 import java.time.LocalDate;
-
+@ConvenioValidado
 public record PacienteDTO(
 
         @NotBlank
@@ -35,6 +36,10 @@ public record PacienteDTO(
         String bairro,
         String cidade,
         String uf,
-        Boolean ativo
+        Boolean ativo,
+
+        String convenio,
+        String numeroCarteirinha,
+        LocalDate dataVencimentoCarteirinha
 ) {
 }

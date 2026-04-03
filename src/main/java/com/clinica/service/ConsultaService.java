@@ -202,7 +202,7 @@ public class ConsultaService {
 		return new ConsultaResponseDTO(
 				consulta.getId(),
 				consulta.getDataHora(),
-				consulta.getTipoConsulta(),
+				consulta.getTipoConsulta().toString(),
 				consulta.getObservacoes(),
 				consulta.getStatus(),
 				new PacienteConsultaDTO(

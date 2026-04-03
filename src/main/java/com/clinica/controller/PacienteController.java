@@ -1,6 +1,7 @@
 package com.clinica.controller;
 
 import com.clinica.dto.PacienteDTO;
+import com.clinica.dto.resposta.PacienteResponseDTO;
 import com.clinica.dto.update.PacienteUpdateDTO;
 import com.clinica.model.Paciente;
 import com.clinica.service.PacienteService;
@@ -24,34 +25,36 @@ public class PacienteController {
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-	public ResponseEntity<List<Paciente>> findAll() {
-		List<Paciente> pacientes = pacienteService.findAll();
-		return ResponseEntity.ok().body(pacientes);
+	public ResponseEntity<List<PacienteResponseDTO>> findAll() {
+		List<PacienteResponseDTO> pacientes = pacienteService.findAll()
+				.stream()
+				.map(PacienteResponseDTO::from)
+				.toList();
+		return ResponseEntity.ok(pacientes);
 	}
 
 	@GetMapping(value = "/{id}")
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-	public ResponseEntity<Paciente> findById(@PathVariable UUID id){
-		Paciente paciente = pacienteService.findById(id);
-		return ResponseEntity.ok().body(paciente);
+	public ResponseEntity<PacienteResponseDTO> findById(@PathVariable UUID id) {
+		return ResponseEntity.ok(PacienteResponseDTO.from(pacienteService.findById(id)));
 	}
 
 	@PostMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
-	public ResponseEntity<Paciente> insert(@RequestBody @Valid PacienteDTO dto) {
+	public ResponseEntity<PacienteResponseDTO> insert(@RequestBody @Valid PacienteDTO dto) {
 		Paciente paciente = pacienteService.insert(dto);
 		URI uri = ServletUriComponentsBuilder
 				.fromCurrentRequest()
 				.path("/{id}")
 				.buildAndExpand(paciente.getId())
 				.toUri();
-		return ResponseEntity.created(uri).body(paciente);
+		return ResponseEntity.created(uri).body(PacienteResponseDTO.from(paciente));
 	}
 
 	@PatchMapping(value = "/{id}")
 	@PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
-	public ResponseEntity<Paciente> patch(@PathVariable UUID id, @RequestBody @Valid PacienteUpdateDTO dto){
-		return ResponseEntity.ok(pacienteService.patch(id,dto));
+	public ResponseEntity<PacienteResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PacienteUpdateDTO dto) {
+		return ResponseEntity.ok(PacienteResponseDTO.from(pacienteService.patch(id, dto)));
 	}
 
 //	@DeleteMapping(value = "/{id}")

@@ -2,38 +2,40 @@ package com.clinica.model;
 
 import com.clinica.model.enums.Role;
 import jakarta.persistence.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.UUID;
 
 @Entity
 @Table(name = "usuario")
+@EntityListeners(AuditingEntityListener.class)
 public class User {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    
-    @Column
+
+    @Column(nullable = false, unique = true)
     private String username;
 
-    @Column
+    @Column(nullable = false)
     private String senha;
 
-    @Column
-    private Boolean ativo;
+    @Column(nullable = false)
+    private Boolean ativo = true; // ex: true (usuário pode logar) / false (acesso bloqueado)
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role")
-    private Role role;
+    @Column(name = "role", nullable = false)
+    private Role role; // ex: ADMIN / MEDICO / SECRETARIA
 
     @ManyToOne
     @JoinColumn(name = "medico_id")
-    private Medico medico;
+    private Medico medico; // ex: referência ao Dr. João Souza (preenchido só se role = MEDICO)
 
     public User() {
     }
 
-    public User(UUID id, String username, String senha, String email ,Boolean ativo, Role role) {
+    public User(UUID id, String username, String senha, Boolean ativo, Role role) {
         this.id = id;
         this.username = username;
         this.senha = senha;
@@ -41,48 +43,21 @@ public class User {
         this.role = role;
     }
 
-    public UUID getId() {
-        return id;
-    }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public String getUsername() {
-        return username;
-    }
+    public String getSenha() { return senha; }
+    public void setSenha(String senha) { this.senha = senha; }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
+    public Boolean getAtivo() { return ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
 
-    public String getSenha() {
-        return senha;
-    }
-
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
-
-    public Boolean getAtivo() {
-        return ativo;
-    }
-
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
     public Medico getMedico() { return medico; }
-
     public void setMedico(Medico medico) { this.medico = medico; }
-
 }

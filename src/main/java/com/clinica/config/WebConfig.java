@@ -12,15 +12,15 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOriginPatterns(
                         "http://localhost:*",
-                        "http://172.20.10.*:*",  // ← IP da sua rede local
-                        "https://*.ngrok-free.app",  // ← ngrok
-                        "https://*.ngrok-free.dev",
-                        "https://*.railway.app",
-                        "https://medmanage-api.onrender.com",
-                        "https://medmanagefront-production.up.railway.app",
-                        "https://marcosssrf.dev", // ← Seu novo domínio do Name.com
+                        "http://172.20.10.*:*",  //
+//                        "https://*.ngrok-free.app",
+//                        "https://*.ngrok-free.dev",
+//                        "https://*.railway.app",
+//                        "https://medmanage-api.onrender.com",
+//                        "https://medmanagefront-production.up.railway.app",
+                        "https://marcosssrf.dev",
                         "https://www.marcosssrf.dev",
-                        "https://*.azurewebsites.net"// ← A versão com www
+                        "https://*.azurewebsites.net"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")

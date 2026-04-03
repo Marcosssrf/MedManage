@@ -22,7 +22,10 @@ public class MedicoService {
 
 	public List<Medico> findAll() { return medicoRepository.findAll();}
 
-	public Medico findById(UUID id) { return medicoRepository.findById(id).get();}
+	public Medico findById(UUID id) {
+		return medicoRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Médico não encontrada"));
+	}
 
 	public Medico insert(MedicoDTO dto){
 

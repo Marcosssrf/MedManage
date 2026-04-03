@@ -1,5 +1,12 @@
 package com.clinica.dto.update;
 
+import com.clinica.validation.ConvenioValidado;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+
+import java.time.LocalDate;
+
+@ConvenioValidado
 public record PacienteUpdateDTO(
         String estadoCivil,
         String cep,
@@ -10,8 +17,14 @@ public record PacienteUpdateDTO(
         String cidade,
         String uf,
         String nome,
-        String email,
+        @Pattern(regexp = "^\\(\\d{2}\\) \\d{4,5}-\\d{4}$", message = "Telefone inválido. Formato: (XX) XXXXX-XXXX")
         String telefone,
-        Boolean ativo
+        @Email(message = "Email inválido")
+        @Pattern(regexp = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", message = "Email deve conter domínio válido")
+        String email,
+        Boolean ativo,
+        String convenio,
+        String numeroCarteirinha,
+        LocalDate dataVencimentoCarteirinha
 ) {
 }

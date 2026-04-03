@@ -1,5 +1,6 @@
 package com.clinica.service;
 
+import com.clinica.dto.UserCreateDTO;
 import com.clinica.dto.UserDTO;
 import com.clinica.dto.resposta.MedicoConsultaDTO;
 import com.clinica.dto.update.UserUpdateDTO;
@@ -28,21 +29,31 @@ public class UserService {
     private MedicoRepository medicoRepository;
 
     @Transactional
-    public User insert(User user){
-        if(user.getRole() == Role.MEDICO && user.getMedico() != null && user.getMedico().getId() != null){
-            Medico medicoVinculado = medicoRepository.findById(user.getMedico().getId())
-                    .orElseThrow(() -> new RuntimeException("Médico não encontrado."));
-            user.setMedico(medicoVinculado);
-        }else{
+    public UserDTO insert(UserCreateDTO dto){
+
+        if (repository.findByUsername(dto.username()).isPresent()){
+            throw new RuntimeException("Username já em uso");
+        }
+
+        User user = new User();
+        user.setUsername(dto.username());
+        user.setSenha(encoder.encode(dto.senha()));
+        user.setRole(dto.role());
+        user.setAtivo(true);
+
+
+        if (dto.role() == Role.MEDICO) {
+            if (dto.medicoId() == null) {
+                throw new RuntimeException("Médico é obrigatório para usuários com role MEDICO");
+            }
+            Medico medico = medicoRepository.findById(dto.medicoId())
+                    .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+            user.setMedico(medico);
+        } else {
             user.setMedico(null);
         }
-        var senha = user.getSenha();
-        if (user.getSenha() == null || user.getSenha().isBlank()) {
-            throw new RuntimeException("Senha é obrigatória");
-        }
-        user.setSenha(encoder.encode(senha));
-        user.setAtivo(true);
-        return repository.save(user);
+
+        return converterParaDTO(repository.save(user));
     }
 
     public UserDTO findByUsername(String username){

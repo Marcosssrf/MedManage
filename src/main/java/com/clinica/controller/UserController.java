@@ -1,11 +1,13 @@
 package com.clinica.controller;
 
+import com.clinica.dto.UserCreateDTO;
 import com.clinica.dto.UserDTO;
 import com.clinica.dto.resposta.MedicoConsultaDTO;
 import com.clinica.dto.update.UserUpdateDTO;
 import com.clinica.model.User;
 import com.clinica.repository.UserRepository;
 import com.clinica.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,11 +32,14 @@ public class UserController {
     @PostMapping
 //    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<UserDTO> insert(@RequestBody User user){
-        service.insert(user);
-        UserDTO dto = converterParaDTO(user);
-        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(user.getId()).toUri();
-        return ResponseEntity.created(uri).body(dto);
+    public ResponseEntity<UserDTO> insert(@RequestBody @Valid UserCreateDTO dto) {
+        UserDTO criado = service.insert(dto);
+        URI uri = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(criado.id())
+                .toUri();
+        return ResponseEntity.created(uri).body(criado);
     }
 
     @GetMapping()

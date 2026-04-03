@@ -4,7 +4,6 @@ import com.clinica.dto.ConsultaDTO;
 import com.clinica.dto.resposta.ConsultaResponseDTO;
 import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.model.Consulta;
-import com.clinica.security.SecurityService;
 import com.clinica.service.ConsultaService;
 import com.clinica.service.UserService;
 import jakarta.validation.Valid;
@@ -29,8 +28,6 @@ public class ConsultaController {
 	ConsultaService consultaService;
 	@Autowired
 	UserService userService;
-	@Autowired
-	SecurityService securityService;
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
@@ -47,7 +44,7 @@ public class ConsultaController {
 		String username = authentication.getName();
 
 		if (role.equals("ROLE_MEDICO")) {
-            medico = userService.findEntityByUsername(username).getUsername();
+            medico = userService.findByUsername(username).medico().nome();
 		}
 
 		List<Consulta> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);

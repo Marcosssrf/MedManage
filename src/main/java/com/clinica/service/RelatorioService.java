@@ -36,7 +36,7 @@ public class RelatorioService {
 
 				Month mes = pagamento.getDataPagamento().getMonth();
 
-				faturamento.put(mes, faturamento.getOrDefault(mes, 0.0) + pagamento.getValor());}}
+				faturamento.put(mes, faturamento.getOrDefault(mes, 0.0) + pagamento.getValor().doubleValue());}}
 
 		return faturamento;
 	}

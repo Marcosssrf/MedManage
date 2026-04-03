@@ -89,6 +89,8 @@ public class PagamentoService {
 				p.getFormaPagamento(),
 				p.getDataPagamento(),
 				p.getValor(),
+				p.getNumeroParcelas(),
+				p.getConvenio(),
 				p.getStatusPagamento(),
 				new PagamentoResponseDTO.ConsultaResumoPagamentoDTO(
 						p.getConsulta().getId(),

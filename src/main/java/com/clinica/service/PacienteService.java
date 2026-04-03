@@ -2,8 +2,10 @@ package com.clinica.service;
 
 import com.clinica.dto.PacienteDTO;
 import com.clinica.dto.update.PacienteUpdateDTO;
+import com.clinica.model.Convenio;
 import com.clinica.model.Paciente;
 import com.clinica.model.User;
+import com.clinica.repository.ConvenioRepository;
 import com.clinica.repository.PacienteRepository;
 import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +22,14 @@ public class PacienteService {
 
 	@Autowired
 	SecurityService securityService;
+    @Autowired
+    private ConvenioRepository convenioRepository;
 
 	public List<Paciente> findAll() { return pacienteRepository.findAll();}
 
 	public Paciente findById(UUID id) {
-		return pacienteRepository.findById(id).get();
+		return pacienteRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Paciente não encontrada"));
 	}
 
 	public Paciente insert(PacienteDTO dto) {
@@ -49,6 +54,14 @@ public class PacienteService {
 
 		User user = securityService.obterUsuarioLogado();
 		paciente.setUsuario(user);
+
+		if(dto.convenio() != null && !dto.convenio().isBlank()){
+			Convenio convenio = convenioRepository.findByNome(dto.convenio())
+					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+			paciente.setConvenio(convenio);
+			paciente.setNumeroCarteirinha(dto.numeroCarteirinha());
+			paciente.setDataVencimentoCarteirinha(dto.dataVencimentoCarteirinha());
+		}
 
 		return pacienteRepository.save(paciente);
 	}
@@ -103,6 +116,14 @@ public class PacienteService {
 
 		if (dto.ativo() != null) {
 			paciente.setAtivo(dto.ativo());
+		}
+
+		if (dto.convenio() != null && !dto.convenio().isBlank()) {
+			Convenio convenio = convenioRepository.findByNome(dto.convenio())
+					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+			paciente.setConvenio(convenio);
+			paciente.setNumeroCarteirinha(dto.numeroCarteirinha());
+			paciente.setDataVencimentoCarteirinha(dto.dataVencimentoCarteirinha());
 		}
 
 		return pacienteRepository.save(paciente);

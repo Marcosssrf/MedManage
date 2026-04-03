@@ -1,6 +1,7 @@
 package com.clinica.model;
 
 import com.clinica.model.enums.StatusConsulta;
+import com.clinica.model.enums.TipoConsulta;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,29 +22,38 @@ public class Consulta {
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
+
+	@Column(nullable = false)
 	private LocalDateTime dataHora;
 
-	@Column/*(nullable = false)*/
-	private String tipoConsulta;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private TipoConsulta tipoConsulta; // ex: PRIMEIRA_VEZ / RETORNO / URGENCIA / TELEMEDICINA
 
 	@Enumerated(EnumType.STRING)
-	private StatusConsulta status;
+	private StatusConsulta status; // ex: AGENDADA / CONFIRMADA / EM_ANDAMENTO / REALIZADA / CANCELADA
 
 	@ManyToOne
 	@JoinColumn(name = "paciente_id", nullable = false)
-	@JsonIgnoreProperties({"dataCadastro","dataAtualizacao","createdBy"})
+	@JsonIgnoreProperties({"dataCadastro", "dataAtualizacao", "createdBy"})
 	private Paciente paciente;
 
 	@ManyToOne
 	@JoinColumn(name = "medico_id", nullable = false)
-	@JsonIgnoreProperties({"dataCadastro","dataAtualizacao","createdBy"})
+	@JsonIgnoreProperties({"dataCadastro", "dataAtualizacao", "createdBy"})
 	private Medico medico;
 
 	@Column
-	private String observacoes;
+	private Integer duracaoPrevistaMinutos; // ex: 30 / 45 / 60 (duração em minutos)
+
+	@Column
+	private String observacoes; // ex: "Paciente solicitou consulta com urgência, relata febre há 2 dias"
+
+	@OneToOne(mappedBy = "consulta", cascade = CascadeType.ALL)
+	private Anamnese anamnese; // ex: referência à anamnese preenchida pelo médico durante a consulta
 
 	@OneToMany(mappedBy = "consulta")
-	private List<Pagamento> pagamentos;
+	private List<Pagamento> pagamentos; // ex: lista com pagamento de R$ 200,00 via PIX
 
 	@CreatedDate
 	@Column(name = "data_cadastro")
@@ -61,17 +71,20 @@ public class Consulta {
 	public Consulta() {
 	}
 
-	public Consulta(UUID id, LocalDateTime dataHora, String tipoConsulta ,StatusConsulta status, Paciente paciente, Medico medico, String observacoes, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User Usuario) {
+	public Consulta(UUID id, LocalDateTime dataHora, TipoConsulta tipoConsulta, StatusConsulta status,
+					Paciente paciente, Medico medico, Integer duracaoPrevistaMinutos, String observacoes,
+					LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User usuario) {
 		this.id = id;
 		this.dataHora = dataHora;
 		this.tipoConsulta = tipoConsulta;
 		this.status = status;
 		this.paciente = paciente;
 		this.medico = medico;
+		this.duracaoPrevistaMinutos = duracaoPrevistaMinutos;
 		this.observacoes = observacoes;
 		this.dataCadastro = dataCadastro;
 		this.dataAtualizacao = dataAtualizacao;
-		this.usuario = Usuario;
+		this.usuario = usuario;
 	}
 
 	@JsonProperty("createdBy")
@@ -79,83 +92,39 @@ public class Consulta {
 		return usuario != null ? usuario.getUsername() : null;
 	}
 
-	public UUID getId() {
-		return id;
-	}
+	public UUID getId() { return id; }
+	public void setId(UUID id) { this.id = id; }
 
-	public void setId(UUID id) {
-		this.id = id;
-	}
+	public LocalDateTime getDataHora() { return dataHora; }
+	public void setDataHora(LocalDateTime dataHora) { this.dataHora = dataHora; }
 
-	public LocalDateTime getDataHora() {
-		return dataHora;
-	}
+	public TipoConsulta getTipoConsulta() { return tipoConsulta; }
+	public void setTipoConsulta(TipoConsulta tipoConsulta) { this.tipoConsulta = tipoConsulta; }
 
-	public void setDataHora(LocalDateTime dataHora) {
-		this.dataHora = dataHora;
-	}
+	public StatusConsulta getStatus() { return status; }
+	public void setStatus(StatusConsulta status) { this.status = status; }
 
-	public String getTipoConsulta() {
-		return tipoConsulta;
-	}
+	public Paciente getPaciente() { return paciente; }
+	public void setPaciente(Paciente paciente) { this.paciente = paciente; }
 
-	public void setTipoConsulta(String tipoConsulta) {
-		this.tipoConsulta = tipoConsulta;
-	}
+	public Medico getMedico() { return medico; }
+	public void setMedico(Medico medico) { this.medico = medico; }
 
-	public StatusConsulta getStatus() {
-		return status;
-	}
+	public Integer getDuracaoPrevistaMinutos() { return duracaoPrevistaMinutos; }
+	public void setDuracaoPrevistaMinutos(Integer duracaoPrevistaMinutos) { this.duracaoPrevistaMinutos = duracaoPrevistaMinutos; }
 
-	public void setStatus(StatusConsulta status) {
-		this.status = status;
-	}
+	public String getObservacoes() { return observacoes; }
+	public void setObservacoes(String observacoes) { this.observacoes = observacoes; }
 
-	public Paciente getPaciente() {
-		return paciente;
-	}
+	public Anamnese getAnamnese() { return anamnese; }
+	public void setAnamnese(Anamnese anamnese) { this.anamnese = anamnese; }
 
-	public void setPaciente(Paciente paciente) {
-		this.paciente = paciente;
-	}
+	public LocalDateTime getDataCadastro() { return dataCadastro; }
+	public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
 
-	public Medico getMedico() {
-		return medico;
-	}
+	public LocalDateTime getDataAtualizacao() { return dataAtualizacao; }
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) { this.dataAtualizacao = dataAtualizacao; }
 
-	public void setMedico(Medico medico) {
-		this.medico = medico;
-	}
-
-	public String getObservacoes() {
-		return observacoes;
-	}
-
-	public void setObservacoes(String observacoes) {
-		this.observacoes = observacoes;
-	}
-
-	public LocalDateTime getDataCadastro() {
-		return dataCadastro;
-	}
-
-	public void setDataCadastro(LocalDateTime dataCadastro) {
-		this.dataCadastro = dataCadastro;
-	}
-
-	public LocalDateTime getDataAtualizacao() {
-		return dataAtualizacao;
-	}
-
-	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
-		this.dataAtualizacao = dataAtualizacao;
-	}
-
-	public User getUsuario() {
-		return usuario;
-	}
-
-	public void setUsuario(User usuario) {
-		this.usuario = usuario;
-	}
+	public User getUsuario() { return usuario; }
+	public void setUsuario(User usuario) { this.usuario = usuario; }
 }

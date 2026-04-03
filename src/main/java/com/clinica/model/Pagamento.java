@@ -11,6 +11,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -25,22 +26,30 @@ public class Pagamento {
 	private UUID id;
 
 	@Enumerated(EnumType.STRING)
-	private TipoPagamento tipoPagamento;
+	private TipoPagamento tipoPagamento; // ex: PARTICULAR / CONVENIO
 
 	@Enumerated(EnumType.STRING)
-	private FormaPagamento formaPagamento;
+	private FormaPagamento formaPagamento; // ex: PIX / CARTAO_CREDITO / CARTAO_DEBITO / DINHEIRO / BOLETO / TRANSFERENCIA
 
-	private LocalDate dataPagamento;
+	private LocalDate dataPagamento; // ex: "2025-04-10" (data em que o pagamento foi efetuado)
 
-	private Double valor;
+	@Column(nullable = false, precision = 10, scale = 2)
+	private BigDecimal valor; // ex: 200.00 / 350.50 / 150.00 (valor em reais)
+
+	@Column
+	private Integer numeroParcelas = 1; // ex: 1 (à vista) / 3 / 6 / 12 (parcelado no cartão)
+
+	@ManyToOne
+	@JoinColumn(name = "convenio_id")
+	private Convenio convenio; // ex: referência ao convênio Unimed (preenchido só se tipoPagamento = CONVENIO)
 
 	@Enumerated(EnumType.STRING)
-	private StatusPagamento statusPagamento;
+	private StatusPagamento statusPagamento; // ex: PENDENTE / PAGO / CANCELADO
 
 	@ManyToOne
 	@JoinColumn(name = "consulta_id", nullable = false)
 	@JsonBackReference
-	private Consulta consulta;
+	private Consulta consulta; // ex: referência à consulta do dia 10/04/2025
 
 	@CreatedDate
 	@Column(name = "data_cadastro")
@@ -58,12 +67,16 @@ public class Pagamento {
 	public Pagamento() {
 	}
 
-	public Pagamento(UUID id, TipoPagamento tipoPagamento,FormaPagamento formaPagamento,LocalDate dataPagamento ,Double valor, StatusPagamento statusPagamento, Consulta consulta, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User usuario) {
+	public Pagamento(UUID id, TipoPagamento tipoPagamento, FormaPagamento formaPagamento, LocalDate dataPagamento,
+					 BigDecimal valor, Integer numeroParcelas, Convenio convenio, StatusPagamento statusPagamento,
+					 Consulta consulta, LocalDateTime dataCadastro, LocalDateTime dataAtualizacao, User usuario) {
 		this.id = id;
 		this.tipoPagamento = tipoPagamento;
 		this.formaPagamento = formaPagamento;
 		this.dataPagamento = dataPagamento;
 		this.valor = valor;
+		this.numeroParcelas = numeroParcelas;
+		this.convenio = convenio;
 		this.statusPagamento = statusPagamento;
 		this.consulta = consulta;
 		this.dataCadastro = dataCadastro;
@@ -76,84 +89,39 @@ public class Pagamento {
 		return usuario != null ? usuario.getUsername() : null;
 	}
 
-	public UUID getId() {
-		return id;
-	}
+	public UUID getId() { return id; }
+	public void setId(UUID id) { this.id = id; }
 
-	public void setId(UUID id) {
-		this.id = id;
-	}
+	public TipoPagamento getTipoPagamento() { return tipoPagamento; }
+	public void setTipoPagamento(TipoPagamento tipoPagamento) { this.tipoPagamento = tipoPagamento; }
 
-	public TipoPagamento getTipoPagamento() {
-		return tipoPagamento;
-	}
+	public FormaPagamento getFormaPagamento() { return formaPagamento; }
+	public void setFormaPagamento(FormaPagamento formaPagamento) { this.formaPagamento = formaPagamento; }
 
-	public void setTipoPagamento(TipoPagamento tipoPagamento) {
-		this.tipoPagamento = tipoPagamento;
-	}
+	public LocalDate getDataPagamento() { return dataPagamento; }
+	public void setDataPagamento(LocalDate dataPagamento) { this.dataPagamento = dataPagamento; }
 
-	public FormaPagamento getFormaPagamento() {
-		return formaPagamento;
-	}
+	public BigDecimal getValor() { return valor; }
+	public void setValor(BigDecimal valor) { this.valor = valor; }
 
-	public void setFormaPagamento(FormaPagamento formaPagamento) {
-		this.formaPagamento = formaPagamento;
-	}
+	public Integer getNumeroParcelas() { return numeroParcelas; }
+	public void setNumeroParcelas(Integer numeroParcelas) { this.numeroParcelas = numeroParcelas; }
 
-	public LocalDate getDataPagamento() {
-		return dataPagamento;
-	}
+	public Convenio getConvenio() { return convenio; }
+	public void setConvenio(Convenio convenio) { this.convenio = convenio; }
 
-	public void setDataPagamento(LocalDate dataPagamento) {
-		this.dataPagamento = dataPagamento;
-	}
+	public StatusPagamento getStatusPagamento() { return statusPagamento; }
+	public void setStatusPagamento(StatusPagamento statusPagamento) { this.statusPagamento = statusPagamento; }
 
-	public Double getValor() {
-		return valor;
-	}
+	public Consulta getConsulta() { return consulta; }
+	public void setConsulta(Consulta consulta) { this.consulta = consulta; }
 
-	public void setValor(Double valor) {
-		this.valor = valor;
-	}
+	public LocalDateTime getDataCadastro() { return dataCadastro; }
+	public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
 
-	public StatusPagamento getStatusPagamento() {
-		return statusPagamento;
-	}
+	public LocalDateTime getDataAtualizacao() { return dataAtualizacao; }
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) { this.dataAtualizacao = dataAtualizacao; }
 
-	public void setStatusPagamento(StatusPagamento statusPagamento) {
-		this.statusPagamento = statusPagamento;
-	}
-
-	public Consulta getConsulta() {
-		return consulta;
-	}
-
-	public void setConsulta(Consulta consulta) {
-		this.consulta = consulta;
-	}
-
-	public LocalDateTime getDataCadastro() {
-		return dataCadastro;
-	}
-
-	public void setDataCadastro(LocalDateTime dataCadastro) {
-		this.dataCadastro = dataCadastro;
-	}
-
-	public LocalDateTime getDataAtualizacao() {
-		return dataAtualizacao;
-	}
-
-	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
-		this.dataAtualizacao = dataAtualizacao;
-	}
-
-	public User getUsuario() {
-		return usuario;
-	}
-
-	public void setUsuario(User usuario) {
-		this.usuario = usuario;
-	}
-
+	public User getUsuario() { return usuario; }
+	public void setUsuario(User usuario) { this.usuario = usuario; }
 }
