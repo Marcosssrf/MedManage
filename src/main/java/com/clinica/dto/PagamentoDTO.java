@@ -1,6 +1,5 @@
 package com.clinica.dto;
 
-import com.clinica.model.Convenio;
 import com.clinica.model.enums.FormaPagamento;
 import com.clinica.model.enums.StatusPagamento;
 import com.clinica.model.enums.TipoPagamento;
@@ -26,7 +25,7 @@ public record PagamentoDTO(
 		@Min(value = 1, message = "Número de parcelas deve ser pelo menos 1")
 		@Max(value = 12, message = "Número de parcelas deve ser no máximo 12")
 		Integer numeroParcelas,
-		Convenio convenio,
+		String  convenio,
 		StatusPagamento statusPagamento
 ) {
 }

@@ -6,8 +6,11 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Future;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record ConsultaUpdateDTO(
+        UUID pacienteId,
+        UUID medicoId,
         @Future
         LocalDateTime dataHora,
         String observacoes,

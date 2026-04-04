@@ -2,12 +2,13 @@ package com.clinica.service;
 
 import com.clinica.dto.PagamentoDTO;
 import com.clinica.dto.resposta.PagamentoResponseDTO;
-import com.clinica.model.Consulta;
-import com.clinica.model.Pagamento;
-import com.clinica.model.User;
+import com.clinica.model.*;
+import com.clinica.model.enums.FormaPagamento;
 import com.clinica.model.enums.StatusConsulta;
 import com.clinica.model.enums.StatusPagamento;
+import com.clinica.model.enums.TipoPagamento;
 import com.clinica.repository.ConsultaRepository;
+import com.clinica.repository.ConvenioRepository;
 import com.clinica.repository.PagamentoRepository;
 import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class PagamentoService {
 
 	@Autowired
 	ConsultaRepository consultaRepository;
+
+	@Autowired
+	ConvenioRepository convenioRepository;
 
 	@Autowired
 	SecurityService securityService;
@@ -46,12 +50,36 @@ public class PagamentoService {
 		}
 
 		Pagamento pagamento = new Pagamento();
+		Paciente paciente = new Paciente();
 		pagamento.setConsulta(consulta);
 		pagamento.setDataPagamento(LocalDate.now());
 		pagamento.setValor(dto.valor());
-		pagamento.setTipoPagamento(dto.tipoPagamento());
-		pagamento.setFormaPagamento(dto.formaPagamento());
-		pagamento.setStatusPagamento(StatusPagamento.PENDENTE);
+		if(dto.tipoPagamento() == TipoPagamento.CONVENIO){
+			Convenio convenio = convenioRepository.findByNome(dto.convenio())
+					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+			if(!convenio.getAtivo()){
+				throw new RuntimeException("Convenio desativado");
+			}
+			if(paciente.getConvenio() != convenio){
+				throw new RuntimeException("Convenio Diferente");
+			}
+			pagamento.setConvenio(convenio);
+			pagamento.setTipoPagamento(TipoPagamento.CONVENIO);
+			pagamento.setFormaPagamento(FormaPagamento.CONVENIO);
+			pagamento.setNumeroParcelas(1);
+			pagamento.setStatusPagamento(StatusPagamento.PAGO);
+		}else if (dto.tipoPagamento() == TipoPagamento.PARTICULAR){
+			if( dto.formaPagamento() == null){
+				throw new RuntimeException("Forma de pagamento é obrigatória");
+			}
+			pagamento.setConvenio(null);
+			pagamento.setTipoPagamento(TipoPagamento.PARTICULAR);
+			pagamento.setFormaPagamento(dto.formaPagamento());
+			pagamento.setNumeroParcelas(dto.numeroParcelas());
+			pagamento.setStatusPagamento(StatusPagamento.PENDENTE);
+		} else{
+			throw new RuntimeException("Tipo de pagamento inválido");
+		}
 
 		User user = securityService.obterUsuarioLogado();
 		pagamento.setUsuario(user);

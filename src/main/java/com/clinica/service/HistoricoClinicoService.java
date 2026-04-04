@@ -39,6 +39,10 @@ public class HistoricoClinicoService {
 
         HistoricoClinico historicoClinico = new HistoricoClinico();
 
+        if(historicoClinicoRepository.existsHistoricoClinicoByPacienteId(paciente.getId())){
+            throw new RuntimeException("Paciente já possui histórico clínico cadastrado");
+        }
+
         historicoClinico.setPaciente(paciente);
         historicoClinico.setAlergias(dto.alergias());
         historicoClinico.setDoencasPreexistentes(dto.doencasPreexistentes());

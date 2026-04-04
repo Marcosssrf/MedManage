@@ -45,6 +45,8 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	// Métodos de validação (exists) não precisam do EntityGraph, pois só retornam true/false
 	boolean existsByMedicoIdAndDataHora(UUID idMedico, LocalDateTime dataHora);
 
+	boolean existsByPacienteIdAndDataHora(UUID idPaciente, LocalDateTime dataHora);
+
 	// A sua query personalizada já está perfeita!
 	// Como ela traz apenas o nome (String) e o Count (Long), o N+1 não acontece aqui.
 	@Query("""

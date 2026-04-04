@@ -41,13 +41,15 @@ public class UserService {
         user.setRole(dto.role());
         user.setAtivo(true);
 
-
         if (dto.role() == Role.MEDICO) {
             if (dto.medicoId() == null) {
                 throw new RuntimeException("Médico é obrigatório para usuários com role MEDICO");
             }
             Medico medico = medicoRepository.findById(dto.medicoId())
                     .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+            if (!medico.getAtivo()) {
+                throw new RuntimeException("Médico desativado");
+            }
             user.setMedico(medico);
         } else {
             user.setMedico(null);
@@ -92,6 +94,13 @@ public class UserService {
 
                 user.setMedico(medicoVinculado);
             }
+            if(user.getRole() == Role.MEDICO){
+                Medico medico = medicoRepository.findById(dto.medico().id())
+                        .orElseThrow(() -> new RuntimeException("Médico não encontrado."));
+                if(medico.getAtivo() != true){
+                    throw new RuntimeException("Médico desativado");
+                }
+            }
         }
         if (user.getRole() != Role.MEDICO) {
             user.setMedico(null);
@@ -105,6 +114,13 @@ public class UserService {
     public UserDTO delete(UUID id){
         User user = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        if(user.getRole() == Role.MEDICO){
+            Medico medico = medicoRepository.findById(user.getMedico().getId())
+                    .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+            medico.setAtivo(false);
+            medicoRepository.save(medico);
+        }
 
         user.setAtivo(false);
         repository.save(user);

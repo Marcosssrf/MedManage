@@ -90,6 +90,10 @@ public class ConsultaService {
 			throw new RuntimeException("Data de atendimento deve ser futura!");
 		}
 
+		if (paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate())) {
+			throw new RuntimeException("Carteirinha do paciente vencida!");
+		}
+
 		Consulta consulta = new Consulta();
 		consulta.setPaciente(paciente);
 		consulta.setMedico(medico);
@@ -98,10 +102,15 @@ public class ConsultaService {
 		consulta.setDataHora(dto.dataHora());
 		consulta.setTipoConsulta(dto.tipoConsulta());
 
-		boolean conflito = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora());
+		boolean conflitoMedico = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora());
+		boolean conflitoPaciente = consultaRepository.existsByPacienteIdAndDataHora(paciente.getId(), dto.dataHora());
 
-		if(conflito){
+		if(conflitoMedico){
 			throw new RuntimeException("Já existe uma consulta para esse médico nesse horário");
+		}
+
+		if(conflitoPaciente){
+			throw new RuntimeException("Já existe uma consulta para esse paciente nesse horário");
 		}
 
 		User user = securityService.obterUsuarioLogado();
@@ -129,9 +138,39 @@ public class ConsultaService {
 		consultaRepository.save(consulta);
 	}
 
-		public Consulta patch(UUID id, ConsultaUpdateDTO dto) {
+	public Consulta patch(UUID id, ConsultaUpdateDTO dto) {
 		Consulta consulta = consultaRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Consulta não encontrada!"));
+
+		Medico medico = medicoRepository.findById(dto.medicoId())
+				.orElseThrow(() -> new RuntimeException("Medico não encontrado"));
+
+		Paciente paciente = pacienteRepository.findById(dto.pacienteId())
+				.orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+
+		LocalTime horario = dto.dataHora().toLocalTime();
+		LocalDateTime dataHoje = LocalDateTime.now();
+		boolean isHorarioAtendimento = !horario.isBefore(inicio) && !horario.isAfter(fim);
+
+		if(!isHorarioAtendimento){
+			throw new RuntimeException("Fora do horario de atendimento!");
+		}
+
+		if(!dto.dataHora().isAfter(dataHoje)){
+			throw new RuntimeException("Data de atendimento deve ser futura!");
+		}
+
+		if (paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate())) {
+			throw new RuntimeException("Carteirinha do paciente vencida!");
+		}
+
+		if (consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora())) {
+			throw new RuntimeException("O médico ja tem uma consulta existente nesse horário");
+		}
+
+		if (consultaRepository.existsByPacienteIdAndDataHora(paciente.getId(), dto.dataHora())) {
+			throw new RuntimeException("O paciente ja tem uma consulta existente nesse horário");
+		}
 
 		if(dto.dataHora() != null){
 			consulta.setDataHora(dto.dataHora());

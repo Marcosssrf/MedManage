@@ -3,6 +3,7 @@ package com.clinica.service;
 import com.clinica.dto.AnamneseDTO;
 import com.clinica.dto.PrescricaoDTO;
 import com.clinica.model.*;
+import com.clinica.model.enums.StatusConsulta;
 import com.clinica.repository.AnamneseRepository;
 import com.clinica.repository.CidRepository;
 import com.clinica.repository.ConsultaRepository;
@@ -45,7 +46,21 @@ public class AnamneseService {
         Consulta consulta = consultaRepository.findById(dto.consultaId())
                 .orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
 
+        boolean statusValido = consulta.getStatus() == StatusConsulta.REALIZADA
+                || consulta.getStatus() == StatusConsulta.EM_ANDAMENTO;
+
+
+
+        if(!statusValido){
+            throw new RuntimeException("Anamnese não pode ser criada com consulta agendada ou cancelada");
+        }
+
+        if (anamneseRepository.existsByConsultaId(dto.consultaId())) {
+            throw new RuntimeException("Já existe uma anamnese para essa consulta!");
+        }
+
         Anamnese anamnese = new Anamnese();
+
         anamnese.setConsulta(consulta);
         anamnese.setQueixaPrincipal(dto.queixaPrincipal());
         anamnese.setHistoriaMolestiaPrincipal(dto.historiaMolestiaPrincipal());

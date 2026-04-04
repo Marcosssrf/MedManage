@@ -22,6 +22,7 @@ public class PacienteService {
 
 	@Autowired
 	SecurityService securityService;
+
     @Autowired
     private ConvenioRepository convenioRepository;
 
@@ -58,6 +59,9 @@ public class PacienteService {
 		if(dto.convenio() != null && !dto.convenio().isBlank()){
 			Convenio convenio = convenioRepository.findByNome(dto.convenio())
 					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+			if(!convenio.getAtivo()){
+				throw new RuntimeException("Convenio desativado");
+			}
 			paciente.setConvenio(convenio);
 			paciente.setNumeroCarteirinha(dto.numeroCarteirinha());
 			paciente.setDataVencimentoCarteirinha(dto.dataVencimentoCarteirinha());
@@ -121,6 +125,9 @@ public class PacienteService {
 		if (dto.convenio() != null && !dto.convenio().isBlank()) {
 			Convenio convenio = convenioRepository.findByNome(dto.convenio())
 					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+			if(!convenio.getAtivo()){
+				throw new RuntimeException("Convenio desativado");
+			}
 			paciente.setConvenio(convenio);
 			paciente.setNumeroCarteirinha(dto.numeroCarteirinha());
 			paciente.setDataVencimentoCarteirinha(dto.dataVencimentoCarteirinha());
