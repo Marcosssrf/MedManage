@@ -111,6 +111,12 @@ public class PagamentoService {
 	}
 
 	private PagamentoResponseDTO toDTO(Pagamento p) {
+		PagamentoResponseDTO.ConvenioResumoDTO convenioResumo = p.getConvenio() != null
+				? new PagamentoResponseDTO.ConvenioResumoDTO(
+				p.getConvenio().getId(),
+				p.getConvenio().getNome())
+				: null;
+
 		return new PagamentoResponseDTO(
 				p.getId(),
 				p.getTipoPagamento(),
@@ -118,7 +124,7 @@ public class PagamentoService {
 				p.getDataPagamento(),
 				p.getValor(),
 				p.getNumeroParcelas(),
-				p.getConvenio(),
+				convenioResumo,
 				p.getStatusPagamento(),
 				new PagamentoResponseDTO.ConsultaResumoPagamentoDTO(
 						p.getConsulta().getId(),

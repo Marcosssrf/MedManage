@@ -1,6 +1,5 @@
 package com.clinica.dto.resposta;
 
-import com.clinica.model.Convenio;
 import com.clinica.model.enums.FormaPagamento;
 import com.clinica.model.enums.StatusPagamento;
 import com.clinica.model.enums.TipoPagamento;
@@ -16,10 +15,12 @@ public record PagamentoResponseDTO(
         LocalDate dataPagamento,
         BigDecimal valor,
         Integer numeroParcelas,
-        Convenio convenio,
+        ConvenioResumoDTO convenio,
         StatusPagamento statusPagamento,
         ConsultaResumoPagamentoDTO consulta
 ) {
+    public record ConvenioResumoDTO(UUID id, String nome) {}
+
     public record ConsultaResumoPagamentoDTO(
             UUID id,
             String pacienteNome,
