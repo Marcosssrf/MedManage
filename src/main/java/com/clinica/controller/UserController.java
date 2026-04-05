@@ -30,7 +30,7 @@ public class UserController {
     private UserRepository userRepository;
 
     @PostMapping
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<UserDTO> insert(@RequestBody @Valid UserCreateDTO dto) {
         UserDTO criado = service.insert(dto);

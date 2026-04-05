@@ -50,7 +50,7 @@ public class PagamentoService {
 		}
 
 		Pagamento pagamento = new Pagamento();
-		Paciente paciente = new Paciente();
+		Paciente paciente = consulta.getPaciente();
 		pagamento.setConsulta(consulta);
 		pagamento.setDataPagamento(LocalDate.now());
 		pagamento.setValor(dto.valor());
@@ -60,8 +60,11 @@ public class PagamentoService {
 			if(!convenio.getAtivo()){
 				throw new RuntimeException("Convenio desativado");
 			}
-			if(paciente.getConvenio() != convenio){
-				throw new RuntimeException("Convenio Diferente");
+			if(paciente.getConvenio() == null){
+				throw new RuntimeException("Paciente não possui convênio cadastrado");
+			}
+			if (!convenio.getId().equals(paciente.getConvenio().getId())) {
+				throw new RuntimeException("Convênio informado é diferente do convênio do paciente");
 			}
 			pagamento.setConvenio(convenio);
 			pagamento.setTipoPagamento(TipoPagamento.CONVENIO);
