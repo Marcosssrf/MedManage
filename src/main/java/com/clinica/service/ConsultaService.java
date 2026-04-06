@@ -38,8 +38,9 @@ public class ConsultaService {
 	@Autowired
 	PacienteRepository pacienteRepository;
 
-	LocalTime inicio = LocalTime.of(8, 0);
-	LocalTime fim = LocalTime.of(18, 0);
+	@Autowired
+	ConfiguracaoClinicaService configuracaoClinicaService;
+
     @Autowired
 	SecurityService securityService;
 
@@ -63,6 +64,17 @@ public class ConsultaService {
 	relatorios (faturamento por mes, medico mais atendido)
 	*/
 
+
+	private LocalTime getInicio() {
+		LocalTime horarioAbertura = configuracaoClinicaService.getClinica().getHorarioAbertura();
+		return horarioAbertura != null ? horarioAbertura : LocalTime.of(8, 0);
+	}
+
+	private LocalTime getFim() {
+		LocalTime horarioFechamento = configuracaoClinicaService.getClinica().getHorarioFechamento();
+		return horarioFechamento != null ? horarioFechamento : LocalTime.of(18, 0);
+	}
+
 	public ConsultaResponseDTO insert(ConsultaDTO dto){
 
 		LocalDateTime dataHoje = LocalDateTime.now();
@@ -72,7 +84,7 @@ public class ConsultaService {
 
 		LocalTime horario = dto.dataHora().toLocalTime();
 
-		boolean isHorarioAtendimento = !horario.isBefore(inicio) && !horario.isAfter(fim);
+		boolean isHorarioAtendimento = !horario.isBefore(getInicio()) && !horario.isAfter(getFim());
 
 		if (paciente.getAtivo() == false){
 			throw new RuntimeException("Paciente inativo");
@@ -90,7 +102,8 @@ public class ConsultaService {
 			throw new RuntimeException("Data de atendimento deve ser futura!");
 		}
 
-		if (paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate())) {
+		if (paciente.getDataVencimentoCarteirinha() != null &&
+				paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate())) {
 			throw new RuntimeException("Carteirinha do paciente vencida!");
 		}
 
@@ -101,6 +114,7 @@ public class ConsultaService {
 		consulta.setObservacoes(dto.observacoes());
 		consulta.setDataHora(dto.dataHora());
 		consulta.setTipoConsulta(dto.tipoConsulta());
+		consulta.setDuracaoPrevistaMinutos(configuracaoClinicaService.getClinica().getDuracaoPadraoConsultas());
 
 		boolean conflitoMedico = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora());
 		boolean conflitoPaciente = consultaRepository.existsByPacienteIdAndDataHora(paciente.getId(), dto.dataHora());
@@ -150,7 +164,7 @@ public class ConsultaService {
 
 		LocalTime horario = dto.dataHora().toLocalTime();
 		LocalDateTime dataHoje = LocalDateTime.now();
-		boolean isHorarioAtendimento = !horario.isBefore(inicio) && !horario.isAfter(fim);
+		boolean isHorarioAtendimento = !horario.isBefore(getInicio()) && !horario.isAfter(getFim());
 
 		if(!isHorarioAtendimento){
 			throw new RuntimeException("Fora do horario de atendimento!");
@@ -160,7 +174,8 @@ public class ConsultaService {
 			throw new RuntimeException("Data de atendimento deve ser futura!");
 		}
 
-		if (paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate())) {
+		if (paciente.getDataVencimentoCarteirinha() != null &&
+				paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate())) {
 			throw new RuntimeException("Carteirinha do paciente vencida!");
 		}
 
