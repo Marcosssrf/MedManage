@@ -46,7 +46,13 @@ function PacienteDetail({
     });
 
     useEffect(() => {
-        if (historico) setForm(historico);
+        if (historico) setForm({
+            ...historico,
+            tabagismo: historico.tabagismo ?? false,
+            etilismo: historico.etilismo ?? false,
+            atividadeFisica: historico.atividadeFisica ?? false,
+            usoDrogas: historico.usoDrogas ?? false,
+        });
     }, [historico]);
 
     const mutation = useMutation({
@@ -62,7 +68,15 @@ function PacienteDetail({
         onError: () => toast.error("Erro ao salvar histórico."),
     });
 
-    const handleSaveHistorico = () => mutation.mutate(form);
+    const handleSaveHistorico = () => {
+        mutation.mutate({
+            ...form,
+            tabagismo: form.tabagismo ?? false,
+            etilismo: form.etilismo ?? false,
+            atividadeFisica: form.atividadeFisica ?? false,
+            usoDrogas: form.usoDrogas ?? false,
+        });
+    };
 
     return (
         <div className="animate-fade-in space-y-6 max-w-4xl">
