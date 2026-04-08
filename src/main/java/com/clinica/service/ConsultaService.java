@@ -1,9 +1,7 @@
 package com.clinica.service;
 
 import com.clinica.dto.ConsultaDTO;
-import com.clinica.dto.resposta.ConsultaResponseDTO;
-import com.clinica.dto.resposta.MedicoConsultaDTO;
-import com.clinica.dto.resposta.PacienteConsultaDTO;
+import com.clinica.dto.resposta.*;
 import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.model.Consulta;
 import com.clinica.model.Medico;
@@ -14,17 +12,14 @@ import com.clinica.repository.ConsultaRepository;
 import com.clinica.repository.MedicoRepository;
 import com.clinica.repository.PacienteRepository;
 import com.clinica.security.SecurityService;
-import jakarta.persistence.criteria.JoinType;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
-
-import static com.clinica.repository.specs.ConsultaSpecs.*;
 
 @Service
 public class ConsultaService {
@@ -134,24 +129,6 @@ public class ConsultaService {
 		return toDTO(consultaSalva);
 	}
 
-	public void atualizarStatus(Consulta consulta) {
-
-		if (consulta.getStatus() == StatusConsulta.CANCELADA || consulta.getStatus() == StatusConsulta.REALIZADA) {
-			return;
-		}
-
-		LocalDateTime agora = LocalDateTime.now();
-
-		if (consulta.getDataHora().isBefore(agora)) {
-			consulta.setStatus(StatusConsulta.REALIZADA);
-		}
-		else if (consulta.getDataHora().isBefore(agora.plusHours(24))) {
-			consulta.setStatus(StatusConsulta.CONFIRMADA);
-		}
-
-		consultaRepository.save(consulta);
-	}
-
 	public Consulta patch(UUID id, ConsultaUpdateDTO dto) {
 		Consulta consulta = consultaRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Consulta não encontrada!"));
@@ -219,56 +196,47 @@ public class ConsultaService {
 	public ConsultaResponseDTO findById(UUID id) {
 		Consulta consulta = consultaRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
-		atualizarStatus(consulta);
 		return toDTO(consulta);
 	}
 
-	public List<Consulta> findByParams(LocalDateTime dataHora, String paciente, String medico) {
+	@Transactional
+	public List<ConsultaResponseGetAll> findByParams(LocalDateTime dataHora, String paciente, String medico) {
 
-		Specification<Consulta> specs = Specification.where((root, query, cb) -> {
-			if (Long.class != query.getResultType() && long.class != query.getResultType()) {
-				root.fetch("paciente", JoinType.LEFT);
-				root.fetch("medico", JoinType.LEFT);
-			}
-			return cb.conjunction();
-		});
+		String pacienteFiltro = paciente != null ? "%" + paciente.toLowerCase() + "%" : null;
+		String medicoFiltro = medico != null ? "%" + medico.toLowerCase() + "%" : null;
 
-		if (dataHora != null) {
-			specs = specs.and(dataHorarioEqual(dataHora));
-		}
-
-		if (paciente != null) {
-			specs = specs.and(pacienteLike(paciente));
-		}
-
-		if (medico != null) {
-			specs = specs.and(medicoLike(medico));
-		}
-
-		List<Consulta> resultado = consultaRepository.findAll(specs);
-
-		resultado.forEach(this::atualizarStatus);
-
-		return resultado;
+		return consultaRepository.findByFiltrosAvancados(dataHora, pacienteFiltro, medicoFiltro);
 	}
 
-	public ConsultaResponseDTO toDTO(Consulta consulta){
+	public ConsultaResponseDTO toDTO(Consulta consulta) {
 		return new ConsultaResponseDTO(
 				consulta.getId(),
 				consulta.getDataHora(),
-				consulta.getTipoConsulta().toString(),
+
+				consulta.getTipoConsulta() != null ? consulta.getTipoConsulta().toString() : null,
+
 				consulta.getObservacoes(),
-				consulta.getStatus(),
-				new PacienteConsultaDTO(
-						consulta.getPaciente().getNome(),
-						consulta.getPaciente().getDataNascimento()
-				),
-				new MedicoConsultaDTO(
+
+				consulta.getStatus() != null ? consulta.getStatus().toString() : null,
+
+				consulta.getPaciente() != null
+						? PacienteResponseDTO.from(consulta.getPaciente())
+						: null,
+
+				consulta.getMedico() != null
+						? new MedicoConsultaDTO(
 						consulta.getMedico().getId(),
 						consulta.getMedico().getNome(),
 						consulta.getMedico().getCrm(),
 						consulta.getMedico().getEspecialidade()
 				)
+						: null,
+
+				consulta.getAnamnese() != null ? new AnamneseResponseDTO(consulta.getAnamnese()) : null,
+
+				consulta.getAnamnese() != null && consulta.getAnamnese().getPrescricoes() != null
+						? consulta.getAnamnese().getPrescricoes().stream().map(PrescricaoResponseDTO::new).toList()
+						: new java.util.ArrayList<>()
 		);
 	}
 }

@@ -79,7 +79,7 @@ public class HistoricoClinico {
             return null;
         }
         return peso.divide(altura.multiply(altura), 2, java.math.RoundingMode.HALF_UP);
-    } // ex: peso 78.50 / altura 1.75 → IMC calculado: 25.63
+    }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }

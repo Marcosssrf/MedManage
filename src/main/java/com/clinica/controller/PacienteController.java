@@ -2,8 +2,10 @@ package com.clinica.controller;
 
 import com.clinica.dto.PacienteDTO;
 import com.clinica.dto.resposta.PacienteResponseDTO;
+import com.clinica.dto.resposta.PacienteResponseGetAll;
 import com.clinica.dto.update.PacienteUpdateDTO;
 import com.clinica.model.Paciente;
+import com.clinica.repository.PacienteRepository;
 import com.clinica.service.PacienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +24,30 @@ public class PacienteController {
 
 	@Autowired
 	PacienteService pacienteService;
+	@Autowired
+	PacienteRepository pacienteRepository;
+
+//	@GetMapping
+//	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
+//	public ResponseEntity<List<PacienteResponseGetAll>> findAll() {
+//		List<PacienteResponseGetAll> pacientes = pacienteService.findAll()
+//				.stream()
+//				.map(paciente -> new PacienteResponseGetAll(
+//						paciente.getId(),
+//						paciente.getNome(),
+//						paciente.getCpf(),
+//						paciente.getTelefone(),
+//						paciente.getEmail()
+//				))
+//				.toList();
+//		return ResponseEntity.ok(pacientes);
+//	}
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-	public ResponseEntity<List<PacienteResponseDTO>> findAll() {
-		List<PacienteResponseDTO> pacientes = pacienteService.findAll()
-				.stream()
-				.map(PacienteResponseDTO::from)
-				.toList();
+	public ResponseEntity<List<PacienteResponseGetAll>> findAll() {
+		List<PacienteResponseGetAll> pacientes = pacienteRepository.findAllPacientesDTO();
+
 		return ResponseEntity.ok(pacientes);
 	}
 

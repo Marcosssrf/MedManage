@@ -2,6 +2,7 @@ package com.clinica.controller;
 
 import com.clinica.dto.ConsultaDTO;
 import com.clinica.dto.resposta.ConsultaResponseDTO;
+import com.clinica.dto.resposta.ConsultaResponseGetAll;
 import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.model.Consulta;
 import com.clinica.service.ConsultaService;
@@ -31,12 +32,12 @@ public class ConsultaController {
 
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-	public ResponseEntity<List<Consulta>> findByParams(
-			@RequestParam(value = "dataHora", required = false)LocalDateTime dataHora,
-			@RequestParam(value = "paciente", required = false)String paciente,
-			@RequestParam(value = "medico", required = false)String medico
-//			@RequestParam(value = "pagina", defaultValue = "0") Integer pagina,
-//			@RequestParam(value = "tamanho-pagina", defaultValue = "10") Integer tamanhoPagina
+	public ResponseEntity<List<ConsultaResponseGetAll>> findByParams(
+			@RequestParam(value = "dataHora", required = false) LocalDateTime dataHora,
+			@RequestParam(value = "paciente", required = false) String paciente,
+			@RequestParam(value = "medico", required = false) String medico
+//    @RequestParam(value = "pagina", defaultValue = "0") Integer pagina,
+//    @RequestParam(value = "tamanho-pagina", defaultValue = "10") Integer tamanhoPagina
 	){
 
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -44,10 +45,10 @@ public class ConsultaController {
 		String username = authentication.getName();
 
 		if (role.equals("ROLE_MEDICO")) {
-            medico = userService.findByUsername(username).medico().nome();
+			medico = userService.findByUsername(username).medico().nome();
 		}
+		List<ConsultaResponseGetAll> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);
 
-		List<Consulta> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);
 		return ResponseEntity.ok(paginaResultado);
 	}
 

@@ -36,6 +36,13 @@ public class HistoricoClinicoController {
         return ResponseEntity.ok().body(historico);
     }
 
+    @GetMapping(value = "/paciente/{pacienteId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
+    public ResponseEntity<List<HistoricoClinico>> findByPacienteId(@PathVariable UUID pacienteId) {
+        List<HistoricoClinico> historicos = historicoClinicoService.findByPacienteId(pacienteId);
+        return ResponseEntity.ok().body(historicos);
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO')")
     public ResponseEntity<HistoricoClinico> insert(@RequestBody @Valid HistoricoClinicoDTO dto) {

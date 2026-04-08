@@ -91,8 +91,8 @@ public class PagamentoService {
 		return toDTO(saved);
 	}
 
-	public List<PagamentoResponseDTO> findAll(){
-		return pagamentoRepository.findAll().stream().map(this::toDTO).toList();
+	public List<PagamentoResponseDTO> findAll() {
+		return pagamentoRepository.buscarListagemOtimizada();
 	}
 
 	public PagamentoResponseDTO findById(UUID id) {
@@ -114,26 +114,41 @@ public class PagamentoService {
 	}
 
 	private PagamentoResponseDTO toDTO(Pagamento p) {
+
 		PagamentoResponseDTO.ConvenioResumoDTO convenioResumo = p.getConvenio() != null
 				? new PagamentoResponseDTO.ConvenioResumoDTO(
 				p.getConvenio().getId(),
-				p.getConvenio().getNome())
+				p.getConvenio().getNome()
+		)
 				: null;
+
+		PagamentoResponseDTO.ConsultaResumoPagamentoDTO consultaResumo = null;
+
+		if (p.getConsulta() != null) {
+			String nomePaciente = p.getConsulta().getPaciente() != null ? p.getConsulta().getPaciente().getNome() : null;
+			String nomeMedico = p.getConsulta().getMedico() != null ? p.getConsulta().getMedico().getNome() : null;
+
+			consultaResumo = new PagamentoResponseDTO.ConsultaResumoPagamentoDTO(
+					p.getConsulta().getId(),
+					nomePaciente,
+					nomeMedico
+			);
+		}
 
 		return new PagamentoResponseDTO(
 				p.getId(),
-				p.getTipoPagamento(),
-				p.getFormaPagamento(),
+
+				p.getTipoPagamento() != null ? p.getTipoPagamento().toString() : null,
+				p.getFormaPagamento() != null ? p.getFormaPagamento().toString() : null,
+
 				p.getDataPagamento(),
 				p.getValor(),
 				p.getNumeroParcelas(),
 				convenioResumo,
-				p.getStatusPagamento(),
-				new PagamentoResponseDTO.ConsultaResumoPagamentoDTO(
-						p.getConsulta().getId(),
-						p.getConsulta().getPaciente().getNome(),
-						p.getConsulta().getMedico().getNome()
-				)
+
+				p.getStatusPagamento() != null ? p.getStatusPagamento().toString() : null,
+
+				consultaResumo
 		);
 	}
 

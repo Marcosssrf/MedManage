@@ -33,6 +33,10 @@ public class HistoricoClinicoService {
                 .orElseThrow(() -> new RuntimeException("Histórico Clínico não encontrada"));
     }
 
+    public List<HistoricoClinico> findByPacienteId(UUID pacienteId) {
+        return historicoClinicoRepository.findByPacienteId(pacienteId);
+    }
+
     public HistoricoClinico insert(HistoricoClinicoDTO dto){
 
         Paciente paciente = pacienteRepository.findById(dto.pacienteId()).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));

@@ -1,5 +1,6 @@
 package com.clinica.repository;
 
+import com.clinica.dto.resposta.PagamentoResponseDTO;
 import com.clinica.model.Pagamento;
 import com.clinica.model.enums.StatusPagamento;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -44,5 +45,25 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
         AND YEAR(p.dataPagamento) = YEAR(CURRENT_DATE)
     """)
 	java.math.BigDecimal sumFaturamentoMesAtual();
+
+	@Query("""
+        SELECT new com.clinica.dto.resposta.PagamentoResponseDTO(
+            p.id, 
+            CAST(p.tipoPagamento AS string), 
+            CAST(p.formaPagamento AS string), 
+            p.dataPagamento, 
+            p.valor, 
+            p.numeroParcelas,
+            cv.id, cv.nome, 
+            CAST(p.statusPagamento AS string),
+            c.id, pac.nome, m.nome
+        )
+        FROM Pagamento p
+        JOIN p.consulta c
+        JOIN c.paciente pac
+        JOIN c.medico m
+        LEFT JOIN p.convenio cv
+    """)
+	List<PagamentoResponseDTO> buscarListagemOtimizada();
 
 }

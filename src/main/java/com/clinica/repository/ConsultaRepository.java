@@ -1,11 +1,9 @@
 package com.clinica.repository;
 
+import com.clinica.dto.resposta.ConsultaResponseGetAll;
 import com.clinica.model.Consulta;
 import com.clinica.model.enums.StatusConsulta;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -14,8 +12,47 @@ import java.util.UUID;
 
 public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSpecificationExecutor<Consulta> {
 
-	// 1. MATANDO O N+1 DA LISTAGEM PRINCIPAL
-	// Sobrescrevemos o findAll() padrão do JpaRepository só para adicionar o EntityGraph
+	// ==============================================================================
+	// 1. BULK UPDATES (Atualização em massa para salvar a performance)
+	// ==============================================================================
+	@Modifying
+	@Query("UPDATE Consulta c SET c.status = :statusRealizada WHERE c.dataHora < :agora AND c.status NOT IN (:statusRealizada, :statusCancelada)")
+	void atualizarStatusParaRealizada(@Param("agora") LocalDateTime agora, @Param("statusRealizada") StatusConsulta statusRealizada, @Param("statusCancelada") StatusConsulta statusCancelada);
+
+	@Modifying
+	@Query("UPDATE Consulta c SET c.status = :statusConfirmada WHERE c.dataHora >= :agora AND c.dataHora < :limite24h AND c.status NOT IN (:statusRealizada, :statusCancelada, :statusConfirmada)")
+	void atualizarStatusParaConfirmada(@Param("agora") LocalDateTime agora, @Param("limite24h") LocalDateTime limite24h, @Param("statusConfirmada") StatusConsulta statusConfirmada, @Param("statusRealizada") StatusConsulta statusRealizada, @Param("statusCancelada") StatusConsulta statusCancelada);
+
+	// ==============================================================================
+	// 2. QUERY OTIMIZADA PARA A LISTAGEM (Solução do Postgres bytea)
+	// ==============================================================================
+	@Query("""
+        SELECT new com.clinica.dto.resposta.ConsultaResponseGetAll(
+            c.id, 
+            c.dataHora, 
+            p.nome, 
+            m.nome, 
+            m.especialidade,
+            CAST(c.status AS string),
+            CAST(c.tipoConsulta AS string),
+            c.observacoes 
+        ) 
+        FROM Consulta c 
+        JOIN c.paciente p 
+        JOIN c.medico m
+        WHERE (CAST(:dataHora AS timestamp) IS NULL OR c.dataHora = :dataHora)
+          AND (CAST(:paciente AS string) IS NULL OR LOWER(p.nome) LIKE :paciente)
+          AND (CAST(:medico AS string) IS NULL OR LOWER(m.nome) LIKE :medico)
+    """)
+	List<ConsultaResponseGetAll> findByFiltrosAvancados(
+			@Param("dataHora") LocalDateTime dataHora,
+			@Param("paciente") String paciente,
+			@Param("medico") String medico
+	);
+
+	// ==============================================================================
+	// 3. MÉTODOS ORIGINAIS MANTIDOS
+	// ==============================================================================
 	@Override
 	@EntityGraph(attributePaths = {"medico", "paciente"})
 	List<Consulta> findAll();
@@ -29,7 +66,6 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	@Query("SELECT COUNT(c) FROM Consulta c WHERE c.dataHora >= :inicioDoDia AND c.dataHora < :fimDoDia")
 	Long countConsultasHoje(@Param("inicioDoDia") java.time.LocalDateTime inicioDoDia, @Param("fimDoDia") java.time.LocalDateTime fimDoDia);
 
-	// 2. MATANDO O N+1 DOS SEUS FILTROS PERSONALIZADOS
 	@EntityGraph(attributePaths = {"medico", "paciente"})
 	List<Consulta> findByPacienteNomeContainingIgnoreCase(String nome);
 
@@ -42,13 +78,10 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	@EntityGraph(attributePaths = {"medico", "paciente"})
 	List<Consulta> findByDataHora(LocalDateTime dataHora);
 
-	// Métodos de validação (exists) não precisam do EntityGraph, pois só retornam true/false
 	boolean existsByMedicoIdAndDataHora(UUID idMedico, LocalDateTime dataHora);
 
 	boolean existsByPacienteIdAndDataHora(UUID idPaciente, LocalDateTime dataHora);
 
-	// A sua query personalizada já está perfeita!
-	// Como ela traz apenas o nome (String) e o Count (Long), o N+1 não acontece aqui.
 	@Query("""
         SELECT 
             c.medico.nome,
