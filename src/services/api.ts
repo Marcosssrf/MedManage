@@ -46,15 +46,28 @@ export interface Paciente {
     bairro: string;
     cidade: string;
     uf: string;
+    convenio?: {
+        nome: string;
+    };
+    numeroCarteirinha?: string;
+    dataVencimentoCarteirinha?: string;
 }
 
 export const pacientesApi = {
+    // Retorna apenas: id, nome, cpf, telefone, email
     listar: async () => {
         const res = await request<Paciente[]>("/pacientes");
-        return res.map(p => ({
+        return res as Paciente[];
+    },
+
+    // Busca todos os dados completos do paciente
+    buscarPorId: async (id: string | number) => {
+        const p = await request<any>(`/pacientes/${id}`);
+        return {
             ...p,
-            dataNascimento: formatDateToBr(p.dataNascimento)
-        }));
+            dataNascimento: p.dataNascimento ? formatDateToBr(p.dataNascimento) : "",
+            dataVencimentoCarteirinha: p.dataVencimentoCarteirinha ? formatDateToBr(p.dataVencimentoCarteirinha) : "",
+        } as Paciente;
     },
 
     cadastrar: (data: Omit<Paciente, "id">) =>
@@ -141,9 +154,9 @@ export const consultasApi = {
                 id: c.id,
                 pacienteId: c.pacienteId ?? "",
                 medicoId: c.medicoId ?? c.medico?.id ?? "",
-                pacienteNome: c.paciente?.nome,
-                medicoNome: c.medico?.nome,
-                medicoEspecialidade: c.medico?.especialidade,
+                pacienteNome: c.nomePaciente,
+                medicoNome: c.nomeMedico,
+                medicoEspecialidade: c.especialidadeMedico,
                 tipoConsulta: c.tipoConsulta,
                 data: dataBr,
                 horario: horario,
@@ -204,6 +217,7 @@ export interface Pagamento {
     pacienteNome?: string;
     medicoNome?: string;
     valor: number;
+    convenio?: string;
     formaPagamento: string;
     tipoPagamento: string;
     status: string;
@@ -221,6 +235,7 @@ export const pagamentosApi = {
             pacienteNome: p.consulta?.pacienteNome,
             medicoNome: p.consulta?.medicoNome,
             valor: p.valor,
+            convenio: p.convenio,
             formaPagamento: p.formaPagamento,
             tipoPagamento: p.tipoPagamento,
             status: p.statusPagamento,
@@ -307,4 +322,97 @@ export const usuariosApi = {
         request(`/usuarios/${id}`, {
             method: "DELETE",
         }),
+};
+
+
+export interface HistoricoClinico {
+    id?: string;
+    pacienteId: string | number;
+    tipoSanguineo?: string;
+    peso?: number;
+    altura?: number;
+    imc?: number;
+    alergias?: string;
+    doencasPreexistentes?: string;
+    cirurgiasPrevias?: string;
+    historicoFamiliar?: string;
+    medicamentosUso?: string;
+    tabagismo?: boolean;
+    etilismo?: boolean;
+    atividadeFisica?: boolean;
+    usoDrogas?: boolean;
+}
+
+export const historicoClinicoApi = {
+    listar: () =>
+        request<HistoricoClinico[]>("/historicosClinicos"),
+
+    buscarPorId: (id: string) =>
+        request<HistoricoClinico>(`/historicosClinicos/${id}`),
+
+    buscarPorPaciente: async (pacienteId: string) => {
+        const res = await request<any[]>(`/historicosClinicos/paciente/${pacienteId}`);
+        const h = Array.isArray(res) ? res[0] : res;
+        if (!h) return null;
+        return {
+            id: h.id,
+            pacienteId: pacienteId,
+            tipoSanguineo: h.tipoSanguineo,
+            peso: h.peso,
+            altura: h.altura,
+            imc: h.imc,
+            alergias: h.alergias,
+            doencasPreexistentes: h.doencasPreexistentes,
+            cirurgiasPrevias: h.cirurgiasPrevias,
+            historicoFamiliar: h.historicoFamiliar,
+            medicamentosUso: h.medicamentosUsoContinuo,
+            tabagismo: h.tabagismo,
+            etilismo: h.etilismo,
+            atividadeFisica: h.praticaAtividadeFisica,
+            usoDrogas: h.usaDrogas,
+        } as HistoricoClinico;
+    },
+
+    cadastrar: (dados: Omit<HistoricoClinico, "id">) => {
+        const body = {
+            pacienteId: dados.pacienteId,
+            tipoSanguineo: dados.tipoSanguineo,
+            peso: dados.peso,
+            altura: dados.altura,
+            alergias: dados.alergias,
+            doencasPreexistentes: dados.doencasPreexistentes,
+            cirurgiasPrevias: dados.cirurgiasPrevias,
+            historicoFamiliar: dados.historicoFamiliar,
+            medicamentosUsoContinuo: dados.medicamentosUso,
+            tabagismo: dados.tabagismo,
+            etilismo: dados.etilismo,
+            praticaAtividadeFisica: dados.atividadeFisica,
+            usaDrogas: dados.usoDrogas,
+        };
+        return request<HistoricoClinico>("/historicosClinicos", {
+            method: "POST",
+            body: JSON.stringify(body),
+        });
+    },
+
+    atualizar: (id: string, dados: Partial<HistoricoClinico>) => {
+        const body = {
+            tipoSanguineo: dados.tipoSanguineo,
+            peso: dados.peso,
+            altura: dados.altura,
+            alergias: dados.alergias,
+            doencasPreexistentes: dados.doencasPreexistentes,
+            cirurgiasPrevias: dados.cirurgiasPrevias,
+            historicoFamiliar: dados.historicoFamiliar,
+            medicamentosUsoContinuo: dados.medicamentosUso,
+            tabagismo: dados.tabagismo,
+            etilismo: dados.etilismo,
+            praticaAtividadeFisica: dados.atividadeFisica,
+            usaDrogas: dados.usoDrogas,
+        };
+        return request<HistoricoClinico>(`/historicosClinicos/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(body),
+        });
+    },
 };

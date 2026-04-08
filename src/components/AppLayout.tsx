@@ -1,177 +1,216 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Users, Stethoscope, CalendarDays, CreditCard, LogOut, Menu, X, ShieldCheck } from "lucide-react";
+import {
+    LayoutDashboard, Users, Stethoscope, CalendarDays, CreditCard,
+    LogOut, Menu, X, ShieldCheck, BarChart2, Settings, ShieldAlert
+} from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-const navItems = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
-    { to: "/pacientes", icon: Users, label: "Pacientes", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
-    { to: "/medicos", icon: Stethoscope, label: "Médicos", roles: ["ADMIN", "SECRETARIA"] },
-    { to: "/consultas", icon: CalendarDays, label: "Consultas", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
-    { to: "/pagamentos", icon: CreditCard, label: "Pagamentos", roles: ["ADMIN", "SECRETARIA"] },
-    { to: "/usuarios", icon: ShieldCheck, label: "Usuários", roles: ["ADMIN"] },
+const navSections = [
+    {
+        label: "CLÍNICO",
+        items: [
+            { to: "/consultas", icon: CalendarDays, label: "Consultas", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
+            { to: "/pacientes", icon: Users, label: "Pacientes", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
+            { to: "/medicos", icon: Stethoscope, label: "Médicos", roles: ["ADMIN", "SECRETARIA"] },
+        ],
+    },
+    {
+        label: "FINANCEIRO",
+        items: [
+            { to: "/pagamentos", icon: CreditCard, label: "Pagamentos", roles: ["ADMIN", "SECRETARIA"] },
+            { to: "/convenios", icon: ShieldAlert, label: "Convênios", roles: ["ADMIN", "SECRETARIA"] },
+        ],
+    },
+    {
+        label: "SISTEMA",
+        items: [
+            { to: "/usuarios", icon: ShieldCheck, label: "Usuários", roles: ["ADMIN"] },
+            { to: "/relatorios", icon: BarChart2, label: "Relatórios", roles: ["ADMIN"] },
+            { to: "/configuracoes", icon: Settings, label: "Configurações", roles: ["ADMIN"] },
+        ],
+    },
 ];
+
+const dashboardItem = { to: "/", icon: LayoutDashboard, label: "Dashboard", roles: ["ADMIN", "SECRETARIA", "MEDICO"] };
+
+// function roleLabel(role: string) {
+//     if (role === "ADMIN") return "Administrador";
+//     if (role === "SECRETARIA") return "Secretária";
+//     if (role === "MEDICO") return "Médico";
+//     return role;
+// }
 
 export default function AppLayout() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
-    const visibleItems = navItems.filter((item) =>
-        item.roles.includes(user?.role)
-    );
 
     const handleLogout = () => {
         logout();
         navigate("/login");
     };
 
-    // Fecha o menu ao redimensionar para desktop
     useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 768) setMenuOpen(false);
-        };
+        const handleResize = () => { if (window.innerWidth >= 768) setMenuOpen(false); };
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    // Bloqueia scroll do body quando menu mobile está aberto
     useEffect(() => {
         document.body.style.overflow = menuOpen ? "hidden" : "";
         return () => { document.body.style.overflow = ""; };
     }, [menuOpen]);
 
+    const userRole = user?.role ?? "";
+    const displayName = user?.medico?.nome ?? (user?.username ? user.username.charAt(0).toUpperCase() + user.username.slice(1) : "");
+    const initials = displayName?.charAt(0).toUpperCase() ?? "?";
+
+    const NavItems = ({ onLinkClick }: { onLinkClick?: () => void }) => (
+        <>
+            <NavLink
+                to={dashboardItem.to}
+                end
+                onClick={onLinkClick}
+                className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`
+                }
+            >
+                <dashboardItem.icon className="w-4 h-4 shrink-0" />
+                {dashboardItem.label}
+            </NavLink>
+
+            {navSections.map((section) => {
+                const visible = section.items.filter((item) => item.roles.includes(userRole));
+                if (visible.length === 0) return null;
+                return (
+                    <div key={section.label} className="mt-2">
+                        <p className="text-[10px] font-semibold tracking-widest text-sidebar-muted px-3 mb-1.5 mt-3">
+                            {section.label}
+                        </p>
+                        {visible.map((item) => (
+                            <NavLink
+                                key={item.to}
+                                to={item.to}
+                                onClick={onLinkClick}
+                                className={({ isActive }) =>
+                                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent"
+                                    }`
+                                }
+                            >
+                                <item.icon className="w-4 h-4 shrink-0" />
+                                {item.label}
+                            </NavLink>
+                        ))}
+                    </div>
+                );
+            })}
+        </>
+    );
+
     return (
-        <div className="flex flex-col h-screen overflow-hidden">
-            {/* Topbar */}
-            <header className="h-16 border-b border-border bg-sidebar text-sidebar-foreground flex items-center px-4 md:px-6 gap-4 shrink-0 z-30">
+        <div className="flex h-screen overflow-hidden">
+
+            {/* Desktop Sidebar */}
+            <aside className="hidden md:flex flex-col w-64 shrink-0 bg-sidebar border-r border-sidebar-border z-20">
                 {/* Logo */}
-                <div className="flex items-center gap-2 text-sidebar-primary font-bold text-lg mr-2 md:mr-4">
-                    <Stethoscope className="w-5 h-5" />
-                    <span>MedManage</span>
+                <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-sidebar-primary/20 flex items-center justify-center text-sidebar-primary">
+                        <Stethoscope className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-sidebar-foreground font-bold text-base leading-tight">MedManage</p>
+                        <p className="text-sidebar-muted text-xs leading-tight">Gestão Clínica</p>
+                    </div>
                 </div>
 
-                {/* Nav links — apenas desktop */}
-                <nav className="hidden md:flex items-center gap-1 flex-1">
-                    {visibleItems.map((item) => (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            end={item.to === "/"}
-                            className={({ isActive }) =>
-                                `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                    ? "bg-sidebar-accent text-sidebar-primary"
-                                    : "text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-                                }`
-                            }
-                        >
-                            <item.icon className="w-4 h-4" />
-                            {item.label}
-                        </NavLink>
-                    ))}
+                {/* Nav */}
+                <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+                    <NavItems />
                 </nav>
 
-                {/* Spacer mobile */}
-                <div className="flex-1 md:hidden" />
-
-                {/* User info + logout — desktop */}
-                <div className="hidden md:flex items-center gap-3">
-                    <div className="text-right">
-                        <p className="text-sm font-medium text-sidebar-foreground leading-none">{user?.username}</p>
-                        <p className="text-xs text-sidebar-muted mt-0.5">{user?.role}</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
-                        {user?.username?.charAt(0).toUpperCase()}
-                    </div>
+                {/* Logout */}
+                <div className="px-3 py-4 border-t border-sidebar-border shrink-0">
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-1.5 text-sm text-sidebar-muted hover:text-sidebar-foreground transition-colors ml-1"
-                        title="Sair"
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
                     >
-                        <LogOut className="w-4 h-4" />
-                        <span>Sair</span>
+                        <LogOut className="w-4 h-4 shrink-0" />
+                        Sair
                     </button>
                 </div>
+            </aside>
 
-                {/* Avatar compacto + botão hambúrguer — mobile */}
-                <div className="flex md:hidden items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
-                        {user?.username?.charAt(0).toUpperCase()}
-                    </div>
-                    <button
-                        onClick={() => setMenuOpen((v) => !v)}
-                        className="p-2 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-                        aria-label="Menu"
-                    >
-                        {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                    </button>
-                </div>
-            </header>
-
-            {/* Overlay mobile */}
+            {/* Mobile overlay */}
             {menuOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 z-20 md:hidden"
-                    onClick={() => setMenuOpen(false)}
-                />
+                <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setMenuOpen(false)} />
             )}
 
-            {/* Drawer mobile */}
+            {/* Mobile drawer */}
             <div
-                className={`
-                    fixed top-16 right-0 bottom-0 w-64 bg-sidebar border-l border-border z-20
-                    flex flex-col transform transition-transform duration-200 ease-in-out md:hidden
-                    ${menuOpen ? "translate-x-0" : "translate-x-full"}
-                `}
+                className={`fixed top-0 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border z-40 flex flex-col transform transition-transform duration-200 ease-in-out md:hidden ${menuOpen ? "translate-x-0" : "-translate-x-full"}`}
             >
-                {/* Info do usuário */}
-                <div className="px-4 py-4 border-b border-border">
-                    <p className="text-sm font-medium text-sidebar-foreground">{user?.username}</p>
-                    <p className="text-xs text-sidebar-muted mt-0.5">{user?.role}</p>
+                <div className="flex items-center justify-between px-5 py-5 border-b border-sidebar-border">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-sidebar-primary/20 flex items-center justify-center text-sidebar-primary">
+                            <Stethoscope className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-sidebar-foreground font-bold text-base leading-tight">MedManage</p>
+                            <p className="text-sidebar-muted text-xs leading-tight">Gestão Clínica</p>
+                        </div>
+                    </div>
+                    <button onClick={() => setMenuOpen(false)} className="p-1.5 rounded-lg text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
-
-                {/* Links de navegação */}
-                <nav className="flex flex-col gap-1 p-3 flex-1">
-                    {visibleItems.map((item) => (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            end={item.to === "/"}
-                            onClick={() => setMenuOpen(false)}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                                    ? "bg-sidebar-accent text-sidebar-primary"
-                                    : "text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
-                                }`
-                            }
-                        >
-                            <item.icon className="w-5 h-5" />
-                            {item.label}
-                        </NavLink>
-                    ))}
+                <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+                    <NavItems onLinkClick={() => setMenuOpen(false)} />
                 </nav>
-
-                {/* Botão de logout */}
-                <div className="p-3 border-t border-border">
-                    <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-                    >
-                        <LogOut className="w-5 h-5" />
+                <div className="px-3 py-4 border-t border-sidebar-border">
+                    <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+                        <LogOut className="w-4 h-4 shrink-0" />
                         Sair
                     </button>
                 </div>
             </div>
 
-            {/* Main content */}
-            <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-                <Outlet />
-            </main>
+            {/* Right: topbar + main */}
+            <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-            {/* Footer */}
-            <footer className="h-8 border-t border-border bg-card flex items-center px-4 md:px-6">
-                <p className="text-xs text-muted-foreground">© 2026 MedManage</p>
-            </footer>
+                {/* Topbar */}
+                <header className="h-16 shrink-0 border-b border-border bg-card flex items-center px-4 md:px-6 gap-4 z-10">
+                    {/* Mobile hamburger */}
+                    <button onClick={() => setMenuOpen(true)} className="md:hidden p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors" aria-label="Abrir menu">
+                        <Menu className="w-5 h-5" />
+                    </button>
+
+                    {/* Welcome */}
+                    <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground">Bem-vindo ao MedManage</p>
+                    </div>
+
+                    {/* User info + avatar */}
+                    <div className="flex items-center gap-3">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-sm font-semibold text-foreground leading-tight">{user.username}</p>
+                            <p className="text-xs text-muted-foreground leading-tight">
+                                {user?.role ? `${user.role}` : ""}
+                            </p>
+                        </div>
+                        <div className="w-9 h-9 rounded-full bg-sidebar flex items-center justify-center text-sidebar-primary font-bold text-sm shrink-0 ring-2 ring-sidebar-primary/40">
+                            {initials}
+                        </div>
+                    </div>
+                </header>
+
+                {/* Page content */}
+                <main className="flex-1 overflow-y-auto bg-background p-4 md:p-6">
+                    <Outlet />
+                </main>
+            </div>
         </div>
     );
 }

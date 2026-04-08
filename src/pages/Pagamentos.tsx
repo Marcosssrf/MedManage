@@ -15,7 +15,7 @@ import Pagination from "../components/Pagination";
 import { Navigate } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 
-const FORMA_PAGAMENTO = ["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO", "DINHEIRO", "TRANSFERENCIA"];
+const FORMA_PAGAMENTO = ["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO", "DINHEIRO", "TRANSFERENCIA", "CONVENIO", "BOLETO"];
 const TIPO_PAGAMENTO = ["PARTICULAR", "CONVENIO", "PLANO_SAUDE"];
 
 const STATUS_COLORS: Record<string, string> = {

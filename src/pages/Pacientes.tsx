@@ -1,23 +1,410 @@
 import { FormCadastroPaciente } from "../components/Form-Paciente";
-import { pacientesApi } from "../services/api";
-import type { Paciente } from "../services/api";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import PageHeader from "../components/PageHeader";
+import { pacientesApi, historicoClinicoApi } from "../services/api";
+import type { Paciente, HistoricoClinico } from "../services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
-import { Plus, Search, Users, User, Phone, Mail, MapPin, Calendar, Heart, Pencil, Cake, Hourglass } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import {
+    Plus, Search, Users, ArrowLeft, Pencil, Activity,
+    Droplets, Weight, Ruler, HeartPulse
+} from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
+import { toast } from "sonner";
 
+
+const Field = ({ label, value }: { label: string; value?: string }) => (
+    <div>
+        <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+        <p className="text-sm font-medium">{value || "—"}</p>
+    </div>
+);
+
+// ── Detail view component
+function PacienteDetail({
+    paciente,
+    onBack,
+    canEdit,
+}: {
+    paciente: Paciente;
+    onBack: () => void;
+    canEdit: boolean;
+}) {
+    const queryClient = useQueryClient();
+    const [tab, setTab] = useState<"dados" | "historico">("dados");
+    const [editOpen, setEditOpen] = useState(false);
+    const [editDadosOpen, setEditDadosOpen] = useState(false);
+    const [form, setForm] = useState<HistoricoClinico>({} as HistoricoClinico);
+
+    const { data: historico, isLoading: loadingHistorico } = useQuery({
+        queryKey: ["historico", paciente.id],
+        queryFn: () => historicoClinicoApi.buscarPorPaciente(String(paciente.id!)),
+    });
+
+    useEffect(() => {
+        if (historico) setForm(historico);
+    }, [historico]);
+
+    const mutation = useMutation({
+        mutationFn: (dados: Omit<HistoricoClinico, "id" | "pacienteId" | "imc">) =>
+            historico?.id
+                ? historicoClinicoApi.atualizar(historico.id, dados)
+                : historicoClinicoApi.cadastrar({ ...dados, pacienteId: paciente.id! }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["historico", paciente.id] });
+            setEditOpen(false);
+            toast.success("Histórico clínico atualizado!");
+        },
+        onError: () => toast.error("Erro ao salvar histórico."),
+    });
+
+    const handleSaveHistorico = () => mutation.mutate(form);
+
+    return (
+        <div className="animate-fade-in space-y-6 max-w-4xl">
+            {/* Back */}
+            <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Voltar
+            </button>
+
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <h1 className="text-2xl font-bold">{paciente.nome}</h1>
+                <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">
+                    Ativo
+                </Badge>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 bg-muted/50 rounded-lg p-1 w-fit">
+                <button
+                    onClick={() => setTab("dados")}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${tab === "dados"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
+                >
+                    Dados Cadastrais
+                </button>
+                <button
+                    onClick={() => setTab("historico")}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${tab === "historico"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                        }`}
+                >
+                    Histórico Clínico
+                </button>
+            </div>
+
+            {/* Tab: Dados Cadastrais */}
+            {tab === "dados" && (
+                <>
+                    <div className="bg-card border border-border rounded-xl p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-5">
+                            <Field label="CPF" value={paciente.cpf} />
+                            <Field label="Data Nasc." value={paciente.dataNascimento} />
+                            <Field label="Idade" value={paciente.idade} />
+                            <Field label="Sexo" value={paciente.sexo} />
+                            <Field label="Estado Civil" value={paciente.estadoCivil} />
+                            <Field label="Telefone" value={paciente.telefone} />
+                            <Field label="Email" value={paciente.email} />
+                            <Field label="CEP" value={paciente.cep} />
+                            <Field
+                                label="Endereço"
+                                value={[paciente.logradouro, paciente.numero, paciente.complemento].filter(Boolean).join(", ")}
+                            />
+                            <Field label="Bairro" value={paciente.bairro} />
+                            <Field
+                                label="Cidade/UF"
+                                value={paciente.cidade && paciente.uf ? `${paciente.cidade}/${paciente.uf}` : paciente.cidade || paciente.uf}
+                            />
+                            <Field label="Convênio" value={paciente.convenio?.nome || "Não informado"} />
+                            <Field label="Carteirinha" value={paciente?.numeroCarteirinha || "Não informado"} />
+                            <Field label="Data Vencimento da Carteirinha" value={paciente.dataVencimentoCarteirinha || "Não informado"} />
+                        </div>
+                    </div>
+
+                    {canEdit && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setEditDadosOpen(true)}
+                            className="flex items-center gap-2"
+                        >
+                            <Pencil className="w-4 h-4" />
+                            Editar
+                        </Button>
+                    )}
+                </>
+            )}
+
+            {/* Tab: Histórico Clínico */}
+            {tab === "historico" && (
+                <>
+                    {loadingHistorico ? (
+                        <div className="p-12 text-center text-muted-foreground animate-pulse">
+                            Carregando histórico clínico...
+                        </div>
+                    ) : (
+                        <div className="bg-card border border-border rounded-xl p-6 space-y-6">
+                            {/* Title */}
+                            <div className="flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-foreground" />
+                                <h2 className="text-xl font-bold">Histórico Clínico</h2>
+                            </div>
+
+                            {/* Vitals */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 border-b border-border">
+                                <div className="flex items-start gap-2">
+                                    <Droplets className="w-4 h-4 text-red-500 mt-1 shrink-0" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Tipo Sanguíneo</p>
+                                        <p className="text-base font-bold">{historico?.tipoSanguineo || "—"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <Weight className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Peso</p>
+                                        <p className="text-base font-bold">{historico?.peso ? `${historico.peso} kg` : "—"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <Ruler className="w-4 h-4 text-primary mt-1 shrink-0" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Altura</p>
+                                        <p className="text-base font-bold">{historico?.altura ? `${historico.altura} m` : "—"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                    <HeartPulse className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">IMC</p>
+                                        <p className="text-base font-bold">{historico?.imc ? `${historico.imc}` : "—"}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Clinical fields */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-5">
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">Alergias</p>
+                                    <p className="text-sm font-medium">{historico?.alergias || "—"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">Doenças Preexistentes</p>
+                                    <p className="text-sm font-medium">{historico?.doencasPreexistentes || "—"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">Cirurgias Prévias</p>
+                                    <p className="text-sm font-medium">{historico?.cirurgiasPrevias || "—"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">Histórico Familiar</p>
+                                    <p className="text-sm font-medium">{historico?.historicoFamiliar || "—"}</p>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <p className="text-xs text-muted-foreground mb-0.5">Medicamentos de Uso Contínuo</p>
+                                    <p className="text-sm font-medium">{historico?.medicamentosUso || "—"}</p>
+                                </div>
+                            </div>
+
+                            {/* Lifestyle badges */}
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {[
+                                    { label: "Tabagismo", value: historico?.tabagismo },
+                                    { label: "Etilismo", value: historico?.etilismo },
+                                    { label: "Atividade Física", value: historico?.atividadeFisica },
+                                    { label: "Uso de Drogas", value: historico?.usoDrogas },
+                                ].map(({ label, value }) => (
+                                    <span
+                                        key={label}
+                                        className={`text-xs px-3 py-1 rounded-full font-medium border ${value
+                                            ? "bg-primary text-primary-foreground border-primary"
+                                            : "bg-muted text-muted-foreground border-border"
+                                            }`}
+                                    >
+                                        {label}: {value ? "Sim" : "Não"}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {canEdit && !loadingHistorico && (
+                        <Button
+                            variant="outline"
+                            onClick={() => { setForm(historico ?? {} as HistoricoClinico); setEditOpen(true); }}
+                            className="flex items-center gap-2"
+                        >
+                            <Pencil className="w-4 h-4" />
+                            Editar Histórico Clínico
+                        </Button>
+                    )}
+                </>
+            )}
+
+            {/* Edit Dados Dialog */}
+            <Dialog open={editDadosOpen} onOpenChange={setEditDadosOpen}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Editar Paciente</DialogTitle>
+                    </DialogHeader>
+                    <FormCadastroPaciente
+                        initialData={paciente}
+                        onSuccess={() => setEditDadosOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Histórico Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Editar Histórico Clínico</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        {/* Tipo sanguíneo */}
+                        <div>
+                            <label className="text-sm font-medium block mb-1">Tipo Sanguíneo</label>
+                            <Input
+                                value={form.tipoSanguineo ?? ""}
+                                onChange={(e) => setForm((f) => ({ ...f, tipoSanguineo: e.target.value }))}
+                                placeholder="Ex: A+"
+                            />
+                        </div>
+                        {/* Peso / Altura */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-sm font-medium block mb-1">Peso (kg)</label>
+                                <Input
+                                    type="number"
+                                    step="0.1"
+                                    value={form.peso ?? ""}
+                                    onChange={(e) => setForm((f) => ({ ...f, peso: parseFloat(e.target.value) || undefined }))}
+                                    placeholder="78.5"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium block mb-1">Altura (m)</label>
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={form.altura ?? ""}
+                                    onChange={(e) => setForm((f) => ({ ...f, altura: parseFloat(e.target.value) || undefined }))}
+                                    placeholder="1.75"
+                                />
+                            </div>
+                        </div>
+                        {/* Alergias */}
+                        <div>
+                            <label className="text-sm font-medium block mb-1">Alergias</label>
+                            <textarea
+                                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-y min-h-[72px] focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={form.alergias ?? ""}
+                                onChange={(e) => setForm((f) => ({ ...f, alergias: e.target.value }))}
+                                placeholder="Liste as alergias..."
+                            />
+                        </div>
+                        {/* Doenças */}
+                        <div>
+                            <label className="text-sm font-medium block mb-1">Doenças Preexistentes</label>
+                            <textarea
+                                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-y min-h-[72px] focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={form.doencasPreexistentes ?? ""}
+                                onChange={(e) => setForm((f) => ({ ...f, doencasPreexistentes: e.target.value }))}
+                                placeholder="Ex: Diabetes tipo 2..."
+                            />
+                        </div>
+                        {/* Cirurgias */}
+                        <div>
+                            <label className="text-sm font-medium block mb-1">Cirurgias Prévias</label>
+                            <textarea
+                                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-y min-h-[72px] focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={form.cirurgiasPrevias ?? ""}
+                                onChange={(e) => setForm((f) => ({ ...f, cirurgiasPrevias: e.target.value }))}
+                                placeholder="Ex: Apendicectomia em 2015..."
+                            />
+                        </div>
+                        {/* Histórico familiar */}
+                        <div>
+                            <label className="text-sm font-medium block mb-1">Histórico Familiar</label>
+                            <textarea
+                                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-y min-h-[72px] focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={form.historicoFamiliar ?? ""}
+                                onChange={(e) => setForm((f) => ({ ...f, historicoFamiliar: e.target.value }))}
+                                placeholder="Ex: Pai com infarto..."
+                            />
+                        </div>
+                        {/* Medicamentos */}
+                        <div>
+                            <label className="text-sm font-medium block mb-1">Medicamentos de Uso Contínuo</label>
+                            <textarea
+                                className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-y min-h-[72px] focus:outline-none focus:ring-2 focus:ring-ring"
+                                value={form.medicamentosUso ?? ""}
+                                onChange={(e) => setForm((f) => ({ ...f, medicamentosUso: e.target.value }))}
+                                placeholder="Ex: Metformina 850mg..."
+                            />
+                        </div>
+                        {/* Toggles */}
+                        <div className="grid grid-cols-2 gap-3 pt-1">
+                            {(
+                                [
+                                    { key: "atividadeFisica", label: "Atividade Física" },
+                                    { key: "tabagismo", label: "Tabagismo" },
+                                    { key: "etilismo", label: "Etilismo" },
+                                    { key: "usoDrogas", label: "Uso de Drogas" },
+                                ] as { key: keyof HistoricoClinico; label: string }[]
+                            ).map(({ key, label }) => (
+                                <label key={key} className="flex items-center gap-3 cursor-pointer select-none">
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={!!form[key]}
+                                        onClick={() => setForm((f) => ({ ...f, [key]: !f[key] }))}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring ${form[key] ? "bg-primary" : "bg-muted"}`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form[key] ? "translate-x-6" : "translate-x-1"}`}
+                                        />
+                                    </button>
+                                    <span className="text-sm">{label}</span>
+                                </label>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-3 pt-2">
+                            <Button
+                                onClick={handleSaveHistorico}
+                                disabled={mutation.isPending}
+                                className="flex-1"
+                            >
+                                {mutation.isPending ? "Salvando..." : "Salvar"}
+                            </Button>
+                            <Button variant="outline" onClick={() => setEditOpen(false)} className="flex-1">
+                                Cancelar
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
+
+// ── Main Pacientes list
 export default function Pacientes() {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
-    const [selectedPaciente, setSelectedPaciente] = useState<Paciente | null>(null);
-    const [editingPaciente, setEditingPaciente] = useState<Paciente | null>(null);
+    const [selectedId, setSelectedId] = useState<string | number | null>(null);
 
     const { canAddPaciente } = usePermissions();
 
@@ -26,36 +413,69 @@ export default function Pacientes() {
         queryFn: pacientesApi.listar,
     });
 
+    // Busca detalhes completos do paciente selecionado
+    const { data: selectedPaciente, isLoading: loadingDetalhe } = useQuery({
+        queryKey: ["paciente", selectedId],
+        queryFn: () => pacientesApi.buscarPorId(selectedId!),
+        enabled: !!selectedId,
+    });
+
     const filtered = pacientes
-        ?.filter((p) => p.nome.toLowerCase().includes(search.toLowerCase()) || p.cpf.includes(search) || p.email.toLowerCase().includes(search.toLowerCase()) || p.telefone.includes(search))
+        ?.filter((p) =>
+            p.nome.toLowerCase().includes(search.toLowerCase()) ||
+            p.cpf.includes(search) ||
+            p.email?.toLowerCase().includes(search.toLowerCase()) ||
+            p.telefone?.includes(search)
+        )
         .sort((a, b) => a.nome.localeCompare(b.nome));
 
     const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);
 
+    // Mostra skeleton enquanto carrega os detalhes
+    if (selectedId && loadingDetalhe) {
+        return (
+            <div className="animate-fade-in space-y-6 max-w-4xl">
+                <button
+                    onClick={() => setSelectedId(null)}
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Voltar
+                </button>
+                <div className="p-12 text-center text-muted-foreground animate-pulse">
+                    Carregando dados do paciente...
+                </div>
+            </div>
+        );
+    }
+
+    if (selectedId && selectedPaciente) {
+        return (
+            <PacienteDetail
+                paciente={selectedPaciente}
+                onBack={() => setSelectedId(null)}
+                canEdit={canAddPaciente}
+            />
+        );
+    }
+
     return (
         <div className="animate-fade-in space-y-6">
-            <PageHeader
-                title="Pacientes"
-                description="Gerencie os pacientes da clínica"
-                action={canAddPaciente ? (
-                    <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Novo Paciente
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle>Cadastrar Paciente</DialogTitle>
-                            </DialogHeader>
-                            <FormCadastroPaciente onSuccess={() => setOpen(false)} />
-                        </DialogContent>
-                    </Dialog>) : undefined
-                }
-            />
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-semibold">Pacientes</h1>
+                    <p className="text-muted-foreground text-sm mt-1">Gerencie os pacientes da clínica</p>
+                </div>
+                {canAddPaciente && (
+                    <Button onClick={() => setOpen(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Novo Paciente
+                    </Button>
+                )}
+            </div>
 
-            {/* Cards de resumo */}
+            {/* Summary card */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                     <div className="bg-primary/10 p-3 rounded-lg">
@@ -68,7 +488,7 @@ export default function Pacientes() {
                 </div>
             </div>
 
-            {/* Barra de busca */}
+            {/* Search */}
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -79,7 +499,7 @@ export default function Pacientes() {
                 />
             </div>
 
-            {/* Tabela */}
+            {/* Table */}
             <div className="bg-card rounded-xl border border-border overflow-hidden">
                 {isLoading ? (
                     <div className="p-12 text-center text-muted-foreground">
@@ -110,9 +530,9 @@ export default function Pacientes() {
                                     <tr
                                         key={p.id}
                                         className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
-                                        onClick={() => setSelectedPaciente(p)}
+                                        onClick={() => setSelectedId(p.id!)}
                                     >
-                                        <td className="py-3 px-4 text-muted-foreground">{i + 1}</td>
+                                        <td className="py-3 px-4 text-muted-foreground">{(page - 1) * 10 + i + 1}</td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs">
@@ -123,7 +543,9 @@ export default function Pacientes() {
                                         </td>
                                         <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{p.cpf}</td>
                                         <td className="py-3 px-4">
-                                            <Badge variant="secondary" className="text-xs">Ativo</Badge>
+                                            <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-primary/10 text-primary">
+                                                Ativo
+                                            </span>
                                         </td>
                                     </tr>
                                 ))}
@@ -145,126 +567,13 @@ export default function Pacientes() {
                 )}
             </div>
 
-            {/* Dialog de detalhes do paciente */}
-            <Dialog open={!!selectedPaciente} onOpenChange={(o) => !o && setSelectedPaciente(null)}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <div className="flex items-center justify-between pr-6">
-                            <DialogTitle>Dados do Paciente</DialogTitle>
-                            {/* BOTÃO EDITAR */}
-                            {canAddPaciente && selectedPaciente && (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                        setEditingPaciente(selectedPaciente);
-                                        setSelectedPaciente(null);
-                                    }}
-                                >
-                                    <Pencil className="w-4 h-4 mr-1" />
-                                    Editar
-                                </Button>
-                            )}
-                        </div>
-                    </DialogHeader>
-                    {selectedPaciente && (
-                        <div className="space-y-5">
-                            {/* Avatar e nome */}
-                            <div className="flex items-center gap-4 p-4 bg-muted/40 rounded-xl">
-                                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
-                                    {selectedPaciente.nome.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-lg">{selectedPaciente.nome}</p>
-                                    <p className="text-xs text-muted-foreground font-mono">{selectedPaciente.cpf}</p>
-                                </div>
-                            </div>
-
-                            {/* Dados pessoais */}
-                            <div className="space-y-2">
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Dados pessoais</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Nascimento</p>
-                                            <p>{selectedPaciente.dataNascimento ?? "—"}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Cake className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Idade</p>
-                                            <p>{selectedPaciente.idade ?? "—"}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Sexo</p>
-                                            <p className="capitalize">{selectedPaciente.sexo ?? "—"}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Heart className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Estado civil</p>
-                                            <p className="capitalize">{selectedPaciente.estadoCivil?.replace("_", " ") ?? "—"}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Contato */}
-                            <div className="space-y-2">
-                                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contato</p>
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                        <span>{selectedPaciente.email ?? "—"}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                        <span>{selectedPaciente.telefone ?? "—"}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Endereço */}
-                            {selectedPaciente.logradouro && (
-                                <div className="space-y-2">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Endereço</p>
-                                    <div className="flex items-start gap-2 text-sm">
-                                        <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                                        <span>
-                                            {selectedPaciente.logradouro}
-                                            {selectedPaciente.numero ? `, ${selectedPaciente.numero}` : ""}
-                                            {selectedPaciente.complemento ? ` — ${selectedPaciente.complemento}` : ""}
-                                            {selectedPaciente.bairro ? `, ${selectedPaciente.bairro}` : ""}
-                                            {selectedPaciente.cidade ? ` — ${selectedPaciente.cidade}` : ""}
-                                            {selectedPaciente.uf ? `/${selectedPaciente.uf}` : ""}
-                                            {selectedPaciente.cep ? ` — CEP: ${selectedPaciente.cep}` : ""}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </DialogContent>
-            </Dialog>
-
-            {/* ✏️ Dialog de EDIÇÃO do paciente */}
-            <Dialog open={!!editingPaciente} onOpenChange={(o) => !o && setEditingPaciente(null)}>
+            {/* New patient dialog */}
+            <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Editar Paciente</DialogTitle>
+                        <DialogTitle>Cadastrar Paciente</DialogTitle>
                     </DialogHeader>
-                    {editingPaciente && (
-                        <FormCadastroPaciente
-                            initialData={editingPaciente}
-                            onSuccess={() => setEditingPaciente(null)}
-                        />
-                    )}
+                    <FormCadastroPaciente onSuccess={() => setOpen(false)} />
                 </DialogContent>
             </Dialog>
         </div>
