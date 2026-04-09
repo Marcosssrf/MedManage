@@ -1,5 +1,6 @@
 package com.clinica.dto.update;
 
+import com.clinica.dto.DadosConvenio;
 import com.clinica.validation.ConvenioValidado;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
@@ -26,5 +27,5 @@ public record PacienteUpdateDTO(
         String convenio,
         String numeroCarteirinha,
         LocalDate dataVencimentoCarteirinha
-) {
+) implements DadosConvenio {
 }

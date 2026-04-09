@@ -76,26 +76,26 @@ public class AnamneseService {
 
         Anamnese anamneseSalva = anamneseRepository.save(anamnese);
 
-        if(dto.prescricoes() !=  null){
-            List<Prescricao> listaDePrescricoes = new ArrayList<>();
-            for(PrescricaoDTO prescricaoDTO : dto.prescricoes()){
-                Prescricao prescricao = new Prescricao();
-                prescricao.setMedicamento(prescricaoDTO.medicamento());
-                prescricao.setDosagem(prescricaoDTO.dosagem());
-                prescricao.setViaAdministracao(prescricaoDTO.viaAdministracao());
-                prescricao.setFrequencia(prescricaoDTO.frequencia());
-                prescricao.setDuracao(prescricaoDTO.duracao());
-                prescricao.setObservacoes(prescricaoDTO.observacao());
-                prescricao.setTipoReceita(prescricaoDTO.tipoReceita());
-                prescricao.setAnamnese(anamneseSalva);
-                prescricao.setUsuario(user);
-
-                Prescricao pSalva = prescricaoRepository.save(prescricao);
-                listaDePrescricoes.add(pSalva);
-
-            }
-            anamneseSalva.setPrescricoes(listaDePrescricoes);
-        }
+//        if(dto.prescricoes() !=  null){
+//            List<Prescricao> listaDePrescricoes = new ArrayList<>();
+//            for(PrescricaoDTO prescricaoDTO : dto.prescricoes()){
+//                Prescricao prescricao = new Prescricao();
+//                prescricao.setMedicamento(prescricaoDTO.medicamento());
+//                prescricao.setDosagem(prescricaoDTO.dosagem());
+//                prescricao.setViaAdministracao(prescricaoDTO.viaAdministracao());
+//                prescricao.setFrequencia(prescricaoDTO.frequencia());
+//                prescricao.setDuracao(prescricaoDTO.duracao());
+//                prescricao.setObservacoes(prescricaoDTO.observacao());
+//                prescricao.setTipoReceita(prescricaoDTO.tipoReceita());
+//                prescricao.setAnamnese(anamneseSalva);
+//                prescricao.setUsuario(user);
+//
+//                Prescricao pSalva = prescricaoRepository.save(prescricao);
+//                listaDePrescricoes.add(pSalva);
+//
+//            }
+//            anamneseSalva.setPrescricoes(listaDePrescricoes);
+//        }
         return anamneseSalva;
     }
 

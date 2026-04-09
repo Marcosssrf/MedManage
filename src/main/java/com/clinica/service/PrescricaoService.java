@@ -1,8 +1,10 @@
 package com.clinica.service;
 
 import com.clinica.dto.PrescricaoDTO;
+import com.clinica.model.Anamnese;
 import com.clinica.model.Prescricao;
 import com.clinica.model.User;
+import com.clinica.repository.AnamneseRepository;
 import com.clinica.repository.PrescricaoRepository;
 import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ public class PrescricaoService {
     PrescricaoRepository prescricaoRepository;
     @Autowired
     private SecurityService securityService;
+    @Autowired
+    AnamneseRepository anamneseRepository;
+
 
     public List<Prescricao> findAll(){
         return prescricaoRepository.findAll();
@@ -44,5 +49,23 @@ public class PrescricaoService {
         prescricao.setUsuario(user);
 
         return prescricaoRepository.save(prescricao);
+    }
+
+    public Prescricao adicionarPrescricao(PrescricaoDTO dto, UUID consultaId) {
+        Anamnese anamnese = anamneseRepository.findByConsultaId(consultaId)
+                .orElseThrow(() -> new RuntimeException("Salve a anamnese antes de prescrever"));
+
+        Prescricao p = new Prescricao();
+        p.setMedicamento(dto.medicamento());
+        p.setDosagem(dto.dosagem());
+        p.setViaAdministracao(dto.viaAdministracao());
+        p.setFrequencia(dto.frequencia());
+        p.setDuracao(dto.duracao());
+        p.setObservacoes(dto.observacao());
+        p.setTipoReceita(dto.tipoReceita());
+        p.setAnamnese(anamnese);
+        p.setUsuario(securityService.obterUsuarioLogado());
+
+        return prescricaoRepository.save(p);
     }
 }

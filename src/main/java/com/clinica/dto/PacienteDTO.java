@@ -41,5 +41,5 @@ public record PacienteDTO(
         String convenio,
         String numeroCarteirinha,
         LocalDate dataVencimentoCarteirinha
-) {
+)implements DadosConvenio {
 }
