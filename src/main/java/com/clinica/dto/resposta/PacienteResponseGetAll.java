@@ -8,7 +8,8 @@ public record PacienteResponseGetAll(
         String nome,
         String cpf,
         String telefone,
-        String email
+        String email,
+        Boolean ativo
 ) {
 
     public PacienteResponseGetAll(Paciente paciente) {
@@ -17,7 +18,8 @@ public record PacienteResponseGetAll(
                 paciente.getNome(),
                 paciente.getCpf(),
                 paciente.getTelefone(),
-                paciente.getEmail()
+                paciente.getEmail(),
+                paciente.getAtivo()
         );
     }
 }

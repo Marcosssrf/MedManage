@@ -34,6 +34,10 @@ public class HorarioTrabalhoMedicoService {
                 .orElseThrow(() -> new RuntimeException("Horário médico não encontrado"));
         return toDTO(horario);
     }
+//
+//    public List<HorarioTrabalhoMedico> findByMedicoId(UUID medicoId) {
+//        return horarioTrabalhoMedicoRepository.findByMedicoId(medicoId);
+//    }
 
     public List<HorarioTrabalhoMedicoResponseDTO> insert(HorarioTrabalhoMedicoDTO dto) {
         Medico medico = medicoRepository.findById(dto.medicoId())

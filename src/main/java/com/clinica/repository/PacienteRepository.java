@@ -15,7 +15,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, UUID> {
     @EntityGraph(attributePaths = {"usuario"})
     List<Paciente> findAll();
 
-    @Query("SELECT new com.clinica.dto.resposta.PacienteResponseGetAll(p.id, p.nome, p.cpf, p.telefone, p.email) FROM Paciente p")
+    @Query("SELECT new com.clinica.dto.resposta.PacienteResponseGetAll(p.id, p.nome, p.cpf, p.telefone, p.email, p.ativo) FROM Paciente p")
     List<PacienteResponseGetAll> findAllPacientesDTO();
 
 }

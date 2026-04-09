@@ -94,4 +94,7 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	List<Object[]> medicoMaisAtendido();
 
 	long countByMedicoIdAndDataHoraBetween(UUID medicoId, LocalDateTime inicio, LocalDateTime fim);
+
+	boolean existsByMedicoIdAndDataHoraAndIdNot(UUID medicoId, LocalDateTime dataHora, UUID id);
+	boolean existsByPacienteIdAndDataHoraAndIdNot(UUID pacienteId, LocalDateTime dataHora, UUID id);
 }

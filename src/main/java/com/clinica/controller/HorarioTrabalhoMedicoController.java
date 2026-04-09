@@ -3,6 +3,8 @@ package com.clinica.controller;
 import com.clinica.dto.HorarioTrabalhoMedicoDTO;
 import com.clinica.dto.resposta.HorarioTrabalhoMedicoResponseDTO;
 import com.clinica.dto.update.HorarioTrabalhoMedicoUpdateDTO;
+import com.clinica.model.HistoricoClinico;
+import com.clinica.model.HorarioTrabalhoMedico;
 import com.clinica.service.HorarioTrabalhoMedicoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,13 @@ public class HorarioTrabalhoMedicoController {
     public ResponseEntity<HorarioTrabalhoMedicoResponseDTO> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(horarioTrabalhoMedicoService.findById(id));
     }
+//
+//    @GetMapping(value = "/medico/{medicoId}")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
+//    public ResponseEntity<List<HorarioTrabalhoMedico>> findByPacienteId(@PathVariable UUID medicoId) {
+//        List<HorarioTrabalhoMedico> horarios = horarioTrabalhoMedicoService.findByMedicoId(medicoId);
+//        return ResponseEntity.ok().body(horarios);
+//    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA', 'MEDICO')")
