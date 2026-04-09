@@ -2,6 +2,7 @@ package com.clinica.service;
 
 import com.clinica.dto.MedicoDTO;
 import com.clinica.dto.update.MedicoUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.model.Medico;
 import com.clinica.model.User;
 import com.clinica.repository.MedicoRepository;
@@ -24,7 +25,7 @@ public class MedicoService {
 
 	public Medico findById(UUID id) {
 		return medicoRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Médico não encontrada"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
 	}
 
 	public Medico insert(MedicoDTO dto){
@@ -58,7 +59,7 @@ public class MedicoService {
 
 	public Medico patch(UUID id, MedicoUpdateDTO dto) {
 		Medico medico = medicoRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Médico não encontrado!"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
 
 		if (dto.estadoCivil() != null) {
 			medico.setEstadoCivil(dto.estadoCivil());

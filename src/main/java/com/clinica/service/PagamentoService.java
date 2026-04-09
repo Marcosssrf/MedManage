@@ -2,6 +2,8 @@ package com.clinica.service;
 
 import com.clinica.dto.PagamentoDTO;
 import com.clinica.dto.resposta.PagamentoResponseDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.*;
 import com.clinica.model.enums.FormaPagamento;
 import com.clinica.model.enums.StatusConsulta;
@@ -36,17 +38,17 @@ public class PagamentoService {
 	public PagamentoResponseDTO insert(PagamentoDTO dto){
 
 		Consulta consulta = consultaRepository.findById(dto.consultaId())
-				.orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Consulta não encontrada"));
 
 		if (consulta.getStatus() != StatusConsulta.REALIZADA) {
-			throw new RuntimeException("Consulta não realizada, impossível pagar");
+			throw new RegraDeNegocioException("Consulta não realizada, impossível pagar");
 		}
 
 		if (pagamentoRepository.existsByConsultaIdAndStatusPagamento(
 				dto.consultaId(),
 				StatusPagamento.PAGO
 		)) {
-			throw new RuntimeException("Essa consulta já foi paga!");
+			throw new RegraDeNegocioException("Essa consulta já foi paga");
 		}
 
 		Pagamento pagamento = new Pagamento();
@@ -56,15 +58,15 @@ public class PagamentoService {
 		pagamento.setValor(dto.valor());
 		if(dto.tipoPagamento() == TipoPagamento.CONVENIO){
 			Convenio convenio = convenioRepository.findByNome(dto.convenio())
-					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+					.orElseThrow(() -> new EntidadeNaoEncontradaException("Convênio não encontrado: " + dto.convenio()));
 			if(!convenio.getAtivo()){
-				throw new RuntimeException("Convenio desativado");
+				throw new RegraDeNegocioException("Convênio desativado");
 			}
 			if(paciente.getConvenio() == null){
-				throw new RuntimeException("Paciente não possui convênio cadastrado");
+				throw new RegraDeNegocioException("Paciente não possui convênio cadastrado");
 			}
 			if (!convenio.getId().equals(paciente.getConvenio().getId())) {
-				throw new RuntimeException("Convênio informado é diferente do convênio do paciente");
+				throw new RegraDeNegocioException("Convênio informado é diferente do convênio do paciente");
 			}
 			pagamento.setConvenio(convenio);
 			pagamento.setTipoPagamento(TipoPagamento.CONVENIO);
@@ -73,7 +75,7 @@ public class PagamentoService {
 			pagamento.setStatusPagamento(StatusPagamento.PAGO);
 		}else if (dto.tipoPagamento() == TipoPagamento.PARTICULAR){
 			if( dto.formaPagamento() == null){
-				throw new RuntimeException("Forma de pagamento é obrigatória");
+				throw new RegraDeNegocioException("Forma de pagamento é obrigatória");
 			}
 			pagamento.setConvenio(null);
 			pagamento.setTipoPagamento(TipoPagamento.PARTICULAR);
@@ -81,7 +83,7 @@ public class PagamentoService {
 			pagamento.setNumeroParcelas(dto.numeroParcelas());
 			pagamento.setStatusPagamento(StatusPagamento.PENDENTE);
 		} else{
-			throw new RuntimeException("Tipo de pagamento inválido");
+			throw new RegraDeNegocioException("Tipo de pagamento inválido");
 		}
 
 		User user = securityService.obterUsuarioLogado();
@@ -97,15 +99,15 @@ public class PagamentoService {
 
 	public PagamentoResponseDTO findById(UUID id) {
 		return toDTO(pagamentoRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Pagamento não encontrado!")));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Pagamento não encontrado")));
 	}
 
 	public PagamentoResponseDTO confirmarPagamento(UUID id){
 		Pagamento pagamento = pagamentoRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Pagamento não encontrado!"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Pagamento não encontrado"));
 
 		if(pagamento.getStatusPagamento() == StatusPagamento.PAGO){
-			throw new RuntimeException("Pagamento já foi confirmado!");
+			throw new RegraDeNegocioException("Pagamento já foi confirmado");
 		}
 
 		pagamento.setStatusPagamento(StatusPagamento.PAGO);

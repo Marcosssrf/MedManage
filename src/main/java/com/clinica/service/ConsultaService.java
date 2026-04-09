@@ -3,6 +3,8 @@ package com.clinica.service;
 import com.clinica.dto.ConsultaDTO;
 import com.clinica.dto.resposta.*;
 import com.clinica.dto.update.ConsultaUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.Consulta;
 import com.clinica.model.Medico;
 import com.clinica.model.Paciente;
@@ -74,32 +76,34 @@ public class ConsultaService {
 
 		LocalDateTime dataHoje = LocalDateTime.now();
 
-		Paciente paciente = pacienteRepository.findById(dto.pacienteId()).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
-		Medico medico = medicoRepository.findById(dto.medicoId()).orElseThrow(() -> new RuntimeException("Medico não encontrado"));
+		Paciente paciente = pacienteRepository.findById(dto.pacienteId())
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Paciente não encontrado"));
+		Medico medico = medicoRepository.findById(dto.medicoId())
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
 
 		LocalTime horario = dto.dataHora().toLocalTime();
 
 		boolean isHorarioAtendimento = !horario.isBefore(getInicio()) && !horario.isAfter(getFim());
 
 		if (paciente.getAtivo() == false){
-			throw new RuntimeException("Paciente inativo");
+			throw new RegraDeNegocioException("Paciente inativo");
 		}
 
 		if(medico.getAtivo() == false){
-			throw new RuntimeException("Medico nao ativo");
+			throw new RegraDeNegocioException("Médico inativo");
 		}
 
 		if(!isHorarioAtendimento){
-			throw new RuntimeException("Fora do horario de atendimento!");
+			throw new RegraDeNegocioException("Fora do horário de atendimento");
 		}
 
 		if(!dto.dataHora().isAfter(dataHoje)){
-			throw new RuntimeException("Data de atendimento deve ser futura!");
+			throw new RegraDeNegocioException("Data de atendimento deve ser futura");
 		}
 
 		if (paciente.getDataVencimentoCarteirinha() != null &&
 				paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate())) {
-			throw new RuntimeException("Carteirinha do paciente vencida!");
+			throw new RegraDeNegocioException("Carteirinha do paciente vencida");
 		}
 
 		Consulta consulta = new Consulta();
@@ -115,11 +119,11 @@ public class ConsultaService {
 		boolean conflitoPaciente = consultaRepository.existsByPacienteIdAndDataHora(paciente.getId(), dto.dataHora());
 
 		if(conflitoMedico){
-			throw new RuntimeException("Já existe uma consulta para esse médico nesse horário");
+			throw new RegraDeNegocioException("Já existe uma consulta para esse médico nesse horário");
 		}
 
 		if(conflitoPaciente){
-			throw new RuntimeException("Já existe uma consulta para esse paciente nesse horário");
+			throw new RegraDeNegocioException("Já existe uma consulta para esse paciente nesse horário");
 		}
 
 		User user = securityService.obterUsuarioLogado();
@@ -131,7 +135,7 @@ public class ConsultaService {
 
 	public Consulta patch(UUID id, ConsultaUpdateDTO dto) {
 		Consulta consulta = consultaRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Consulta não encontrada!"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Consulta não encontrada"));
 
 		boolean apenasStatus = dto.statusConsulta() != null
 				&& dto.dataHora() == null
@@ -149,25 +153,25 @@ public class ConsultaService {
 		LocalDateTime novaDataHora = dto.dataHora() != null ? dto.dataHora() : consulta.getDataHora();
 
 		Medico medico = medicoRepository.findById(medicoId)
-				.orElseThrow(() -> new RuntimeException("Medico não encontrado"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
 		Paciente paciente = pacienteRepository.findById(pacienteId)
-				.orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Paciente não encontrado"));
 
 		LocalTime horario = novaDataHora.toLocalTime();
 		LocalDateTime dataHoje = LocalDateTime.now();
 
 		if (!horario.isBefore(getInicio()) == false || horario.isAfter(getFim()))
-			throw new RuntimeException("Fora do horario de atendimento!");
+			throw new RegraDeNegocioException("Fora do horário de atendimento");
 		if (!novaDataHora.isAfter(dataHoje))
-			throw new RuntimeException("Data de atendimento deve ser futura!");
+			throw new RegraDeNegocioException("Data de atendimento deve ser futura");
 		if (paciente.getDataVencimentoCarteirinha() != null &&
 				paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate()))
-			throw new RuntimeException("Carteirinha do paciente vencida!");
+			throw new RegraDeNegocioException("Carteirinha do paciente vencida");
 
 		if (consultaRepository.existsByMedicoIdAndDataHoraAndIdNot(medico.getId(), novaDataHora, id))
-			throw new RuntimeException("O médico ja tem uma consulta existente nesse horário");
+			throw new RegraDeNegocioException("Já existe uma consulta para esse médico nesse horário");
 		if (consultaRepository.existsByPacienteIdAndDataHoraAndIdNot(paciente.getId(), novaDataHora, id))
-			throw new RuntimeException("O paciente ja tem uma consulta existente nesse horário");
+			throw new RegraDeNegocioException("Já existe uma consulta para esse paciente nesse horário");
 
 		consulta.setMedico(medico);
 		consulta.setPaciente(paciente);
@@ -179,17 +183,18 @@ public class ConsultaService {
 	}
 
 	public ConsultaResponseDTO cancelar(UUID id){
-		Consulta consulta = consultaRepository.findById(id).orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+		Consulta consulta = consultaRepository.findById(id)
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Consulta não encontrada"));
 
 		LocalDateTime agora = LocalDateTime.now();
 
 		if (consulta.getStatus() == StatusConsulta.REALIZADA ||
 				consulta.getStatus() == StatusConsulta.CANCELADA) {
-			throw new RuntimeException("Consulta não pode ser cancelada");
+			throw new RegraDeNegocioException("Consulta não pode ser cancelada");
 		}
 
 		if (consulta.getDataHora().isBefore(agora.plusHours(24))) {
-			throw new RuntimeException("Consulta só pode ser cancelada com 24h de antecedência");
+			throw new RegraDeNegocioException("Consulta só pode ser cancelada com 24h de antecedência");
 		}
 
 		consulta.setStatus(StatusConsulta.CANCELADA);
@@ -199,7 +204,7 @@ public class ConsultaService {
 
 	public ConsultaResponseDTO findById(UUID id) {
 		Consulta consulta = consultaRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Consulta não encontrada"));
 		return toDTO(consulta);
 	}
 

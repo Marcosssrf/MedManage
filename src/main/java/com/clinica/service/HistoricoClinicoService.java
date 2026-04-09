@@ -2,6 +2,8 @@ package com.clinica.service;
 
 import com.clinica.dto.HistoricoClinicoDTO;
 import com.clinica.dto.update.HistoricoClinicoUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.HistoricoClinico;
 import com.clinica.model.Paciente;
 import com.clinica.model.User;
@@ -30,7 +32,7 @@ public class HistoricoClinicoService {
 
     public HistoricoClinico findById(UUID id){
         return  historicoClinicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Histórico Clínico não encontrada"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Histórico clínico não encontrado"));
     }
 
     public List<HistoricoClinico> findByPacienteId(UUID pacienteId) {
@@ -39,12 +41,13 @@ public class HistoricoClinicoService {
 
     public HistoricoClinico insert(HistoricoClinicoDTO dto){
 
-        Paciente paciente = pacienteRepository.findById(dto.pacienteId()).orElseThrow(() -> new RuntimeException("Paciente não encontrado"));
+        Paciente paciente = pacienteRepository.findById(dto.pacienteId())
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Paciente não encontrado"));
 
         HistoricoClinico historicoClinico = new HistoricoClinico();
 
         if(historicoClinicoRepository.existsHistoricoClinicoByPacienteId(paciente.getId())){
-            throw new RuntimeException("Paciente já possui histórico clínico cadastrado");
+            throw new RegraDeNegocioException("Paciente já possui histórico clínico cadastrado");
         }
 
         historicoClinico.setPaciente(paciente);
@@ -69,7 +72,7 @@ public class HistoricoClinicoService {
 
     public HistoricoClinico patch(UUID id, HistoricoClinicoUpdateDTO dto){
         HistoricoClinico historicoClinico = historicoClinicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Registro Clinico não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Registro clínico não encontrado"));
 
         if(dto.alergias() != null){
             historicoClinico.setAlergias(dto.alergias());

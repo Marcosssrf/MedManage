@@ -2,6 +2,8 @@ package com.clinica.service;
 
 import com.clinica.dto.PacienteDTO;
 import com.clinica.dto.update.PacienteUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.Convenio;
 import com.clinica.model.Paciente;
 import com.clinica.model.User;
@@ -30,7 +32,7 @@ public class PacienteService {
 
 	public Paciente findById(UUID id) {
 		return pacienteRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Paciente não encontrada"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Paciente não encontrado"));
 	}
 
 	public Paciente insert(PacienteDTO dto) {
@@ -58,9 +60,9 @@ public class PacienteService {
 
 		if(dto.convenio() != null && !dto.convenio().isBlank()){
 			Convenio convenio = convenioRepository.findByNome(dto.convenio())
-					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+					.orElseThrow(() -> new EntidadeNaoEncontradaException("Convênio não encontrado: " + dto.convenio()));
 			if(!convenio.getAtivo()){
-				throw new RuntimeException("Convenio desativado");
+				throw new RegraDeNegocioException("Convênio desativado");
 			}
 			paciente.setConvenio(convenio);
 			paciente.setNumeroCarteirinha(dto.numeroCarteirinha());
@@ -72,7 +74,7 @@ public class PacienteService {
 
 	public Paciente patch(UUID id, PacienteUpdateDTO dto) {
 		Paciente paciente = pacienteRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Paciente não encontrado!"));
+				.orElseThrow(() -> new EntidadeNaoEncontradaException("Paciente não encontrado"));
 
 		if (dto.nome() != null) {
 			paciente.setNome(dto.nome());
@@ -124,9 +126,9 @@ public class PacienteService {
 
 		if (dto.convenio() != null && !dto.convenio().isBlank()) {
 			Convenio convenio = convenioRepository.findByNome(dto.convenio())
-					.orElseThrow(() -> new RuntimeException("Convênio não encontrado: " + dto.convenio()));
+					.orElseThrow(() -> new EntidadeNaoEncontradaException("Convênio não encontrado: " + dto.convenio()));
 			if(!convenio.getAtivo()){
-				throw new RuntimeException("Convenio desativado");
+				throw new RegraDeNegocioException("Convênio desativado");
 			}
 			paciente.setConvenio(convenio);
 			paciente.setNumeroCarteirinha(dto.numeroCarteirinha());

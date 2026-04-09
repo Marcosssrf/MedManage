@@ -3,6 +3,8 @@ package com.clinica.service;
 import com.clinica.dto.HorarioTrabalhoMedicoDTO;
 import com.clinica.dto.resposta.HorarioTrabalhoMedicoResponseDTO;
 import com.clinica.dto.update.HorarioTrabalhoMedicoUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.HorarioTrabalhoMedico;
 import com.clinica.model.Medico;
 import com.clinica.repository.HorarioTrabalhoMedicoRepository;
@@ -31,7 +33,7 @@ public class HorarioTrabalhoMedicoService {
 
     public HorarioTrabalhoMedicoResponseDTO findById(UUID id) {
         HorarioTrabalhoMedico horario = horarioTrabalhoMedicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Horário médico não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Horário médico não encontrado"));
         return toDTO(horario);
     }
 //
@@ -41,10 +43,10 @@ public class HorarioTrabalhoMedicoService {
 
     public List<HorarioTrabalhoMedicoResponseDTO> insert(HorarioTrabalhoMedicoDTO dto) {
         Medico medico = medicoRepository.findById(dto.medicoId())
-                .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
 
         if (!medico.getAtivo()) {
-            throw new RuntimeException("Médico desativado");
+            throw new RegraDeNegocioException("Médico desativado");
         }
 
         HorarioTrabalhoMedico horario = new HorarioTrabalhoMedico();
@@ -59,7 +61,7 @@ public class HorarioTrabalhoMedicoService {
 
     public HorarioTrabalhoMedicoResponseDTO patch(UUID id, HorarioTrabalhoMedicoUpdateDTO dto) {
         HorarioTrabalhoMedico horario = horarioTrabalhoMedicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Horário médico não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Horário médico não encontrado"));
 
         if (dto.diasSemana() != null && !dto.diasSemana().isEmpty()) {
             horario.setDiasSemana(dto.diasSemana());

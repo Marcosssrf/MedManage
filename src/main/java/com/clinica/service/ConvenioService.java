@@ -2,6 +2,7 @@ package com.clinica.service;
 
 import com.clinica.dto.ConvenioDTO;
 import com.clinica.dto.update.ConvenioUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.model.Convenio;
 import com.clinica.repository.ConvenioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ public class ConvenioService {
 
     public Convenio findById(UUID id){
         return convenioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Convênio não encontrada"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Convênio não encontrado"));
     }
 
     public Convenio insert(ConvenioDTO dto){
@@ -41,7 +42,7 @@ public class ConvenioService {
 
     public Convenio patch(UUID id, ConvenioUpdateDTO dto){
         Convenio convenio = convenioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Registro de Convênio não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Registro de convênio não encontrado"));
 
         if(dto.nome()!=null){
             convenio.setNome(dto.nome());

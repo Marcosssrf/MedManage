@@ -2,6 +2,8 @@ package com.clinica.service;
 
 import com.clinica.dto.AnamneseDTO;
 import com.clinica.dto.PrescricaoDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.*;
 import com.clinica.model.enums.StatusConsulta;
 import com.clinica.repository.AnamneseRepository;
@@ -36,15 +38,15 @@ public class AnamneseService {
 
     public Anamnese findById(UUID id){
         return anamneseRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Anamnese não encontrada"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Anamnese não encontrada"));
     }
 
     public Anamnese insert(AnamneseDTO dto){
 
         Cid cid = cidRepository.findById(dto.cidCodigo())
-                .orElseThrow(() -> new RuntimeException("CID não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("CID não encontrado"));
         Consulta consulta = consultaRepository.findById(dto.consultaId())
-                .orElseThrow(() -> new RuntimeException("Consulta não encontrada"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Consulta não encontrada"));
 
         boolean statusValido = consulta.getStatus() == StatusConsulta.REALIZADA
                 || consulta.getStatus() == StatusConsulta.EM_ANDAMENTO;
@@ -52,11 +54,11 @@ public class AnamneseService {
 
 
         if(!statusValido){
-            throw new RuntimeException("Anamnese não pode ser criada com consulta agendada ou cancelada");
+            throw new RegraDeNegocioException("Anamnese não pode ser criada com consulta agendada ou cancelada");
         }
 
         if (anamneseRepository.existsByConsultaId(dto.consultaId())) {
-            throw new RuntimeException("Já existe uma anamnese para essa consulta!");
+            throw new RegraDeNegocioException("Já existe uma anamnese para essa consulta");
         }
 
         Anamnese anamnese = new Anamnese();

@@ -4,6 +4,7 @@ import com.clinica.dto.UserCreateDTO;
 import com.clinica.dto.UserDTO;
 import com.clinica.dto.resposta.MedicoConsultaDTO;
 import com.clinica.dto.update.UserUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.model.User;
 import com.clinica.repository.UserRepository;
 import com.clinica.service.UserService;
@@ -53,7 +54,7 @@ public class UserController {
     public ResponseEntity<UserDTO> me(Authentication authentication) {
         String username = authentication.getName();
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Usuário não encontrado"));
         UserDTO dto = converterParaDTO(user);
         return ResponseEntity.ok(dto);
     }

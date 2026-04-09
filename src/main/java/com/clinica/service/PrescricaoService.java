@@ -1,6 +1,8 @@
 package com.clinica.service;
 
 import com.clinica.dto.PrescricaoDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.Anamnese;
 import com.clinica.model.Prescricao;
 import com.clinica.model.User;
@@ -30,7 +32,7 @@ public class PrescricaoService {
 
     public Prescricao findById(UUID id){
         return prescricaoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Prescrição não encontrada"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Prescrição não encontrada"));
     }
 
     public Prescricao insert(PrescricaoDTO dto){
@@ -53,7 +55,7 @@ public class PrescricaoService {
 
     public Prescricao adicionarPrescricao(PrescricaoDTO dto, UUID consultaId) {
         Anamnese anamnese = anamneseRepository.findByConsultaId(consultaId)
-                .orElseThrow(() -> new RuntimeException("Salve a anamnese antes de prescrever"));
+                .orElseThrow(() -> new RegraDeNegocioException("Salve a anamnese antes de prescrever"));
 
         Prescricao p = new Prescricao();
         p.setMedicamento(dto.medicamento());

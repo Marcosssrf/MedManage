@@ -4,6 +4,8 @@ import com.clinica.dto.UserCreateDTO;
 import com.clinica.dto.UserDTO;
 import com.clinica.dto.resposta.MedicoConsultaDTO;
 import com.clinica.dto.update.UserUpdateDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.Medico;
 import com.clinica.model.User;
 import com.clinica.model.enums.Role;
@@ -32,7 +34,7 @@ public class UserService {
     public UserDTO insert(UserCreateDTO dto){
 
         if (repository.findByUsername(dto.username()).isPresent()){
-            throw new RuntimeException("Username já em uso");
+            throw new RegraDeNegocioException("Username já em uso");
         }
 
         User user = new User();
@@ -43,12 +45,12 @@ public class UserService {
 
         if (dto.role() == Role.MEDICO) {
             if (dto.medicoId() == null) {
-                throw new RuntimeException("Médico é obrigatório para usuários com role MEDICO");
+                throw new RegraDeNegocioException("Médico é obrigatório para usuários com role MEDICO");
             }
             Medico medico = medicoRepository.findById(dto.medicoId())
-                    .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+                    .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
             if (!medico.getAtivo()) {
-                throw new RuntimeException("Médico desativado");
+                throw new RegraDeNegocioException("Médico desativado");
             }
             user.setMedico(medico);
         } else {
@@ -65,7 +67,7 @@ public class UserService {
 
     public User findEntityByUsername(String username){
         return repository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Usuário não encontrado"));
     }
 
     public List<UserDTO> findAll(){
@@ -77,7 +79,7 @@ public class UserService {
 
     public UserDTO patch(UUID id, UserUpdateDTO dto){
         User user = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Usuário não encontrado"));
         if(dto.username() != null){
             user.setUsername(dto.username());
         }
@@ -90,15 +92,15 @@ public class UserService {
         if (dto.medico() != null && dto.medico().id() != null) {
             if (user.getRole() == Role.MEDICO) {
                 Medico medicoVinculado = medicoRepository.findById(dto.medico().id())
-                        .orElseThrow(() -> new RuntimeException("Médico não encontrado."));
+                        .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
 
                 user.setMedico(medicoVinculado);
             }
             if(user.getRole() == Role.MEDICO){
                 Medico medico = medicoRepository.findById(dto.medico().id())
-                        .orElseThrow(() -> new RuntimeException("Médico não encontrado."));
+                        .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
                 if(medico.getAtivo() != true){
-                    throw new RuntimeException("Médico desativado");
+                    throw new RegraDeNegocioException("Médico desativado");
                 }
             }
         }
@@ -113,11 +115,11 @@ public class UserService {
 
     public UserDTO delete(UUID id){
         User user = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Usuário não encontrado"));
 
         if(user.getRole() == Role.MEDICO){
             Medico medico = medicoRepository.findById(user.getMedico().getId())
-                    .orElseThrow(() -> new RuntimeException("Médico não encontrado"));
+                    .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
             medico.setAtivo(false);
             medicoRepository.save(medico);
         }
