@@ -29,7 +29,7 @@ interface UserForm {
 const EMPTY_FORM: UserForm = { username: "", senha: "", role: "SECRETARIA", medicoId: "", ativo: true };
 
 function roleBadge(role: string) {
-    const map: Record<string, { label: string; className: string; icon: JSX.Element }> = {
+    const map: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
         ADMIN: { label: "Administrador", className: "bg-purple-100 text-purple-700", icon: <ShieldCheck className="w-3 h-3" /> },
         MEDICO: { label: "Médico", className: "bg-blue-100 text-blue-700", icon: <Stethoscope className="w-3 h-3" /> },
         SECRETARIA: { label: "Recepcionista", className: "bg-green-100 text-green-700", icon: <Briefcase className="w-3 h-3" /> },
