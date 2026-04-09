@@ -5,7 +5,6 @@ import com.clinica.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -16,8 +15,7 @@ public class SecurityService {
 
     public User obterUsuarioLogado(){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String username = userDetails.getUsername();
+        String username = authentication.getName();
         return userService.findEntityByUsername(username);
     }
 
