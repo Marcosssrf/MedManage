@@ -132,12 +132,12 @@ export function FormCadastroConsulta({ onSuccess, initialData, prefillData, pref
 
     const { data: pacientes = [] } = useQuery({
         queryKey: ["pacientes"],
-        queryFn: pacientesApi.listar,
+        queryFn: () => pacientesApi.listar(),
     });
 
     const { data: medicos = [] } = useQuery({
         queryKey: ["medicos"],
-        queryFn: medicosApi.listar,
+        queryFn: () => medicosApi.listar(),
         enabled: isAdmin || isSecretaria,
     });
 
