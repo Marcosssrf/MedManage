@@ -478,8 +478,27 @@ function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: {
         onError: () => toast.error("Erro ao cancelar."),
     });
 
-    const podeEditarClinico = canEdit && consultaAtiva(consulta.status);
-    const statusLabel = consulta.status?.replace("_", " ") ?? "";
+    const [currentStatus, setCurrentStatus] = useState(consulta.status);
+
+    const statusMutation = useMutation({
+        mutationFn: (novoStatus: "EM_ANDAMENTO" | "REALIZADA" | "CONFIRMADA" | "AGENDADA") =>
+            consultasApi.mudarStatus(consulta.id!, novoStatus),
+        onSuccess: (_, novoStatus) => {
+            setCurrentStatus(novoStatus);
+            queryClient.invalidateQueries({ queryKey: ["consultas"] });
+            const labels: Record<string, string> = {
+                EM_ANDAMENTO: "Em Andamento",
+                REALIZADA: "Realizada",
+                CONFIRMADA: "Confirmada",
+                AGENDADA: "Agendada",
+            };
+            toast.success(`Status alterado para ${labels[novoStatus] ?? novoStatus}!`);
+        },
+        onError: () => toast.error("Erro ao alterar status."),
+    });
+
+    const podeEditarClinico = canEdit && consultaAtiva(currentStatus);
+    const statusLabel = currentStatus?.replace("_", " ") ?? "";
 
     return (
         <div className="animate-fade-in space-y-6 max-w-4xl">
@@ -503,14 +522,14 @@ function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: {
                     <div><p className="text-xs text-muted-foreground">Horário</p><p className="font-bold">{consulta.horario?.slice(0, 5)}</p></div>
                     <div>
                         <p className="text-xs text-muted-foreground mb-1">Status</p>
-                        <span className={`text-xs px-3 py-1 rounded-full font-medium border ${STATUS_STYLE[consulta.status] ?? "bg-muted text-muted-foreground"}`}>{statusLabel}</span>
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium border ${STATUS_STYLE[currentStatus] ?? "bg-muted text-muted-foreground"}`}>{statusLabel}</span>
                     </div>
                     {consulta.tipoConsulta && <div><p className="text-xs text-muted-foreground">Tipo</p><p className="font-bold capitalize">{consulta.tipoConsulta.replace("_", " ").toLowerCase()}</p></div>}
                 </div>
             </div>
 
             {/* Anamnese */}
-            {consultaAtiva(consulta.status) && (
+            {consultaAtiva(currentStatus) && (
                 <div className="bg-card border border-border rounded-xl p-6 space-y-5">
                     <div className="flex items-center justify-between">
                         <h2 className="font-bold">Anamnese</h2>
@@ -551,27 +570,68 @@ function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: {
             )}
 
             {/* Prescrições */}
-            {consultaAtiva(consulta.status) && (
+            {consultaAtiva(currentStatus) && (
                 <div className="bg-card border border-border rounded-xl p-6">
                     <PrescricoesPanel consulta={consulta} />
                 </div>
             )}
 
-            {!consultaAtiva(consulta.status) && consulta.status !== "CANCELADA" && (
+            {!consultaAtiva(currentStatus) && currentStatus !== "CANCELADA" && (
                 <div className="bg-muted/30 border border-border rounded-xl p-4 text-sm text-muted-foreground text-center">
                     Anamnese e prescrições disponíveis apenas quando a consulta estiver <strong>Em Andamento</strong> ou <strong>Realizada</strong>.
                 </div>
             )}
 
-            {(canEdit || canCancelar) && consulta.status !== "CANCELADA" && consulta.status !== "REALIZADA" && (
-                <div className="flex gap-3">
-                    {canEdit && (
+            {/* Botões de ação — visíveis conforme status atual */}
+            {currentStatus !== "CANCELADA" && (
+                <div className="flex flex-wrap gap-3">
+                    {/* Iniciar atendimento — AGENDADA ou CONFIRMADA → EM_ANDAMENTO */}
+                    {(currentStatus === "AGENDADA" || currentStatus === "CONFIRMADA") && canEdit && (
+                        <Button
+                            onClick={() => statusMutation.mutate("EM_ANDAMENTO")}
+                            disabled={statusMutation.isPending}
+                            className="bg-amber-500 hover:bg-amber-600 text-white"
+                        >
+                            {statusMutation.isPending ? "Alterando..." : "▶ Iniciar Atendimento"}
+                        </Button>
+                    )}
+
+                    {/* Concluir — EM_ANDAMENTO → REALIZADA */}
+                    {currentStatus === "EM_ANDAMENTO" && canEdit && (
+                        <Button
+                            onClick={() => statusMutation.mutate("REALIZADA")}
+                            disabled={statusMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            {statusMutation.isPending ? "Alterando..." : "✓ Concluir Consulta"}
+                        </Button>
+                    )}
+
+                    {/* Confirmar — AGENDADA → CONFIRMADA */}
+                    {currentStatus === "AGENDADA" && canEdit && (
+                        <Button
+                            variant="outline"
+                            onClick={() => statusMutation.mutate("CONFIRMADA")}
+                            disabled={statusMutation.isPending}
+                        >
+                            {statusMutation.isPending ? "Alterando..." : "Confirmar"}
+                        </Button>
+                    )}
+
+                    {/* Editar dados da consulta */}
+                    {currentStatus !== "REALIZADA" && canEdit && (
                         <Button variant="outline" onClick={() => setEditOpen(true)}>
                             <Pencil className="w-4 h-4 mr-2" /> Editar Consulta
                         </Button>
                     )}
-                    {canCancelar && (
-                        <Button variant="destructive" onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending}>
+
+                    {/* Cancelar */}
+                    {currentStatus !== "REALIZADA" && canCancelar && (
+                        <Button
+                            variant="destructive"
+                            onClick={() => cancelMutation.mutate()}
+                            disabled={cancelMutation.isPending}
+                        >
                             <X className="w-4 h-4 mr-2" /> {cancelMutation.isPending ? "Cancelando..." : "Cancelar Consulta"}
                         </Button>
                     )}

@@ -446,9 +446,10 @@ export default function Pacientes() {
 
     const { canAddPaciente } = usePermissions();
 
+    // Sempre busca todos (inclusive inativos) — filtragem feita no cliente
     const { data: pacientes, isLoading, error } = useQuery({
-        queryKey: ["pacientes", showInactive],
-        queryFn: () => pacientesApi.listar(showInactive),
+        queryKey: ["pacientes"],
+        queryFn: () => pacientesApi.listar(true),
     });
 
     // Busca detalhes completos do paciente selecionado
@@ -459,12 +460,20 @@ export default function Pacientes() {
     });
 
     const filtered = pacientes
-        ?.filter((p) =>
-            p.nome.toLowerCase().includes(search.toLowerCase()) ||
-            p.cpf.includes(search) ||
-            p.email?.toLowerCase().includes(search.toLowerCase()) ||
-            p.telefone?.includes(search)
-        )
+        ?.filter((p) => {
+            // Filtro de ativo/inativo — se o campo não existe, trata como ativo
+            const estaAtivo = p.ativo !== false;
+            // toggle OFF → só ativos; toggle ON → só inativos
+            if (!showInactive && !estaAtivo) return false;
+            if (showInactive && estaAtivo) return false;
+            // Filtro de busca
+            return (
+                p.nome.toLowerCase().includes(search.toLowerCase()) ||
+                p.cpf?.includes(search) ||
+                p.email?.toLowerCase().includes(search.toLowerCase()) ||
+                p.telefone?.includes(search)
+            );
+        })
         .sort((a, b) => a.nome.localeCompare(b.nome));
 
     const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);

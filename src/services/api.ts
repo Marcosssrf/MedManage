@@ -173,6 +173,25 @@ export const consultasApi = {
     },
     cancelar: (id: string | number) =>
         request(`/consultas/${id}/cancelar`, { method: "PUT" }),
+
+    mudarStatus: async (id: string | number, status: "EM_ANDAMENTO" | "REALIZADA" | "CONFIRMADA" | "AGENDADA") => {
+        // Busca os dados completos da consulta para obter pacienteId e medicoId reais
+        const completa = await request<any>(`/consultas/${id}`);
+        const pacienteId = completa.paciente?.id;
+        const medicoId = completa.medico?.id;
+        const dataHora = completa.dataHora; // já está em ISO no backend
+        if (!pacienteId || !medicoId) throw new Error("IDs de paciente/médico não encontrados");
+        return request(`/consultas/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                pacienteId,
+                medicoId,
+                dataHora,
+                observacoes: completa.observacoes ?? null,
+                statusConsulta: status,
+            }),
+        });
+    },
     atualizar: (id: string | number, dados: { data: string; horario: string; observacoes?: string; tipoConsulta?: string }) => {
         const dataIso = dados.data.includes("/") ? dados.data.split("/").reverse().join("-") : dados.data;
         return request(`/consultas/${id}`, {
