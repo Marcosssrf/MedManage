@@ -11,6 +11,8 @@ import { useAuth } from "../context/AuthContext";
 interface Props {
     onSuccess?: () => void;
     initialData?: Consulta;
+    prefillData?: string;
+    prefillHorario?: string;
 }
 
 interface ItemSelecionado {
@@ -97,7 +99,7 @@ function Autocomplete({
     );
 }
 
-export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
+export function FormCadastroConsulta({ onSuccess, initialData, prefillData, prefillHorario }: Props) {
     const queryClient = useQueryClient();
     const { isAdmin, isSecretaria } = usePermissions();
     const { user } = useAuth();
@@ -123,8 +125,8 @@ export function FormCadastroConsulta({ onSuccess, initialData }: Props) {
         return dataBr;
     };
 
-    const [data, setData] = useState(initialData ? toInputDate(initialData.data) : "");
-    const [horario, setHorario] = useState(initialData ? (initialData.horario?.slice(0, 5) ?? "") : "");
+    const [data, setData] = useState(initialData ? toInputDate(initialData.data) : (prefillData ?? ""));
+    const [horario, setHorario] = useState(initialData ? (initialData.horario?.slice(0, 5) ?? "") : (prefillHorario ?? ""));
     const [observacoes, setObservacoes] = useState(initialData?.observacoes ?? "");
     const [tipoConsulta, setTipoConsulta] = useState(initialData?.tipoConsulta ?? "PRIMEIRA_CONSULTA");
 

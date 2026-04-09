@@ -24,6 +24,19 @@ const Field = ({ label, value }: { label: string; value?: string }) => (
     </div>
 );
 
+// ── Toggle Ativo Button
+function ToggleAtivoButton({ ativo, onToggle }: { ativo: boolean; onToggle: () => void }) {
+    return (
+        <Button
+            variant="outline"
+            onClick={onToggle}
+            className={`flex items-center gap-2 ${ativo ? "text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5" : "text-primary hover:text-primary border-primary/30 hover:bg-primary/5"}`}
+        >
+            {ativo ? "Desativar Paciente" : "Reativar Paciente"}
+        </Button>
+    );
+}
+
 // ── Detail view component
 function PacienteDetail({
     paciente,
@@ -92,9 +105,9 @@ function PacienteDetail({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">{paciente.nome}</h1>
-                <Badge className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">
-                    Ativo
-                </Badge>
+                <span className={`text-xs px-3 py-1 rounded-full font-medium ${paciente.ativo !== false ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground line-through"}`}>
+                    {paciente.ativo !== false ? "Ativo" : "Inativo"}
+                </span>
             </div>
 
             {/* Tabs */}
@@ -148,14 +161,24 @@ function PacienteDetail({
                     </div>
 
                     {canEdit && (
-                        <Button
-                            variant="outline"
-                            onClick={() => setEditDadosOpen(true)}
-                            className="flex items-center gap-2"
-                        >
-                            <Pencil className="w-4 h-4" />
-                            Editar
-                        </Button>
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setEditDadosOpen(true)}
+                                className="flex items-center gap-2"
+                            >
+                                <Pencil className="w-4 h-4" />
+                                Editar
+                            </Button>
+                            <ToggleAtivoButton
+                                ativo={paciente.ativo !== false}
+                                onToggle={() => {
+                                    pacientesApi.atualizar(paciente.id!, { ativo: !(paciente.ativo !== false) })
+                                        .then(() => { queryClient.invalidateQueries({ queryKey: ["paciente", paciente.id] }); queryClient.invalidateQueries({ queryKey: ["pacientes"] }); toast.success(paciente.ativo !== false ? "Paciente inativado." : "Paciente reativado."); })
+                                        .catch(() => toast.error("Erro ao alterar status."));
+                                }}
+                            />
+                        </div>
                     )}
                 </>
             )}
@@ -419,12 +442,13 @@ export default function Pacientes() {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [selectedId, setSelectedId] = useState<string | number | null>(null);
+    const [showInactive, setShowInactive] = useState(false);
 
     const { canAddPaciente } = usePermissions();
 
     const { data: pacientes, isLoading, error } = useQuery({
-        queryKey: ["pacientes"],
-        queryFn: pacientesApi.listar,
+        queryKey: ["pacientes", showInactive],
+        queryFn: () => pacientesApi.listar(showInactive),
     });
 
     // Busca detalhes completos do paciente selecionado
@@ -502,15 +526,29 @@ export default function Pacientes() {
                 </div>
             </div>
 
-            {/* Search */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar paciente por nome, CPF, email ou telefone..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                />
+            {/* Search + toggle inativos */}
+            <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar paciente por nome, CPF, email ou telefone..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="pl-9"
+                    />
+                </div>
+                <label className="flex items-center gap-2 text-sm cursor-pointer select-none whitespace-nowrap">
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={showInactive}
+                        onClick={() => setShowInactive(v => !v)}
+                        className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors ${showInactive ? "bg-primary" : "bg-muted"}`}
+                    >
+                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${showInactive ? "translate-x-5" : "translate-x-1"}`} />
+                    </button>
+                    <span className="text-muted-foreground">Mostrar inativos</span>
+                </label>
             </div>
 
             {/* Table */}
@@ -557,8 +595,8 @@ export default function Pacientes() {
                                         </td>
                                         <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{p.cpf}</td>
                                         <td className="py-3 px-4">
-                                            <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-primary/10 text-primary">
-                                                Ativo
+                                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${p.ativo !== false ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                                {p.ativo !== false ? "Ativo" : "Inativo"}
                                             </span>
                                         </td>
                                     </tr>

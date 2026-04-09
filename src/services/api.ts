@@ -23,12 +23,6 @@ const formatDateToBr = (dateString: string) => {
     return dateString.split("-").reverse().join("/");
 }
 
-const formatDateToIso = (dateString?: string) => {
-    if (!dateString) return undefined;
-    if (dateString.includes("-")) return dateString; // Já está no formato ISO
-    return dateString.split("/").reverse().join("-");
-};
-
 export interface Paciente {
     id?: string | number;
     nome: string;
@@ -39,28 +33,25 @@ export interface Paciente {
     cpf: string;
     email: string;
     telefone: string;
-    cep: string;
-    logradouro: string;
-    numero: string;
-    complemento: string;
-    bairro: string;
-    cidade: string;
-    uf: string;
-    convenio?: {
-        nome: string;
-    };
+    cep?: string;
+    logradouro?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    ativo?: boolean;
+    convenio?: { id?: string | number; nome: string; };
     numeroCarteirinha?: string;
     dataVencimentoCarteirinha?: string;
 }
 
 export const pacientesApi = {
-    // Retorna apenas: id, nome, cpf, telefone, email
-    listar: async () => {
-        const res = await request<Paciente[]>("/pacientes");
+    listar: async (incluirInativos = false) => {
+        const url = incluirInativos ? "/pacientes?incluirInativos=true" : "/pacientes";
+        const res = await request<Paciente[]>(url);
         return res as Paciente[];
     },
-
-    // Busca todos os dados completos do paciente
     buscarPorId: async (id: string | number) => {
         const p = await request<any>(`/pacientes/${id}`);
         return {
@@ -69,18 +60,10 @@ export const pacientesApi = {
             dataVencimentoCarteirinha: p.dataVencimentoCarteirinha ? formatDateToBr(p.dataVencimentoCarteirinha) : "",
         } as Paciente;
     },
-
     cadastrar: (data: Omit<Paciente, "id">) =>
-        request<Paciente>("/pacientes", {
-            method: "POST",
-            body: JSON.stringify(data),
-        }),
-
+        request<Paciente>("/pacientes", { method: "POST", body: JSON.stringify(data) }),
     atualizar: (id: string | number, dados: Partial<Paciente>) =>
-        request<Paciente>(`/pacientes/${id}`, {
-            method: "PATCH",
-            body: JSON.stringify(dados),
-        }),
+        request<Paciente>(`/pacientes/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
 };
 
 export interface Medico {
@@ -96,36 +79,30 @@ export interface Medico {
     especialidade: string;
     email: string;
     telefone: string;
-    cep: string;
-    logradouro: string;
-    numero: string;
-    complemento: string;
-    bairro: string;
-    cidade: string;
-    uf: string;
+    cep?: string;
+    logradouro?: string;
+    numero?: string;
+    complemento?: string;
+    bairro?: string;
+    cidade?: string;
+    uf?: string;
+    ativo?: boolean;
 }
 
 export const medicosApi = {
-    listar: async () => {
-        const res = await request<Medico[]>("/medicos");
-        return res.map(m => ({
-            ...m,
-            dataNascimento: formatDateToBr(m.dataNascimento)
-        }));
+    listar: async (incluirInativos = false) => {
+        const url = incluirInativos ? "/medicos?incluirInativos=true" : "/medicos";
+        const res = await request<Medico[]>(url);
+        return res.map(m => ({ ...m, dataNascimento: formatDateToBr(m.dataNascimento) }));
     },
-
+    buscarPorId: async (id: string | number) => {
+        const m = await request<any>(`/medicos/${id}`);
+        return { ...m, dataNascimento: m.dataNascimento ? formatDateToBr(m.dataNascimento) : "" } as Medico;
+    },
     cadastrar: (data: Omit<Medico, "id">) =>
-        request<Medico>("/medicos", {
-            method: "POST",
-            body: JSON.stringify(data),
-        }),
-
+        request<Medico>("/medicos", { method: "POST", body: JSON.stringify(data) }),
     atualizar: (id: string | number, dados: Partial<Medico>) =>
-        request<Medico>(`/medicos/${id}`, {
-            method: "PATCH",
-            body: JSON.stringify(dados),
-        })
-
+        request<Medico>(`/medicos/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
 };
 
 export interface Consulta {
@@ -145,15 +122,13 @@ export interface Consulta {
 export const consultasApi = {
     listar: async () => {
         const res = await request<any[]>("/consultas");
-
         return res.map((c) => {
             const [data, horario] = (c.dataHora || "").split("T");
             const dataBr = data ? data.split("-").reverse().join("/") : "";
-
             return {
                 id: c.id,
                 pacienteId: c.pacienteId ?? "",
-                medicoId: c.medicoId ?? c.medico?.id ?? "",
+                medicoId: c.medicoId ?? "",
                 pacienteNome: c.nomePaciente,
                 medicoNome: c.nomeMedico,
                 medicoEspecialidade: c.especialidadeMedico,
@@ -165,51 +140,47 @@ export const consultasApi = {
             } as Consulta;
         });
     },
-
-    agendar: async (
-        data: Omit<Consulta, "id" | "status" | "pacienteNome" | "medicoNome">,
-    ) => {
-        const dataIso = data.data.includes("/")
-            ? data.data.split("/").reverse().join("-")
-            : data.data;
-
-        const dataHora = `${dataIso}T${data.horario}`;
-
+    buscarPorId: async (id: string | number) => {
+        const c = await request<any>(`/consultas/${id}`);
+        const [data, horario] = (c.dataHora || "").split("T");
+        const dataBr = data ? data.split("-").reverse().join("/") : "";
+        return {
+            id: c.id,
+            pacienteId: c.paciente?.id ?? "",
+            medicoId: c.medico?.id ?? "",
+            pacienteNome: c.paciente?.nome,
+            medicoNome: c.medico?.nome,
+            medicoEspecialidade: c.medico?.especialidade,
+            tipoConsulta: c.tipoConsulta,
+            data: dataBr,
+            horario: horario,
+            status: c.status,
+            observacoes: c.observacoes,
+            anamnese: c.anamnese ?? null,
+            prescricoes: c.prescricoes ?? [],
+        };
+    },
+    agendar: async (data: Omit<Consulta, "id" | "status" | "pacienteNome" | "medicoNome">) => {
+        const dataIso = data.data.includes("/") ? data.data.split("/").reverse().join("-") : data.data;
         const body = {
             pacienteId: data.pacienteId,
             medicoId: data.medicoId,
-            dataHora: dataHora,
+            dataHora: `${dataIso}T${data.horario}`,
             tipoConsulta: data.tipoConsulta,
             observacoes: data.observacoes,
         };
-
-        return request<Consulta>("/consultas", {
-            method: "POST",
-            body: JSON.stringify(body),
-        });
+        return request<Consulta>("/consultas", { method: "POST", body: JSON.stringify(body) });
     },
-
     cancelar: (id: string | number) =>
-        request(`/consultas/${id}/cancelar`, {
-            method: "PUT",
-        }),
-
+        request(`/consultas/${id}/cancelar`, { method: "PUT" }),
     atualizar: (id: string | number, dados: { data: string; horario: string; observacoes?: string; tipoConsulta?: string }) => {
-        const dataIso = dados.data.includes("/")
-            ? dados.data.split("/").reverse().join("-")
-            : dados.data;
-
+        const dataIso = dados.data.includes("/") ? dados.data.split("/").reverse().join("-") : dados.data;
         return request(`/consultas/${id}`, {
             method: "PATCH",
-            body: JSON.stringify({
-                dataHora: `${dataIso}T${dados.horario}`,
-                observacoes: dados.observacoes,
-                tipoConsulta: dados.tipoConsulta,
-            }),
+            body: JSON.stringify({ dataHora: `${dataIso}T${dados.horario}`, observacoes: dados.observacoes, tipoConsulta: dados.tipoConsulta }),
         });
     },
 };
-
 
 export interface Pagamento {
     id?: string | number;
@@ -224,11 +195,9 @@ export interface Pagamento {
     data: string;
 }
 
-
 export const pagamentosApi = {
     listar: async () => {
         const res = await request<any[]>("/pagamentos");
-
         return res.map((p) => ({
             id: p.id,
             consultaId: p.consulta?.id ?? "",
@@ -242,7 +211,6 @@ export const pagamentosApi = {
             data: formatDateToBr(p.dataPagamento),
         } as Pagamento));
     },
-
     registrar: (data: Omit<Pagamento, "id" | "status" | "pacienteNome" | "medicoNome">) => {
         const body = {
             consultaId: data.consultaId,
@@ -251,34 +219,19 @@ export const pagamentosApi = {
             tipoPagamento: data.tipoPagamento,
             dataPagamento: `${data.data}T00:00:00`,
         };
-
-        return request<Pagamento>("/pagamentos", {
-            method: "POST",
-            body: JSON.stringify(body),
-        });
+        return request<Pagamento>("/pagamentos", { method: "POST", body: JSON.stringify(body) });
     },
-
-    confirmar: (id: string | number) => {
-        return request(`/pagamentos/${id}/confirmar`, {
-            method: "PATCH",
-        });
-    }
+    confirmar: (id: string | number) =>
+        request(`/pagamentos/${id}/confirmar`, { method: "PATCH" }),
 };
 
 export const relatoriosApi = {
     faturamentoPorMes: (ano: number) =>
         request<Record<string, number>>(`/relatorios/faturamento?ano=${ano}`),
-
     medicoMaisAtendido: () =>
         request<{ nome: string; totalConsultas: number }>("/relatorios/medico-mais-atendido"),
-
     resumo: () =>
-        request<{
-            totalPacientes: number;
-            totalMedicos: number;
-            consultasHoje: number;
-            faturamentoMensal: number;
-        }>("/dashboard/resumo"),
+        request<{ totalPacientes: number; totalMedicos: number; consultasHoje: number; faturamentoMensal: number; }>("/dashboard/resumo"),
 };
 
 export interface Usuario {
@@ -287,43 +240,23 @@ export interface Usuario {
     role: string;
     ativo: boolean;
     senha?: string;
-    medico?: {
-        id: string;
-        nome?: string;
-    } | null;
+    medico?: { id: string; nome?: string; } | null;
 }
 
 export const usuariosApi = {
     listar: async () => {
         const res = await request<any[]>("/usuarios");
-
         return res.map((u) => ({
-            id: u.id,
-            username: u.username,
-            role: u.role ?? u.role,
-            ativo: u.ativo,
-            medico: u.medico || null,
+            id: u.id, username: u.username, role: u.role, ativo: u.ativo, medico: u.medico || null,
         } as Usuario));
     },
-
     cadastrar: (data: Omit<Usuario, "id" | "ativo">) =>
-        request<Usuario>("/usuarios", {
-            method: "POST",
-            body: JSON.stringify(data),
-        }),
-
+        request<Usuario>("/usuarios", { method: "POST", body: JSON.stringify(data) }),
     atualizar: (id: string | number, dados: Partial<Usuario>) =>
-        request<Usuario>(`/usuarios/${id}`, {
-            method: "PATCH",
-            body: JSON.stringify(dados),
-        }),
-
+        request<Usuario>(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
     deletar: (id: string | number) =>
-        request(`/usuarios/${id}`, {
-            method: "DELETE",
-        }),
+        request(`/usuarios/${id}`, { method: "DELETE" }),
 };
-
 
 export interface HistoricoClinico {
     id?: string;
@@ -344,75 +277,274 @@ export interface HistoricoClinico {
 }
 
 export const historicoClinicoApi = {
-    listar: () =>
-        request<HistoricoClinico[]>("/historicosClinicos"),
-
-    buscarPorId: (id: string) =>
-        request<HistoricoClinico>(`/historicosClinicos/${id}`),
-
+    listar: () => request<HistoricoClinico[]>("/historicosClinicos"),
+    buscarPorId: (id: string) => request<HistoricoClinico>(`/historicosClinicos/${id}`),
     buscarPorPaciente: async (pacienteId: string) => {
         const res = await request<any[]>(`/historicosClinicos/paciente/${pacienteId}`);
         const h = Array.isArray(res) ? res[0] : res;
         if (!h) return null;
         return {
-            id: h.id,
-            pacienteId: pacienteId,
-            tipoSanguineo: h.tipoSanguineo,
-            peso: h.peso,
-            altura: h.altura,
-            imc: h.imc,
-            alergias: h.alergias,
-            doencasPreexistentes: h.doencasPreexistentes,
-            cirurgiasPrevias: h.cirurgiasPrevias,
-            historicoFamiliar: h.historicoFamiliar,
+            id: h.id, pacienteId,
+            tipoSanguineo: h.tipoSanguineo, peso: h.peso, altura: h.altura, imc: h.imc,
+            alergias: h.alergias, doencasPreexistentes: h.doencasPreexistentes,
+            cirurgiasPrevias: h.cirurgiasPrevias, historicoFamiliar: h.historicoFamiliar,
             medicamentosUso: h.medicamentosUsoContinuo,
-            tabagismo: h.tabagismo,
-            etilismo: h.etilismo,
-            atividadeFisica: h.praticaAtividadeFisica,
-            usoDrogas: h.usaDrogas,
+            tabagismo: h.tabagismo, etilismo: h.etilismo,
+            atividadeFisica: h.praticaAtividadeFisica, usoDrogas: h.usaDrogas,
         } as HistoricoClinico;
     },
-
     cadastrar: (dados: Omit<HistoricoClinico, "id">) => {
         const body = {
-            pacienteId: dados.pacienteId,
-            tipoSanguineo: dados.tipoSanguineo,
-            peso: dados.peso,
-            altura: dados.altura,
-            alergias: dados.alergias,
-            doencasPreexistentes: dados.doencasPreexistentes,
-            cirurgiasPrevias: dados.cirurgiasPrevias,
-            historicoFamiliar: dados.historicoFamiliar,
+            pacienteId: dados.pacienteId, tipoSanguineo: dados.tipoSanguineo, peso: dados.peso, altura: dados.altura,
+            alergias: dados.alergias, doencasPreexistentes: dados.doencasPreexistentes,
+            cirurgiasPrevias: dados.cirurgiasPrevias, historicoFamiliar: dados.historicoFamiliar,
             medicamentosUsoContinuo: dados.medicamentosUso,
-            tabagismo: dados.tabagismo,
-            etilismo: dados.etilismo,
-            praticaAtividadeFisica: dados.atividadeFisica,
-            usaDrogas: dados.usoDrogas,
+            tabagismo: dados.tabagismo, etilismo: dados.etilismo,
+            praticaAtividadeFisica: dados.atividadeFisica, usaDrogas: dados.usoDrogas,
         };
-        return request<HistoricoClinico>("/historicosClinicos", {
-            method: "POST",
-            body: JSON.stringify(body),
-        });
+        return request<HistoricoClinico>("/historicosClinicos", { method: "POST", body: JSON.stringify(body) });
     },
-
     atualizar: (id: string, dados: Partial<HistoricoClinico>) => {
         const body = {
-            tipoSanguineo: dados.tipoSanguineo,
-            peso: dados.peso,
-            altura: dados.altura,
-            alergias: dados.alergias,
-            doencasPreexistentes: dados.doencasPreexistentes,
-            cirurgiasPrevias: dados.cirurgiasPrevias,
-            historicoFamiliar: dados.historicoFamiliar,
+            tipoSanguineo: dados.tipoSanguineo, peso: dados.peso, altura: dados.altura,
+            alergias: dados.alergias, doencasPreexistentes: dados.doencasPreexistentes,
+            cirurgiasPrevias: dados.cirurgiasPrevias, historicoFamiliar: dados.historicoFamiliar,
             medicamentosUsoContinuo: dados.medicamentosUso,
-            tabagismo: dados.tabagismo,
-            etilismo: dados.etilismo,
-            praticaAtividadeFisica: dados.atividadeFisica,
-            usaDrogas: dados.usoDrogas,
+            tabagismo: dados.tabagismo, etilismo: dados.etilismo,
+            praticaAtividadeFisica: dados.atividadeFisica, usaDrogas: dados.usoDrogas,
         };
-        return request<HistoricoClinico>(`/historicosClinicos/${id}`, {
-            method: "PATCH",
-            body: JSON.stringify(body),
-        });
+        return request<HistoricoClinico>(`/historicosClinicos/${id}`, { method: "PATCH", body: JSON.stringify(body) });
     },
+};
+
+// ─────────────────────────────────────────────
+// CONVÊNIOS — campos alinhados com backend
+// ─────────────────────────────────────────────
+export interface Convenio {
+    id?: string | number;
+    nome: string;
+    registroANS?: string;       // backend: registroANS (ConvenioDTO)
+    cnpj?: string;
+    telefone?: string;
+    diasParaFaturamento?: number; // backend: diasParaFaturamento
+    ativo?: boolean;
+}
+
+export const conveniosApi = {
+    listar: () => request<Convenio[]>("/convenios"),
+    buscarPorId: (id: string | number) => request<Convenio>(`/convenios/${id}`),
+    cadastrar: (dados: Omit<Convenio, "id">) =>
+        request<Convenio>("/convenios", {
+            method: "POST",
+            body: JSON.stringify({
+                nome: dados.nome,
+                cnpj: dados.cnpj,
+                registroANS: dados.registroANS,
+                telefone: dados.telefone,
+                diasParaFaturamento: dados.diasParaFaturamento,
+                ativo: dados.ativo,
+            }),
+        }),
+    atualizar: (id: string | number, dados: Partial<Convenio>) =>
+        request<Convenio>(`/convenios/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                nome: dados.nome,
+                telefone: dados.telefone,
+                diasParaFaturamento: dados.diasParaFaturamento,
+                ativo: dados.ativo,
+            }),
+        }),
+};
+
+// ─────────────────────────────────────────────
+// CONFIGURAÇÕES DA CLÍNICA
+// ─────────────────────────────────────────────
+export interface ConfiguracaoClinica {
+    id?: string | number;
+    nomeClinica: string;
+    cnpj?: string;
+    telefone?: string;
+    horarioAbertura?: string;
+    horarioFechamento?: string;
+    duracaoPadraoConsulta?: number;
+}
+
+function parseLocalTime(value: any): string | undefined {
+    if (!value) return undefined;
+    if (typeof value === "string") return value.slice(0, 5);
+    if (Array.isArray(value)) return `${String(value[0]).padStart(2, "0")}:${String(value[1]).padStart(2, "0")}`;
+    return undefined;
+}
+
+export const configuracoesApi = {
+    buscar: async (): Promise<ConfiguracaoClinica | null> => {
+        try {
+            const data = await request<any>("/configuracaoClinica");
+            return {
+                id: data.id,
+                nomeClinica: data.nomeClinica,
+                cnpj: data.cnpj,
+                telefone: data.telefone,
+                horarioAbertura: parseLocalTime(data.horarioAbertura),
+                horarioFechamento: parseLocalTime(data.horarioFechamento),
+                duracaoPadraoConsulta: data.duracaoPadraoConsultas ?? data.duracaoPadraoConsulta,
+            };
+        } catch {
+            return null;
+        }
+    },
+    salvar: (dados: Partial<ConfiguracaoClinica>) =>
+        request<ConfiguracaoClinica>("/configuracaoClinica", {
+            method: "PATCH",
+            body: JSON.stringify({
+                nomeClinica: dados.nomeClinica,
+                cnpj: dados.cnpj,
+                telefone: dados.telefone,
+                horarioAbertura: dados.horarioAbertura,
+                horarioFechamento: dados.horarioFechamento,
+                duracaoPadraoConsulta: dados.duracaoPadraoConsulta,
+            }),
+        }),
+};
+
+// ─────────────────────────────────────────────
+// ANAMNESE — alinhado com backend
+// AnamneseController: POST /anamneses, GET /anamneses/{id}
+// Anamnese vem embutida em GET /consultas/{id}
+// ─────────────────────────────────────────────
+export interface Anamnese {
+    id?: string;
+    consultaId: string | number;
+    queixaPrincipal?: string;
+    historiaMolestiaPrincipal?: string;
+    exameFisico?: string;
+    hipoteseDiagnostica?: string;
+    solicitacaoDeExames?: string;
+    encaminhamento?: string;
+    condutaMedica?: string;
+    cidCodigo?: string;
+}
+
+export const anamneseApi = {
+    buscarPorConsulta: async (consultaId: string | number): Promise<Anamnese | null> => {
+        try {
+            const consulta = await request<any>(`/consultas/${consultaId}`);
+            const a = consulta.anamnese;
+            if (!a) return null;
+            return {
+                id: a.id,
+                consultaId,
+                queixaPrincipal: a.queixaPrincipal,
+                historiaMolestiaPrincipal: a.historiaMolestiaPrincipal,
+                exameFisico: a.exameFisico,
+                hipoteseDiagnostica: a.hipoteseDiagnostica,
+                solicitacaoDeExames: a.solicitacaoDeExames,
+                encaminhamento: a.encaminhamento,
+                condutaMedica: a.condutaMedica,
+                cidCodigo: typeof a.cidCodigo === "object" ? a.cidCodigo?.codigo : a.cidCodigo,
+            };
+        } catch {
+            return null;
+        }
+    },
+    cadastrar: (dados: Omit<Anamnese, "id">) =>
+        request<Anamnese>("/anamneses", {
+            method: "POST",
+            body: JSON.stringify({
+                consultaId: dados.consultaId,
+                queixaPrincipal: dados.queixaPrincipal ?? "",
+                historiaMolestiaPrincipal: dados.historiaMolestiaPrincipal,
+                exameFisico: dados.exameFisico,
+                hipoteseDiagnostica: dados.hipoteseDiagnostica,
+                solicitacaoDeExames: dados.solicitacaoDeExames,
+                encaminhamento: dados.encaminhamento,
+                condutaMedica: dados.condutaMedica,
+                cidCodigo: dados.cidCodigo || undefined,
+                prescricoes: [],
+            }),
+        }),
+    // Não há PATCH no backend - envia novo POST (recria anamnese)
+    atualizar: (id: string, dados: Partial<Anamnese>) =>
+        request<Anamnese>("/anamneses", {
+            method: "POST",
+            body: JSON.stringify({
+                consultaId: dados.consultaId,
+                queixaPrincipal: dados.queixaPrincipal ?? "",
+                historiaMolestiaPrincipal: dados.historiaMolestiaPrincipal,
+                exameFisico: dados.exameFisico,
+                hipoteseDiagnostica: dados.hipoteseDiagnostica,
+                solicitacaoDeExames: dados.solicitacaoDeExames,
+                encaminhamento: dados.encaminhamento,
+                condutaMedica: dados.condutaMedica,
+                cidCodigo: dados.cidCodigo || undefined,
+                prescricoes: [],
+            }),
+        }),
+};
+
+// ─────────────────────────────────────────────
+// PRESCRIÇÕES — salvas via anamnese
+// Backend: prescrições são embutidas em AnamneseDTO.prescricoes[]
+// Não existe endpoint POST /prescricoes separado
+// ─────────────────────────────────────────────
+export interface Prescricao {
+    id?: string;
+    consultaId?: string | number;
+    medicamento: string;
+    dosagem?: string;
+    frequencia?: string;
+    duracao?: string;
+    viaAdministracao?: string;
+    via?: string;
+    observacoes?: string;
+    tipoReceita?: string;
+}
+
+export const prescricoesApi = {
+    listarPorConsulta: async (consultaId: string | number): Promise<Prescricao[]> => {
+        try {
+            const consulta = await request<any>(`/consultas/${consultaId}`);
+            const prescricoes = consulta.anamnese?.prescricoes ?? consulta.prescricoes ?? [];
+            return prescricoes.map((p: any) => ({
+                id: p.id,
+                consultaId,
+                medicamento: p.medicamento,
+                dosagem: p.dosagem,
+                frequencia: p.frequencia,
+                duracao: p.duracao,
+                viaAdministracao: p.viaAdministracao,
+                via: p.viaAdministracao,
+                observacoes: p.observacoes,
+                tipoReceita: p.tipoReceita,
+            } as Prescricao));
+        } catch {
+            return [];
+        }
+    },
+    // Salva anamnese com prescrições embutidas
+    salvarComAnamnese: (anamneseId: string | undefined, consultaId: string | number, prescricoes: Omit<Prescricao, "id" | "consultaId">[], anamneseData: Partial<Anamnese>) =>
+        request<Anamnese>("/anamneses", {
+            method: "POST",
+            body: JSON.stringify({
+                consultaId,
+                queixaPrincipal: anamneseData.queixaPrincipal ?? "",
+                historiaMolestiaPrincipal: anamneseData.historiaMolestiaPrincipal,
+                exameFisico: anamneseData.exameFisico,
+                hipoteseDiagnostica: anamneseData.hipoteseDiagnostica,
+                solicitacaoDeExames: anamneseData.solicitacaoDeExames,
+                encaminhamento: anamneseData.encaminhamento,
+                condutaMedica: anamneseData.condutaMedica,
+                cidCodigo: anamneseData.cidCodigo || undefined,
+                prescricoes: prescricoes.map(p => ({
+                    medicamento: p.medicamento,
+                    dosagem: p.dosagem ?? "",
+                    viaAdministracao: p.viaAdministracao ?? p.via ?? "",
+                    frequencia: p.frequencia ?? "",
+                    duracao: p.duracao ?? "",
+                    observacao: p.observacoes,
+                    tipoReceita: p.tipoReceita ?? "COMUM",
+                })),
+            }),
+        }),
 };

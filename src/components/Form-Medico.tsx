@@ -21,6 +21,7 @@ interface FormData {
     bairro: string;
     cidade: string;
     uf: string;
+    ativo: boolean;
 }
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
@@ -48,60 +49,21 @@ const ESTADOS_BR: string[] = [
 ];
 
 const ESPECIALIDADES: string[] = [
-    "Acupuntura",
-    "Alergia e Imunologia",
-    "Anestesiologia",
-    "Angiologia",
-    "Cardiologia",
-    "Cirurgia Cardiovascular",
-    "Cirurgia da Mão",
-    "Cirurgia de Cabeça e Pescoço",
-    "Cirurgia do Aparelho Digestivo",
-    "Cirurgia Geral",
-    "Cirurgia Oncológica",
-    "Cirurgia Pediátrica",
-    "Cirurgia Plástica",
-    "Cirurgia Torácica",
-    "Cirurgia Vascular",
-    "Clínica Médica",
-    "Coloproctologia",
-    "Dermatologia",
-    "Endocrinologia e Metabologia",
-    "Endoscopia",
-    "Gastroenterologia",
-    "Genética Médica",
-    "Geriatria",
-    "Ginecologia e Obstetrícia",
-    "Hematologia e Hemoterapia",
-    "Homeopatia",
-    "Infectologia",
-    "Mastologia",
-    "Medicina de Emergência",
-    "Medicina de Família e Comunidade",
-    "Medicina do Trabalho",
-    "Medicina Esportiva",
-    "Medicina Física e Reabilitação",
-    "Medicina Intensiva",
-    "Medicina Legal e Perícia Médica",
-    "Medicina Nuclear",
-    "Medicina Preventiva e Social",
-    "Nefrologia",
-    "Neurocirurgia",
-    "Neurologia",
-    "Nutrologia",
-    "Oftalmologia",
-    "Oncologia Clínica",
-    "Ortopedia e Traumatologia",
-    "Otorrinolaringologia",
-    "Patologia",
-    "Patologia Clínica / Medicina Laboratorial",
-    "Pediatria",
-    "Pneumologia",
-    "Psiquiatria",
-    "Radiologia e Diagnóstico por Imagem",
-    "Radioterapia",
-    "Reumatologia",
-    "Urologia",
+    "Acupuntura", "Alergia e Imunologia", "Anestesiologia", "Angiologia", "Cardiologia",
+    "Cirurgia Cardiovascular", "Cirurgia da Mão", "Cirurgia de Cabeça e Pescoço",
+    "Cirurgia do Aparelho Digestivo", "Cirurgia Geral", "Cirurgia Oncológica",
+    "Cirurgia Pediátrica", "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular",
+    "Clínica Médica", "Coloproctologia", "Dermatologia", "Endocrinologia e Metabologia",
+    "Endoscopia", "Gastroenterologia", "Genética Médica", "Geriatria",
+    "Ginecologia e Obstetrícia", "Hematologia e Hemoterapia", "Homeopatia", "Infectologia",
+    "Mastologia", "Medicina de Emergência", "Medicina de Família e Comunidade",
+    "Medicina do Trabalho", "Medicina Esportiva", "Medicina Física e Reabilitação",
+    "Medicina Intensiva", "Medicina Legal e Perícia Médica", "Medicina Nuclear",
+    "Medicina Preventiva e Social", "Nefrologia", "Neurocirurgia", "Neurologia",
+    "Nutrologia", "Oftalmologia", "Oncologia Clínica", "Ortopedia e Traumatologia",
+    "Otorrinolaringologia", "Patologia", "Patologia Clínica / Medicina Laboratorial",
+    "Pediatria", "Pneumologia", "Psiquiatria", "Radiologia e Diagnóstico por Imagem",
+    "Radioterapia", "Reumatologia", "Urologia",
 ];
 
 const initialForm: FormData = {
@@ -109,7 +71,7 @@ const initialForm: FormData = {
     cpf: "", crm: "", crmEstado: "", especialidade: "",
     email: "", telefone: "",
     cep: "", logradouro: "", numero: "", complemento: "",
-    bairro: "", cidade: "", uf: "",
+    bairro: "", cidade: "", uf: "", ativo: true,
 };
 
 const maskCPF = (v: string): string =>
@@ -128,48 +90,25 @@ const maskCEP = (v: string): string =>
     v.replace(/\D/g, "").slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2");
 
 const fieldsetStyle: React.CSSProperties = {
-    border: "1px solid #e5e5e5",
-    borderRadius: 10,
-    padding: "1.25rem 1.5rem",
-    marginBottom: "1.25rem",
+    border: "1px solid #e5e5e5", borderRadius: 10,
+    padding: "1.25rem 1.5rem", marginBottom: "1.25rem",
 };
-
 const legendStyle: React.CSSProperties = {
-    fontSize: 12,
-    fontWeight: 500,
-    color: "#888",
-    padding: "0 8px",
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
+    fontSize: 12, fontWeight: 500, color: "#888",
+    padding: "0 8px", textTransform: "uppercase", letterSpacing: "0.04em",
 };
-
 const grid2: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 12,
+    display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12,
 };
-
 const btnSecStyle: React.CSSProperties = {
-    height: 36,
-    border: "1px solid #ddd",
-    borderRadius: 6,
-    background: "transparent",
-    fontSize: 13,
-    cursor: "pointer",
-    padding: "0 12px",
-    fontFamily: "inherit",
+    height: 36, border: "1px solid #ddd", borderRadius: 6,
+    background: "transparent", fontSize: 13, cursor: "pointer",
+    padding: "0 12px", fontFamily: "inherit",
 };
-
 const btnPrimaryStyle: React.CSSProperties = {
-    height: 40,
-    padding: "0 28px",
-    borderRadius: 6,
-    border: "1px solid #ccc",
-    background: "transparent",
-    fontSize: 14,
-    fontWeight: 500,
-    cursor: "pointer",
-    fontFamily: "inherit",
+    height: 40, padding: "0 28px", borderRadius: 6, border: "1px solid #ccc",
+    background: "transparent", fontSize: 14, fontWeight: 500,
+    cursor: "pointer", fontFamily: "inherit",
 };
 
 const Campo = ({ id, label, required, error, children }: CampoProps) => (
@@ -190,43 +129,42 @@ interface Props {
 export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
     const isEditing = !!initialData;
 
-    const [form, setForm] = useState<FormData>(initialForm ? {
-        nome: initialData?.nome ?? "",
-        dataNascimento: initialData?.dataNascimento ?? "",
-        sexo: initialData?.sexo ?? "",
-        estadoCivil: initialData?.estadoCivil ?? "",
-        cpf: initialData?.cpf ?? "",
-        crm: initialData?.crm ?? "",
-        crmEstado: initialData?.crmEstado ?? "",
-        especialidade: initialData?.especialidade ?? "",
-        email: initialData?.email ?? "",
-        telefone: initialData?.telefone ?? "",
-        cep: initialData?.cep ?? "",
-        logradouro: initialData?.logradouro ?? "",
-        numero: initialData?.numero ?? "",
-        complemento: initialData?.complemento ?? "",
-        bairro: initialData?.bairro ?? "",
-        cidade: initialData?.cidade ?? "",
-        uf: initialData?.uf ?? "",
-    } : initialForm
-    );
+    const [form, setForm] = useState<FormData>(() => initialData ? {
+        nome: initialData.nome ?? "",
+        dataNascimento: initialData.dataNascimento ?? "",
+        sexo: initialData.sexo ?? "",
+        estadoCivil: initialData.estadoCivil ?? "",
+        cpf: initialData.cpf ?? "",
+        crm: initialData.crm ?? "",
+        crmEstado: initialData.crmEstado ?? "",
+        especialidade: initialData.especialidade ?? "",
+        email: initialData.email ?? "",
+        telefone: initialData.telefone ?? "",
+        cep: initialData.cep ?? "",
+        logradouro: initialData.logradouro ?? "",
+        numero: initialData.numero ?? "",
+        complemento: initialData.complemento ?? "",
+        bairro: initialData.bairro ?? "",
+        cidade: initialData.cidade ?? "",
+        uf: initialData.uf ?? "",
+        ativo: initialData.ativo !== false,
+    } : initialForm);
+
     const [errors, setErrors] = useState<FormErrors>({});
     const [buscandoCep, setBuscandoCep] = useState(false);
-    const [sucesso, setSucesso] = useState(false);
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
         mutationFn: (data: FormData) =>
-            isEditing ? medicosApi.atualizar(initialData!.id!, data) :
-                medicosApi.cadastrar(data),
+            isEditing ? medicosApi.atualizar(initialData!.id!, data) : medicosApi.cadastrar(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["medicos"] });
-            if (isEditing) setForm(initialForm);
-            toast.success(isEditing ? "Medico Atualizado com Sucesso!" : "Medico Cadastrado com Sucesso!");
+            queryClient.invalidateQueries({ queryKey: ["medico", initialData?.id] });
+            toast.success(isEditing ? "Médico atualizado com sucesso!" : "Médico cadastrado com sucesso!");
             onSuccess?.();
         },
         onError: (error: Error) => {
-            toast.error(error.message || (isEditing ? "Erro ao atualizar medico" : "Erro ao cadastrar medico"));
+            toast.error(error.message || (isEditing ? "Erro ao atualizar médico" : "Erro ao cadastrar médico"));
         }
     });
 
@@ -235,9 +173,7 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
         setErrors(prev => ({ ...prev, [campo]: undefined }));
     };
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ): void => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
         const { name, value } = e.target;
         if (name === "cpf") return set("cpf", maskCPF(value));
         if (name === "telefone") return set("telefone", maskPhone(value));
@@ -247,10 +183,7 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
 
     const buscarCep = async (): Promise<void> => {
         const cep = form.cep.replace(/\D/g, "");
-        if (cep.length !== 8) {
-            setErrors((prev) => ({ ...prev, cep: "CEP inválido" }));
-            return;
-        }
+        if (cep.length !== 8) { setErrors((prev) => ({ ...prev, cep: "CEP inválido" })); return; }
         setBuscandoCep(true);
         try {
             const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
@@ -259,11 +192,8 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
                 setErrors((prev) => ({ ...prev, cep: "CEP não encontrado" }));
             } else {
                 setForm((prev) => ({
-                    ...prev,
-                    logradouro: data.logradouro ?? "",
-                    bairro: data.bairro ?? "",
-                    cidade: data.localidade ?? "",
-                    uf: data.uf ?? "",
+                    ...prev, logradouro: data.logradouro ?? "",
+                    bairro: data.bairro ?? "", cidade: data.localidade ?? "", uf: data.uf ?? "",
                 }));
                 setErrors((prev) => ({ ...prev, cep: undefined }));
             }
@@ -279,79 +209,51 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
         if (!form.dataNascimento) erros.dataNascimento = "Campo obrigatório";
         if (!form.sexo) erros.sexo = "Campo obrigatório";
         if (!form.estadoCivil) erros.estadoCivil = "Campo obrigatório";
-        if (!form.cpf || form.cpf.replace(/\D/g, "").length !== 11)
-            erros.cpf = "CPF inválido";
-        if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-            erros.email = "E-mail inválido";
+        if (!form.cpf || form.cpf.replace(/\D/g, "").length !== 11) erros.cpf = "CPF inválido";
+        if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) erros.email = "E-mail inválido";
         return erros;
     };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
         e.preventDefault();
         const erros = validate();
-        if (Object.keys(erros).length > 0) {
-            setErrors(erros);
-            return;
-        }
+        if (Object.keys(erros).length > 0) { setErrors(erros); return; }
         mutation.mutate(form);
     };
 
     const inputStyle = (campo: keyof FormData): React.CSSProperties => ({
-        height: 36,
-        padding: "0 10px",
+        height: 36, padding: "0 10px",
         border: `1px solid ${errors[campo] ? "red" : "#ddd"}`,
-        borderRadius: 6,
-        fontSize: 14,
-        fontFamily: "inherit",
+        borderRadius: 6, fontSize: 14, fontFamily: "inherit",
     });
-
-    const selectStyle = (campo: keyof FormData): React.CSSProperties => ({
-        ...inputStyle(campo),
-        background: "white",
-    });
+    const selectStyle = (campo: keyof FormData): React.CSSProperties => ({ ...inputStyle(campo), background: "white" });
 
     return (
         <div style={{ maxWidth: 680, fontFamily: "sans-serif" }}>
             <form onSubmit={handleSubmit} noValidate>
-
                 <fieldset style={fieldsetStyle}>
                     <legend style={legendStyle}>Dados Pessoais</legend>
                     <div style={grid2}>
                         <div style={{ gridColumn: "span 2" }}>
                             <Campo id="nome" label="Nome Completo" required error={errors.nome}>
-                                <input
-                                    id="nome" name="nome" type="text" value={form.nome} onChange={handleChange}
-                                    style={inputStyle("nome")} placeholder="Ex: João da Silva" autoComplete="name"
-                                />
+                                <input id="nome" name="nome" type="text" value={form.nome} onChange={handleChange}
+                                    style={inputStyle("nome")} placeholder="Ex: Dr. João da Silva" autoComplete="name" />
                             </Campo>
                         </div>
-
                         <Campo id="dataNascimento" label="Data de Nascimento" required error={errors.dataNascimento}>
-                            <input
-                                id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento} onChange={handleChange}
-                                style={inputStyle("dataNascimento")}
-                            />
+                            <input id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento}
+                                onChange={handleChange} style={inputStyle("dataNascimento")} />
                         </Campo>
-
                         <Campo id="sexo" label="Sexo biológico" required error={errors.sexo}>
-                            <select
-                                id="sexo" name="sexo"
-                                value={form.sexo} onChange={handleChange}
-                                style={selectStyle("sexo")}
-                            >
+                            <select id="sexo" name="sexo" value={form.sexo} onChange={handleChange} style={selectStyle("sexo")}>
                                 <option value="">Selecione</option>
                                 <option value="masculino">Masculino</option>
                                 <option value="feminino">Feminino</option>
                                 <option value="nao_informado">Prefiro não informar</option>
                             </select>
                         </Campo>
-
                         <Campo id="estadoCivil" label="Estado civil" required error={errors.estadoCivil}>
-                            <select
-                                id="estadoCivil" name="estadoCivil"
-                                value={form.estadoCivil} onChange={handleChange}
-                                style={selectStyle("estadoCivil")}
-                            >
+                            <select id="estadoCivil" name="estadoCivil" value={form.estadoCivil} onChange={handleChange} style={selectStyle("estadoCivil")}>
                                 <option value="">Selecione</option>
                                 <option value="solteiro">Solteiro(a)</option>
                                 <option value="casado">Casado(a)</option>
@@ -360,16 +262,10 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
                                 <option value="uniao_estavel">União estável</option>
                             </select>
                         </Campo>
-
                         <Campo id="cpf" label="CPF" required error={errors.cpf}>
-                            <input
-                                id="cpf" name="cpf" type="text"
-                                value={form.cpf} onChange={handleChange}
+                            <input id="cpf" name="cpf" type="text" value={form.cpf} onChange={handleChange}
                                 style={{ ...inputStyle("cpf"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
-                                inputMode="numeric" maxLength={14}
-                                placeholder="000.000.000-00"
-                                disabled={isEditing}
-                            />
+                                inputMode="numeric" maxLength={14} placeholder="000.000.000-00" disabled={isEditing} />
                         </Campo>
                     </div>
                 </fieldset>
@@ -377,71 +273,40 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
                 <fieldset style={fieldsetStyle}>
                     <legend style={legendStyle}>Dados profissionais</legend>
                     <div style={grid2}>
-
                         <Campo id="crm" label="CRM" required error={errors.crm}>
-                            <input
-                                id="crm" name="crm" type="text"
-                                value={form.crm} onChange={handleChange}
+                            <input id="crm" name="crm" type="text" value={form.crm} onChange={handleChange}
                                 style={{ ...inputStyle("crm"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
-                                inputMode="numeric" maxLength={6}
-                                placeholder="000000"
-                                disabled={isEditing}
-                            />
+                                inputMode="numeric" maxLength={6} placeholder="000000" disabled={isEditing} />
                         </Campo>
-
                         <Campo id="crmEstado" label="Estado do CRM" required error={errors.crmEstado}>
-                            <select
-                                id="crmEstado" name="crmEstado"
-                                value={form.crmEstado} onChange={handleChange}
+                            <select id="crmEstado" name="crmEstado" value={form.crmEstado} onChange={handleChange}
                                 style={{ ...selectStyle("crmEstado"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
-                                disabled={isEditing}
-                            >
+                                disabled={isEditing}>
                                 <option value="">Selecione</option>
-                                {ESTADOS_BR.map((uf) => (
-                                    <option key={uf} value={uf}>{uf}</option>
-                                ))}
+                                {ESTADOS_BR.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
                             </select>
                         </Campo>
-
                         <div style={{ gridColumn: "span 2" }}>
                             <Campo id="especialidade" label="Especialidade" required error={errors.especialidade}>
-                                <select
-                                    id="especialidade" name="especialidade"
-                                    value={form.especialidade} onChange={handleChange}
-                                    style={selectStyle("especialidade")}
-                                >
+                                <select id="especialidade" name="especialidade" value={form.especialidade} onChange={handleChange} style={selectStyle("especialidade")}>
                                     <option value="">Selecione</option>
-                                    {ESPECIALIDADES.map((esp) => (
-                                        <option key={esp} value={esp}>{esp}</option>
-                                    ))}
+                                    {ESPECIALIDADES.map((esp) => <option key={esp} value={esp}>{esp}</option>)}
                                 </select>
                             </Campo>
                         </div>
-
                     </div>
                 </fieldset>
 
                 <fieldset style={fieldsetStyle}>
                     <legend style={legendStyle}>Contato</legend>
                     <div style={grid2}>
-
                         <Campo id="email" label="E-mail" required error={errors.email}>
-                            <input
-                                id="email" name="email" type="email"
-                                value={form.email} onChange={handleChange}
-                                style={inputStyle("email")} placeholder="exemplo@email.com"
-                                inputMode="email" autoComplete="email"
-                            />
+                            <input id="email" name="email" type="email" value={form.email} onChange={handleChange}
+                                style={inputStyle("email")} placeholder="exemplo@email.com" inputMode="email" autoComplete="email" />
                         </Campo>
-
                         <Campo id="telefone" label="Telefone / celular" required error={errors.telefone}>
-                            <input
-                                id="telefone" name="telefone" type="text"
-                                value={form.telefone} onChange={handleChange}
-                                style={inputStyle("telefone")}
-                                inputMode="numeric" maxLength={15}
-                                placeholder="(00) 00000-0000"
-                            />
+                            <input id="telefone" name="telefone" type="text" value={form.telefone} onChange={handleChange}
+                                style={inputStyle("telefone")} inputMode="numeric" maxLength={15} placeholder="(00) 00000-0000" />
                         </Campo>
                     </div>
                 </fieldset>
@@ -451,80 +316,76 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
                     <div style={{ display: "grid", flexDirection: "column", gap: 12 }}>
                         <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "end" }}>
                             <Campo id="cep" label="CEP" error={errors.cep}>
-                                <input
-                                    id="cep" name="cep" type="text"
-                                    value={form.cep} onChange={handleChange}
-                                    style={inputStyle("cep")}
-                                    inputMode="numeric" maxLength={9}
-                                    placeholder="00000-000"
-                                />
+                                <input id="cep" name="cep" type="text" value={form.cep} onChange={handleChange}
+                                    style={inputStyle("cep")} inputMode="numeric" maxLength={9} placeholder="00000-000" />
                             </Campo>
-                            <button
-                                type="button" onClick={buscarCep}
-                                disabled={buscandoCep} style={btnSecStyle}
-                            >
+                            <button type="button" onClick={buscarCep} disabled={buscandoCep} style={btnSecStyle}>
                                 {buscandoCep ? "Buscando..." : "Buscar endereço"}
                             </button>
                         </div>
-
                         <Campo id="logradouro" label="Logradouro" error={errors.logradouro}>
-                            <input
-                                id="logradouro" name="logradouro" type="text"
-                                value={form.logradouro} onChange={handleChange}
-                                style={inputStyle("logradouro")}
-                                autoComplete="street-address"
-                            />
+                            <input id="logradouro" name="logradouro" type="text" value={form.logradouro} onChange={handleChange}
+                                style={inputStyle("logradouro")} autoComplete="street-address" />
                         </Campo>
-
                         <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 12 }}>
                             <Campo id="numero" label="Número" error={errors.numero}>
-                                <input
-                                    id="numero" name="numero" type="text"
-                                    value={form.numero} onChange={handleChange}
-                                    style={inputStyle("numero")}
-                                    inputMode="numeric" maxLength={10}
-                                />
+                                <input id="numero" name="numero" type="text" value={form.numero} onChange={handleChange}
+                                    style={inputStyle("numero")} inputMode="numeric" maxLength={10} />
                             </Campo>
                             <Campo id="complemento" label="Complemento" error={errors.complemento}>
-                                <input
-                                    id="complemento" name="complemento" type="text"
-                                    value={form.complemento} onChange={handleChange}
-                                    style={inputStyle("complemento")}
-                                    placeholder="Apto, bloco, sala..."
-                                />
+                                <input id="complemento" name="complemento" type="text" value={form.complemento} onChange={handleChange}
+                                    style={inputStyle("complemento")} placeholder="Apto, bloco, sala..." />
                             </Campo>
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px", gap: 12 }}>
                             <Campo id="bairro" label="Bairro" error={errors.bairro}>
-                                <input
-                                    id="bairro" name="bairro" type="text"
-                                    value={form.bairro} onChange={handleChange}
-                                    style={inputStyle("bairro")}
-                                />
+                                <input id="bairro" name="bairro" type="text" value={form.bairro} onChange={handleChange} style={inputStyle("bairro")} />
                             </Campo>
                             <Campo id="cidade" label="Cidade" error={errors.cidade}>
-                                <input
-                                    id="cidade" name="cidade" type="text"
-                                    value={form.cidade} onChange={handleChange}
-                                    style={inputStyle("cidade")}
-                                />
+                                <input id="cidade" name="cidade" type="text" value={form.cidade} onChange={handleChange} style={inputStyle("cidade")} />
                             </Campo>
                             <Campo id="uf" label="UF" error={errors.uf}>
-                                <select
-                                    id="uf" name="uf"
-                                    value={form.uf} onChange={handleChange}
-                                    style={selectStyle("uf")}
-                                >
+                                <select id="uf" name="uf" value={form.uf} onChange={handleChange} style={selectStyle("uf")}>
                                     <option value="">—</option>
-                                    {ESTADOS_BR.map((uf) => (
-                                        <option key={uf} value={uf}>{uf}</option>
-                                    ))}
+                                    {ESTADOS_BR.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
                                 </select>
                             </Campo>
                         </div>
-
                     </div>
+                </fieldset>
+
+                {/* Status Ativo/Inativo */}
+                <fieldset style={fieldsetStyle}>
+                    <legend style={legendStyle}>Status</legend>
+                    <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", userSelect: "none" }}>
+                        <button
+                            type="button"
+                            role="switch"
+                            aria-checked={form.ativo}
+                            onClick={() => setForm(f => ({ ...f, ativo: !f.ativo }))}
+                            style={{
+                                position: "relative", display: "inline-flex",
+                                height: 24, width: 44, alignItems: "center",
+                                borderRadius: 9999, border: "none", cursor: "pointer",
+                                backgroundColor: form.ativo ? "#6366f1" : "#d1d5db",
+                                transition: "background-color 0.2s",
+                            }}
+                        >
+                            <span style={{
+                                display: "inline-block", height: 16, width: 16,
+                                transform: form.ativo ? "translateX(24px)" : "translateX(4px)",
+                                borderRadius: 9999, backgroundColor: "white",
+                                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                                transition: "transform 0.2s",
+                            }} />
+                        </button>
+                        <span style={{ fontSize: 14, fontWeight: 500 }}>
+                            {form.ativo ? "Médico Ativo" : "Médico Inativo"}
+                        </span>
+                        <span style={{ fontSize: 12, color: "#888" }}>
+                            {form.ativo ? "(aparece nas listagens e pode ter consultas)" : "(não aparece nas listagens ativas)"}
+                        </span>
+                    </label>
                 </fieldset>
 
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
@@ -535,11 +396,9 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
                     >
                         {mutation.isPending
                             ? (isEditing ? "Salvando..." : "Cadastrando...")
-                            : (isEditing ? "Salvar alterações" : "Cadastrar médicos")
-                        }
+                            : (isEditing ? "Salvar alterações" : "Cadastrar médico")}
                     </button>
                 </div>
-
             </form>
         </div>
     );

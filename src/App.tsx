@@ -8,6 +8,8 @@ import Consultas from "./pages/Consultas";
 import Pagamentos from "./pages/Pagamentos";
 import Dashboard from "./pages/Dashboard";
 import Usuarios from "./pages/Usuarios";
+import Convenios from "./pages/Convenios";
+import Configuracoes from "./pages/Configuracoes";
 
 export default function App() {
   return (
@@ -38,17 +40,29 @@ export default function App() {
             <Consultas />
           </ProtectedRoute>
         } />
-        <Route
-          path="pagamentos"
-          element={
-            <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
-              <Pagamentos />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="pagamentos" element={
+          <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
+            <Pagamentos />
+          </ProtectedRoute>
+        } />
+        <Route path="convenios" element={
+          <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
+            <Convenios />
+          </ProtectedRoute>
+        } />
         <Route path="usuarios" element={
           <ProtectedRoute roles={["ADMIN"]}>
             <Usuarios />
+          </ProtectedRoute>
+        } />
+        <Route path="relatorios" element={
+          <ProtectedRoute roles={["ADMIN"]}>
+            <p>Relatórios</p>
+          </ProtectedRoute>
+        } />
+        <Route path="configuracoes" element={
+          <ProtectedRoute roles={["ADMIN"]}>
+            <Configuracoes />
           </ProtectedRoute>
         } />
       </Route>
