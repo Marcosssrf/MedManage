@@ -280,11 +280,11 @@ function CidAutocomplete({ value, onChange }: { value: string; onChange: (v: str
     const containerRef = useRef<HTMLDivElement>(null);
 
     const getHeaders = () => {
-        const credentials = authService.getCredentials();
+        const token = authService.getToken();
         return {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "true",
-            ...(credentials ? { Authorization: `Basic ${credentials}` } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
         };
     };
 
