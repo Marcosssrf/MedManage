@@ -3,13 +3,13 @@ import { authService } from "./auth";
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-    const credentials = authService.getCredentials();
+    const token = authService.getToken();
     const res = await fetch(`${API_BASE_URL}${path}`, {
         ...options,
         headers: {
             "Content-Type": "application/json",
             "ngrok-skip-browser-warning": "true",
-            ...(credentials ? { Authorization: `Basic ${credentials}` } : {}),
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options.headers,
         },
     });

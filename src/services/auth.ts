@@ -15,37 +15,52 @@ export interface AuthUser {
 
 export const authService = {
     login: async (username: string, senha: string): Promise<AuthUser> => {
-        const credentials = btoa(`${username}:${senha}`);
-        const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
+        // 1. Obtém o token
+        const tokenRes = await fetch(`${API_BASE_URL}/auth/token`, {
+            method: "POST",
             headers: {
-                Authorization: `Basic ${credentials}`,
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+            },
+            body: JSON.stringify({ username, senha }),
+        });
+
+        if (!tokenRes.ok) throw new Error("Usuário ou senha inválidos");
+
+        const tokenData = await tokenRes.json();
+        const token: string = tokenData.accessToken ?? tokenData.token ?? tokenData.access_token;
+
+        if (!token) throw new Error("Token não recebido do servidor");
+
+        // 2. Busca os dados do usuário usando o token recém-obtido
+        const meRes = await fetch(`${API_BASE_URL}/usuarios/me`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
                 "ngrok-skip-browser-warning": "true",
                 "Content-Type": "application/json",
             },
         });
 
-        if (!res.ok) throw new Error("Usuário ou senha inválidos");
+        if (!meRes.ok) throw new Error("Erro ao carregar dados do usuário");
 
-        const user: AuthUser = await res.json();
+        const user: AuthUser = await meRes.json();
 
         if (user.ativo === false) {
-            localStorage.removeItem("auth_credentials");
-            localStorage.removeItem("auth_user");
             throw new Error("Usuário inativo. Contate o administrador.");
         }
 
-        localStorage.setItem("auth_credentials", credentials);
+        localStorage.setItem("auth_token", token);
         localStorage.setItem("auth_user", JSON.stringify(user));
         return user;
     },
 
     logout: () => {
-        localStorage.removeItem("auth_credentials");
+        localStorage.removeItem("auth_token");
         localStorage.removeItem("auth_user");
     },
 
-    getCredentials: (): string | null => {
-        return localStorage.getItem("auth_credentials");
+    getToken: (): string | null => {
+        return localStorage.getItem("auth_token");
     },
 
     getUser: (): AuthUser | null => {
@@ -54,6 +69,6 @@ export const authService = {
     },
 
     isAuthenticated: (): boolean => {
-        return !!localStorage.getItem("auth_credentials");
+        return !!localStorage.getItem("auth_token");
     },
 };

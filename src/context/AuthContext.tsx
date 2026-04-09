@@ -15,8 +15,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(authService.getUser());
 
     const login = async (username: string, senha: string) => {
-        const user = await authService.login(username, senha);
-        setUser(user);
+        const loggedUser = await authService.login(username, senha);
+        setUser(loggedUser);
     };
 
     const logout = () => {
