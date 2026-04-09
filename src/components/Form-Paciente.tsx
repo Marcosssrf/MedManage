@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { pacientesApi, type Paciente } from "../services/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
+import { pacientesApi, conveniosApi, type Paciente, type Convenio } from "../services/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface FormData {
@@ -18,6 +18,9 @@ interface FormData {
   bairro: string;
   cidade: string;
   uf: string;
+  convenioId: string;
+  numeroCarteirinha: string;
+  dataVencimentoCarteirinha: string;
 }
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
@@ -49,6 +52,7 @@ const initialForm: FormData = {
   cpf: "", email: "", telefone: "",
   cep: "", logradouro: "", numero: "", complemento: "",
   bairro: "", cidade: "", uf: "",
+  convenioId: "", numeroCarteirinha: "", dataVencimentoCarteirinha: "",
 };
 
 const maskCPF = (v: string): string =>
@@ -148,19 +152,58 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
         bairro: initialData.bairro ?? "",
         cidade: initialData.cidade ?? "",
         uf: initialData.uf ?? "",
+        convenioId: initialData.convenio?.id ? String(initialData.convenio.id) : "",
+        numeroCarteirinha: initialData.numeroCarteirinha ?? "",
+        dataVencimentoCarteirinha: initialData.dataVencimentoCarteirinha ?? "",
       }
       : initialForm
   );
+
+  // Convênio autocomplete state
+  const [convenioQuery, setConvenioQuery] = useState(initialData?.convenio?.nome ?? "");
+  const [convenioOpen, setConvenioOpen] = useState(false);
+  const convenioRef = useRef<HTMLDivElement>(null);
+
+  const { data: convenios = [] } = useQuery({
+    queryKey: ["convenios"],
+    queryFn: conveniosApi.listar,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const conveniosFiltrados = convenios.filter((c) =>
+    c.nome.toLowerCase().includes(convenioQuery.toLowerCase())
+  );
+
+  // Fecha dropdown ao clicar fora
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (convenioRef.current && !convenioRef.current.contains(e.target as Node)) {
+        setConvenioOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [buscandoCep, setBuscandoCep] = useState(false);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (data: FormData) =>
-      isEditing
-        ? pacientesApi.atualizar(initialData!.id!, data)
-        : pacientesApi.cadastrar(data),
+    mutationFn: (data: FormData) => {
+      const payload: any = { ...data };
+      // Mapeia convenioId para o formato esperado pela api
+      if (data.convenioId) {
+        payload.convenioId = data.convenioId;
+      } else {
+        delete payload.convenioId;
+      }
+      if (!data.numeroCarteirinha) delete payload.numeroCarteirinha;
+      if (!data.dataVencimentoCarteirinha) delete payload.dataVencimentoCarteirinha;
+      return isEditing
+        ? pacientesApi.atualizar(initialData!.id!, payload)
+        : pacientesApi.cadastrar(payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pacientes"] });
       if (!isEditing) setForm(initialForm);
@@ -329,6 +372,93 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
                 placeholder="(00) 00000-0000"
               />
             </Campo>
+          </div>
+        </fieldset>
+
+        <fieldset style={fieldsetStyle}>
+          <legend style={legendStyle}>Convênio</legend>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Autocomplete de convênio */}
+            <Campo id="convenio" label="Convênio">
+              <div ref={convenioRef} style={{ position: "relative" }}>
+                <input
+                  id="convenio"
+                  type="text"
+                  value={convenioQuery}
+                  onChange={(e) => {
+                    setConvenioQuery(e.target.value);
+                    setConvenioOpen(true);
+                    if (!e.target.value) {
+                      set("convenioId", "");
+                    }
+                  }}
+                  onFocus={() => setConvenioOpen(true)}
+                  style={inputStyle("convenioId")}
+                  placeholder="Digite para buscar convênio..."
+                  autoComplete="off"
+                />
+                {/* Botão limpar */}
+                {convenioQuery && (
+                  <button
+                    type="button"
+                    onClick={() => { setConvenioQuery(""); set("convenioId", ""); setConvenioOpen(false); }}
+                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 16, lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                )}
+                {convenioOpen && conveniosFiltrados.length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "white", border: "1px solid #ddd", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", marginTop: 2, maxHeight: 200, overflowY: "auto" }}>
+                    <div
+                      style={{ padding: "8px 12px", fontSize: 13, color: "#888", cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                      onMouseDown={() => { setConvenioQuery(""); set("convenioId", ""); setConvenioOpen(false); }}
+                    >
+                      — Sem convênio (particular)
+                    </div>
+                    {conveniosFiltrados.map((c) => (
+                      <div
+                        key={c.id}
+                        onMouseDown={() => {
+                          setConvenioQuery(c.nome);
+                          set("convenioId", String(c.id));
+                          setConvenioOpen(false);
+                        }}
+                        style={{
+                          padding: "8px 12px", fontSize: 14, cursor: "pointer",
+                          background: form.convenioId === String(c.id) ? "#f0faf6" : "white",
+                          fontWeight: form.convenioId === String(c.id) ? 500 : 400,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = form.convenioId === String(c.id) ? "#f0faf6" : "white")}
+                      >
+                        {c.nome}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Campo>
+
+            {/* Campos de carteirinha — só aparecem quando um convênio está selecionado */}
+            {form.convenioId && (
+              <div style={grid2}>
+                <Campo id="numeroCarteirinha" label="Número da Carteirinha">
+                  <input
+                    id="numeroCarteirinha" name="numeroCarteirinha" type="text"
+                    value={form.numeroCarteirinha} onChange={handleChange}
+                    style={inputStyle("numeroCarteirinha")}
+                    placeholder="Ex: 0012345678901"
+                  />
+                </Campo>
+                <Campo id="dataVencimentoCarteirinha" label="Vencimento da Carteirinha">
+                  <input
+                    id="dataVencimentoCarteirinha" name="dataVencimentoCarteirinha" type="date"
+                    value={form.dataVencimentoCarteirinha} onChange={handleChange}
+                    style={inputStyle("dataVencimentoCarteirinha")}
+                  />
+                </Campo>
+              </div>
+            )}
           </div>
         </fieldset>
 

@@ -200,32 +200,37 @@ function PacienteDetail({
 
                             {/* Vitals */}
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 border-b border-border">
-                                <div className="flex items-start gap-2">
-                                    <Droplets className="w-4 h-4 text-red-500 mt-1 shrink-0" />
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Tipo Sanguíneo</p>
-                                        <p className="text-base font-bold">{historico?.tipoSanguineo || "—"}</p>
+                                {[
+                                    { icon: <Droplets className="w-4 h-4 text-red-500" />, label: "Tipo Sanguíneo", value: historico?.tipoSanguineo || "—" },
+                                    { icon: <Weight className="w-4 h-4 text-muted-foreground" />, label: "Peso", value: historico?.peso ? `${historico.peso} kg` : "—" },
+                                    { icon: <Ruler className="w-4 h-4 text-primary" />, label: "Altura", value: historico?.altura ? `${historico.altura} m` : "—" },
+                                ].map(({ icon, label, value }) => (
+                                    <div key={label} className="bg-muted/30 rounded-xl p-3 flex items-center gap-2">
+                                        <div className="shrink-0">{icon}</div>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">{label}</p>
+                                            <p className="text-base font-bold leading-tight">{value}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <Weight className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Peso</p>
-                                        <p className="text-base font-bold">{historico?.peso ? `${historico.peso} kg` : "—"}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <Ruler className="w-4 h-4 text-primary mt-1 shrink-0" />
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Altura</p>
-                                        <p className="text-base font-bold">{historico?.altura ? `${historico.altura} m` : "—"}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <HeartPulse className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
+                                ))}
+                                {/* IMC com classificação */}
+                                <div className="bg-muted/30 rounded-xl p-3 flex items-center gap-2">
+                                    <HeartPulse className="w-4 h-4 text-muted-foreground shrink-0" />
                                     <div>
                                         <p className="text-xs text-muted-foreground">IMC</p>
-                                        <p className="text-base font-bold">{historico?.imc ? `${historico.imc}` : "—"}</p>
+                                        <p className="text-base font-bold leading-tight">
+                                            {historico?.imc ? (() => {
+                                                const imc = Number(historico.imc);
+                                                const label =
+                                                    imc < 18.5 ? "Abaixo do peso" :
+                                                        imc < 25 ? "Peso normal" :
+                                                            imc < 30 ? "Sobrepeso" :
+                                                                imc < 35 ? "Obesidade I" :
+                                                                    imc < 40 ? "Obesidade II" :
+                                                                        "Obesidade III";
+                                                return `${historico.imc} — ${label}`;
+                                            })() : "—"}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

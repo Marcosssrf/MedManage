@@ -13,7 +13,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
             ...options.headers,
         },
     });
-    if (!res.ok) throw new Error(`Erro ${res.status}`);
+    if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        const msg = body?.error || body?.message || `Erro ${res.status}`;
+        throw new Error(msg);
+    }
     return res.json();
 }
 
@@ -158,6 +162,7 @@ export const consultasApi = {
             observacoes: c.observacoes,
             anamnese: c.anamnese ?? null,
             prescricoes: c.prescricoes ?? [],
+            historicoClinico: c.paciente?.historicoClinico ?? null,
         };
     },
     agendar: async (data: Omit<Consulta, "id" | "status" | "pacienteNome" | "medicoNome">) => {
@@ -503,9 +508,8 @@ export const anamneseApi = {
 };
 
 // ─────────────────────────────────────────────
-// PRESCRIÇÕES — salvas via anamnese
-// Backend: prescrições são embutidas em AnamneseDTO.prescricoes[]
-// Não existe endpoint POST /prescricoes separado
+// PRESCRIÇÕES — endpoint dedicado POST /prescricoes/{consultaId}
+// Backend: PrescricaoController.insert(@RequestBody PrescricaoDTO, @PathVariable UUID consultaId)
 // ─────────────────────────────────────────────
 export interface Prescricao {
     id?: string;
@@ -524,7 +528,8 @@ export const prescricoesApi = {
     listarPorConsulta: async (consultaId: string | number): Promise<Prescricao[]> => {
         try {
             const consulta = await request<any>(`/consultas/${consultaId}`);
-            const prescricoes = consulta.anamnese?.prescricoes ?? consulta.prescricoes ?? [];
+            // Backend retorna prescrições vinculadas à anamnese da consulta
+            const prescricoes = consulta.prescricoes ?? consulta.anamnese?.prescricoes ?? [];
             return prescricoes.map((p: any) => ({
                 id: p.id,
                 consultaId,
@@ -541,29 +546,19 @@ export const prescricoesApi = {
             return [];
         }
     },
-    // Salva anamnese com prescrições embutidas
-    salvarComAnamnese: (anamneseId: string | undefined, consultaId: string | number, prescricoes: Omit<Prescricao, "id" | "consultaId">[], anamneseData: Partial<Anamnese>) =>
-        request<Anamnese>("/anamneses", {
+    // Adiciona uma única prescrição via endpoint dedicado POST /prescricoes/{consultaId}
+    // O backend exige que a anamnese da consulta já exista antes de prescrever
+    adicionar: (consultaId: string | number, prescricao: Omit<Prescricao, "id" | "consultaId">) =>
+        request<Prescricao>(`/prescricoes/consulta/${consultaId}`, {
             method: "POST",
             body: JSON.stringify({
-                consultaId,
-                queixaPrincipal: anamneseData.queixaPrincipal ?? "",
-                historiaMolestiaPrincipal: anamneseData.historiaMolestiaPrincipal,
-                exameFisico: anamneseData.exameFisico,
-                hipoteseDiagnostica: anamneseData.hipoteseDiagnostica,
-                solicitacaoDeExames: anamneseData.solicitacaoDeExames,
-                encaminhamento: anamneseData.encaminhamento,
-                condutaMedica: anamneseData.condutaMedica,
-                cidCodigo: anamneseData.cidCodigo || undefined,
-                prescricoes: prescricoes.map(p => ({
-                    medicamento: p.medicamento,
-                    dosagem: p.dosagem ?? "",
-                    viaAdministracao: p.viaAdministracao ?? p.via ?? "",
-                    frequencia: p.frequencia ?? "",
-                    duracao: p.duracao ?? "",
-                    observacao: p.observacoes,
-                    tipoReceita: p.tipoReceita ?? "COMUM",
-                })),
+                medicamento: prescricao.medicamento,
+                dosagem: prescricao.dosagem ?? "",
+                viaAdministracao: prescricao.viaAdministracao ?? prescricao.via ?? "",
+                frequencia: prescricao.frequencia ?? "",
+                duracao: prescricao.duracao ?? "",
+                observacao: prescricao.observacoes,
+                tipoReceita: prescricao.tipoReceita ?? "COMUM",
             }),
         }),
 };
