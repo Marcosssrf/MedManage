@@ -86,7 +86,7 @@ function CidAutocomplete({ value, onChange }: { value: string; onChange: (v: str
         queryFn: async () => {
             if (query.length < 1) return [];
             try {
-                const all = await import("../services/api").then(m => m.default ?? m).catch(() => null);
+                const all = await import("../services/api").then(m => (m as any).default ?? m).catch(() => null);
                 // usa endpoint /cids com busca local
                 const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8080"}/cids`, {
                     headers: {
