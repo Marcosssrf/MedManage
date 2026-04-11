@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Month;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,14 +27,22 @@ public class RelatorioService {
 	PagamentoRepository pagamentoRepository;
 
 	public Map<Month, Double> faturamentoPorMes(int ano) {
+		Map<Month, Double> faturamento = new EnumMap<>(Month.class);
+		for (Month mes : Month.values()) {
+			faturamento.put(mes, 0.0);
+		}
+
 		List<Object[]> resultado = pagamentoRepository.faturamentoPorAno(ano);
 
-		Map<Month, Double> faturamento = new HashMap<>();
 		for (Object[] row : resultado) {
-			int mesNumero = ((Double) row[0]).intValue();
+			if (row[0] == null || row[1] == null) continue;
+
+			int mesNumero = ((Number) row[0]).intValue();
 			double valor  = ((Number) row[1]).doubleValue();
+
 			faturamento.put(Month.of(mesNumero), valor);
 		}
+
 		return faturamento;
 	}
 
