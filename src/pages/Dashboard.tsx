@@ -53,27 +53,33 @@ export default function Dashboard() {
     const today = new Date().toLocaleDateString("pt-BR");
     const mesAtual = new Date().getMonth();
     const anoAtual = new Date().getFullYear();
+    const hoje = new Date();
+    const dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 19);
+    const dataFim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59).toISOString().slice(0, 19);
 
     // const { data: pacientes = [] } = useQuery({ queryKey: ["pacientes"], queryFn: pacientesApi.listar });
     // const { data: medicos = [] } = useQuery({ queryKey: ["medicos"], queryFn: medicosApi.listar });
-    const { data: consultas = [] } = useQuery({ queryKey: ["consultas"], queryFn: consultasApi.listar });
+    const { data: consultas = [] } = useQuery({ queryKey: ["consultas", dataInicio, dataFim], queryFn: () => consultasApi.listar(dataInicio, dataFim) });
     // const { data: pagamentos = [] } = useQuery({ queryKey: ["pagamentos"], queryFn: pagamentosApi.listar });
 
     const { data: resumo } = useQuery({
         queryKey: ["dashboard-resumo"],
         queryFn: relatoriosApi.resumo,
+        staleTime: 60 * 1000, // 1 minuto
     });
 
     const { data: faturamento } = useQuery({
         queryKey: ["faturamento", anoAtual],
         queryFn: () => relatoriosApi.faturamentoPorMes(anoAtual),
         enabled: user?.role === "ADMIN",
+        staleTime: 5 * 60 * 1000, // 5 minutos
     });
 
     const { data: medicoTop } = useQuery({
         queryKey: ["medico-mais-atendido"],
         queryFn: relatoriosApi.medicoMaisAtendido,
         enabled: user?.role === "ADMIN",
+        staleTime: 5 * 60 * 1000, // 5 minutos
     });
 
     const consultasFiltradas = user?.role === "MEDICO"

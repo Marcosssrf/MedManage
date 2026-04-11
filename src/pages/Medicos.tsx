@@ -1,7 +1,14 @@
 import { FormCadastroMedico } from "../components/Form-Medico";
-import { medicosApi, type Medico } from "../services/api";
+import {
+    medicosApi,
+    horariosApi,
+    type Medico,
+    type DiaHorario,
+    DIA_SEMANA_LABEL,
+    DIAS_SEMANA_ORDER,
+} from "../services/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -13,39 +20,6 @@ import { usePermissions } from "../hooks/usePermissions";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
 import { toast } from "sonner";
-
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
-
-const DIAS_SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
-
-interface HorarioAtendimento {
-    id: string;
-    dias: string[];      // e.g. ["Segunda", "Quarta", "Sexta"]
-    inicio: string;      // "08:00"
-    termino: string;     // "12:00"
-    duracaoMin: number;  // 30
-}
-
-// ─────────────────────────────────────────────
-// Local storage helpers for horários
-// ─────────────────────────────────────────────
-
-function getHorarios(medicoId: string | number): HorarioAtendimento[] {
-    try {
-        const raw = localStorage.getItem(`horarios_medico_${medicoId}`);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
-}
-
-function saveHorarios(medicoId: string | number, horarios: HorarioAtendimento[]) {
-    localStorage.setItem(`horarios_medico_${medicoId}`, JSON.stringify(horarios));
-}
-
-function genId() {
-    return Math.random().toString(36).slice(2, 10);
-}
 
 // ─────────────────────────────────────────────
 // Shared Field component
@@ -62,100 +36,124 @@ const Field = ({ label, value }: { label: string; value?: string }) => (
 // Horário form dialog
 // ─────────────────────────────────────────────
 
+// Dias já cadastrados são bloqueados para evitar conflito 409
 function HorarioDialog({
     open,
     onOpenChange,
-    initial,
+    diasJaCadastrados,
     onSave,
 }: {
     open: boolean;
     onOpenChange: (v: boolean) => void;
-    initial?: HorarioAtendimento;
-    onSave: (h: HorarioAtendimento) => void;
+    diasJaCadastrados: string[];
+    onSave: (horarios: Omit<DiaHorario, "id">[]) => void;
 }) {
-    const [dias, setDias] = useState<string[]>(initial?.dias ?? []);
-    const [inicio, setInicio] = useState(initial?.inicio ?? "08:00");
-    const [termino, setTermino] = useState(initial?.termino ?? "12:00");
-    const [duracao, setDuracao] = useState(initial?.duracaoMin ?? 30);
+    const [diasSelecionados, setDiasSelecionados] = useState<string[]>([]);
+    const [horaInicio, setHoraInicio] = useState("08:00");
+    const [horaFim, setHoraFim] = useState("18:00");
+    const [duracaoPadrao, setDuracaoPadrao] = useState(60);
 
 
-    const toggleDia = (dia: string) =>
-        setDias((prev) => prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia]);
-
-    const handleSave = () => {
-        if (dias.length === 0) { toast.error("Selecione ao menos um dia."); return; }
-        if (!inicio || !termino) { toast.error("Preencha início e término."); return; }
-        onSave({ id: initial?.id ?? genId(), dias, inicio, termino, duracaoMin: duracao });
-        onOpenChange(false);
-    };
-
-    // reset when dialog opens for a new entry
     const handleOpenChange = (v: boolean) => {
         if (v) {
-            setDias(initial?.dias ?? []);
-            setInicio(initial?.inicio ?? "08:00");
-            setTermino(initial?.termino ?? "12:00");
-            setDuracao(initial?.duracaoMin ?? 30);
+            setDiasSelecionados([]);
+            setHoraInicio("08:00");
+            setHoraFim("18:00");
+            setDuracaoPadrao(60);
         }
         onOpenChange(v);
+    };
+
+    useEffect(() => {
+        if (open) {
+            setDiasSelecionados([]);
+            setHoraInicio("08:00");
+            setHoraFim("18:00");
+            setDuracaoPadrao(60);
+        }
+    }, [open]);
+
+    const toggleDia = (dia: string) =>
+        setDiasSelecionados(prev =>
+            prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]
+        );
+
+    const handleSave = () => {
+        if (diasSelecionados.length === 0) { toast.error("Selecione ao menos um dia."); return; }
+        if (!horaInicio || !horaFim) { toast.error("Preencha início e fim."); return; }
+        if (horaFim <= horaInicio) { toast.error("O horário de fim deve ser após o início."); return; }
+        if (duracaoPadrao < 5) { toast.error("Duração mínima é 5 minutos."); return; }
+
+        const apenasNovos = diasSelecionados.filter(dia => !diasJaCadastrados.includes(dia));
+
+        if (apenasNovos.length === 0) {
+            toast.error("Todos os dias selecionados já estão cadastrados.");
+            return;
+        }
+
+        onSave(apenasNovos.map(dia => ({
+            diaSemana: dia,
+            horaInicio,
+            horaFim,
+            duracaoPadrao,
+        })));
+        onOpenChange(false);
     };
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{initial ? "Editar Horário" : "Adicionar Horário"}</DialogTitle>
+                    <DialogTitle>Adicionar Horário</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
-                    {/* Dias */}
                     <div>
                         <label className="text-sm font-medium block mb-2">Dias da semana</label>
                         <div className="flex flex-wrap gap-2">
-                            {DIAS_SEMANA.map((dia) => (
-                                <button
-                                    key={dia}
-                                    type="button"
-                                    onClick={() => toggleDia(dia)}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${dias.includes(dia)
-                                        ? "bg-primary text-primary-foreground border-primary"
-                                        : "bg-muted text-muted-foreground border-border hover:border-primary/50"
-                                        }`}
-                                >
-                                    {dia}
-                                </button>
-                            ))}
+                            {DIAS_SEMANA_ORDER.map((dia) => {
+                                const bloqueado = diasJaCadastrados.includes(dia);
+                                const selecionado = diasSelecionados.includes(dia);
+                                return (
+                                    <button
+                                        key={dia}
+                                        type="button"
+                                        disabled={bloqueado}
+                                        onClick={() => toggleDia(dia)}
+                                        title={bloqueado ? "Dia já cadastrado" : undefined}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors
+                                            ${selecionado
+                                                ? "bg-primary text-primary-foreground border-primary"
+                                                : bloqueado
+                                                    ? "bg-muted text-muted-foreground border-border opacity-40 cursor-not-allowed"
+                                                    : "bg-muted text-muted-foreground border-border hover:border-primary/50"
+                                            }`}
+                                    >
+                                        {DIA_SEMANA_LABEL[dia]}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* Início / Término */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="text-sm font-medium block mb-1">Início</label>
-                            <Input
-                                type="time"
-                                value={inicio}
-                                onChange={(e) => setInicio(e.target.value)}
-                            />
+                            <Input type="time" value={horaInicio} onChange={(e) => setHoraInicio(e.target.value)} />
                         </div>
                         <div>
-                            <label className="text-sm font-medium block mb-1">Término</label>
-                            <Input
-                                type="time"
-                                value={termino}
-                                onChange={(e) => setTermino(e.target.value)}
-                            />
+                            <label className="text-sm font-medium block mb-1">Fim</label>
+                            <Input type="time" value={horaFim} onChange={(e) => setHoraFim(e.target.value)} />
                         </div>
                     </div>
 
-                    {/* Duração */}
                     <div>
                         <label className="text-sm font-medium block mb-1">Duração Padrão (min)</label>
                         <Input
                             type="number"
                             min={5}
                             step={5}
-                            value={duracao}
-                            onChange={(e) => setDuracao(Number(e.target.value))}
+                            value={duracaoPadrao}
+                            onChange={(e) => setDuracaoPadrao(Number(e.target.value))}
                         />
                     </div>
 
@@ -177,7 +175,10 @@ function ToggleAtivoMedicoButton({ ativo, onToggle }: { ativo: boolean; onToggle
         <Button
             variant="outline"
             onClick={onToggle}
-            className={`flex items-center gap-2 ${ativo ? "text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5" : "text-primary hover:text-primary border-primary/30 hover:bg-primary/5"}`}
+            className={`flex items-center gap-2 ${ativo
+                ? "text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5"
+                : "text-primary hover:text-primary border-primary/30 hover:bg-primary/5"
+                }`}
         >
             {ativo ? "Desativar Médico" : "Reativar Médico"}
         </Button>
@@ -200,27 +201,77 @@ function MedicoDetail({
     const queryClient = useQueryClient();
     const [editDadosOpen, setEditDadosOpen] = useState(false);
     const [horarioDialogOpen, setHorarioDialogOpen] = useState(false);
-    const [editingHorario, setEditingHorario] = useState<HorarioAtendimento | undefined>();
-    const [horarios, setHorarios] = useState<HorarioAtendimento[]>(() =>
-        getHorarios(medico.id!)
-    );
+    const [editingHorario, setEditingHorario] = useState<DiaHorario | undefined>();
 
-    const handleSaveHorario = (h: HorarioAtendimento) => {
-        const updated = horarios.some((x) => x.id === h.id)
-            ? horarios.map((x) => (x.id === h.id ? h : x))
-            : [...horarios, h];
-        setHorarios(updated);
-        saveHorarios(medico.id!, updated);
-        toast.success(editingHorario ? "Horário atualizado!" : "Horário adicionado!");
-        setEditingHorario(undefined);
+    // Busca horários da API
+    const { data: horarioData, isLoading: loadingHorarios } = useQuery({
+        queryKey: ["horarios", medico.id],
+        queryFn: () => horariosApi.buscarPorMedico(medico.id!),
+        // Se o médico não tiver horários ainda, a API retorna 404 — tratamos como lista vazia
+        retry: false,
+    });
+
+    const horarios: DiaHorario[] = horarioData?.horarios ?? [];
+    const diasCadastrados = horarios.map(h => h.diaSemana);
+
+    // Adicionar horário (POST com um único dia)
+    const adicionarMutation = useMutation({
+        mutationFn: (horarios: Omit<DiaHorario, "id">[]) =>
+            horariosApi.salvar(medico.id!, horarios),
+        onSuccess: (data) => {
+            queryClient.setQueryData(["horarios", medico.id], (old: any) => ({
+                ...old,
+                horarios: [...(old?.horarios ?? []), ...data.horarios],
+            }));
+            toast.success("Horário(s) adicionado(s)!");
+            setHorarioDialogOpen(false); // fecha só depois que salvou
+        },
+        onError: (err: Error) => toast.error(err.message || "Erro ao salvar horário."),
+    });
+
+    // Editar horário: deleta todos e recria com os novos dados
+    // (a API não tem PATCH por dia individual; a abordagem mais simples é recriar)
+    const editarMutation = useMutation({
+        mutationFn: async (updated: Omit<DiaHorario, "id">) => {
+            // Remove o dia antigo e reenvia todos com o dia atualizado
+            const novosHorarios = horarios
+                .filter(h => h.id !== editingHorario?.id)
+                .map(h => ({
+                    diaSemana: h.diaSemana,
+                    horaInicio: h.horaInicio,
+                    horaFim: h.horaFim,
+                    duracaoPadrao: h.duracaoPadrao,
+                }));
+            novosHorarios.push(updated);
+            await horariosApi.deletarTodos(medico.id!);
+            if (novosHorarios.length > 0) {
+                await horariosApi.salvar(medico.id!, novosHorarios);
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["horarios", medico.id] });
+            toast.success("Horário atualizado!");
+            setHorarioDialogOpen(false);
+            setEditingHorario(undefined);
+        },
+        onError: (err: Error) => toast.error(err.message || "Erro ao atualizar horário."),
+    });
+
+    const removerMutation = useMutation({
+        mutationFn: (horarioId: string) =>
+            horariosApi.deletarUm(medico.id!, horarioId),
+        onSuccess: () => {
+            queryClient.refetchQueries({ queryKey: ["horarios", medico.id] });
+            toast.success("Horário removido!");
+        },
+        onError: (err: Error) => toast.error(err.message || "Erro ao remover horário."),
+    });
+
+    const handleSaveHorario = (horarios: Omit<DiaHorario, "id">[]) => {
+        adicionarMutation.mutate(horarios);
     };
 
-    const handleDeleteHorario = (id: string) => {
-        const updated = horarios.filter((h) => h.id !== id);
-        setHorarios(updated);
-        saveHorarios(medico.id!, updated);
-        toast.success("Horário removido!");
-    };
+    const isSaving = adicionarMutation.isPending || editarMutation.isPending || removerMutation.isPending;
 
     return (
         <div className="animate-fade-in space-y-6 max-w-4xl">
@@ -236,7 +287,10 @@ function MedicoDetail({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">{medico.nome}</h1>
-                <span className={`text-xs px-3 py-1 rounded-full font-medium ${medico.ativo !== false ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground line-through"}`}>
+                <span className={`text-xs px-3 py-1 rounded-full font-medium ${medico.ativo !== false
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground line-through"
+                    }`}>
                     {medico.ativo !== false ? "Ativo" : "Inativo"}
                 </span>
             </div>
@@ -300,6 +354,7 @@ function MedicoDetail({
                         <Button
                             onClick={() => { setEditingHorario(undefined); setHorarioDialogOpen(true); }}
                             className="flex items-center gap-2"
+                            disabled={isSaving}
                         >
                             <Plus className="w-4 h-4" />
                             Adicionar Horário
@@ -307,7 +362,11 @@ function MedicoDetail({
                     )}
                 </div>
 
-                {horarios.length === 0 ? (
+                {loadingHorarios ? (
+                    <div className="py-8 text-center text-muted-foreground animate-pulse text-sm">
+                        Carregando horários...
+                    </div>
+                ) : horarios.length === 0 ? (
                     <div className="py-8 text-center text-muted-foreground">
                         <Clock className="w-8 h-8 mx-auto mb-2 opacity-40" />
                         <p className="text-sm">Nenhum horário cadastrado.</p>
@@ -318,20 +377,22 @@ function MedicoDetail({
                             <div key={h.id} className="bg-muted/40 rounded-xl p-4">
                                 <div className="flex items-start justify-between mb-3">
                                     <p className="font-semibold text-base">
-                                        {h.dias.join(", ")}
+                                        {DIA_SEMANA_LABEL[h.diaSemana] ?? h.diaSemana}
                                     </p>
                                     {canEdit && (
                                         <div className="flex items-center gap-2 shrink-0">
                                             <button
                                                 onClick={() => { setEditingHorario(h); setHorarioDialogOpen(true); }}
-                                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                                disabled={isSaving}
+                                                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40"
                                                 title="Editar"
                                             >
                                                 <Pencil className="w-4 h-4" />
                                             </button>
                                             <button
-                                                onClick={() => handleDeleteHorario(h.id)}
-                                                className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                                onClick={() => removerMutation.mutate(h.id)}
+                                                disabled={isSaving}
+                                                className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
                                                 title="Remover"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -342,15 +403,15 @@ function MedicoDetail({
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <p className="text-xs text-muted-foreground mb-0.5">Início</p>
-                                        <p className="font-semibold">{h.inicio}</p>
+                                        <p className="font-semibold">{h.horaInicio}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-muted-foreground mb-0.5">Término</p>
-                                        <p className="font-semibold">{h.termino}</p>
+                                        <p className="text-xs text-muted-foreground mb-0.5">Fim</p>
+                                        <p className="font-semibold">{h.horaFim}</p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-muted-foreground mb-0.5">Duração Padrão</p>
-                                        <p className="font-semibold">{h.duracaoMin} min</p>
+                                        <p className="font-semibold">{h.duracaoPadrao} min</p>
                                     </div>
                                 </div>
                             </div>
@@ -377,6 +438,7 @@ function MedicoDetail({
                 open={horarioDialogOpen}
                 onOpenChange={(v) => { setHorarioDialogOpen(v); if (!v) setEditingHorario(undefined); }}
                 initial={editingHorario}
+                diasJaCadastrados={diasCadastrados}
                 onSave={handleSaveHorario}
             />
         </div>
@@ -400,7 +462,6 @@ export default function Medicos() {
         queryFn: () => medicosApi.listar(showInactive),
     });
 
-    // Busca detalhes completos ao clicar
     const { data: selectedMedico, isLoading: loadingDetalhe } = useQuery({
         queryKey: ["medico", selectedId],
         queryFn: () => medicosApi.buscarPorId(selectedId!),
@@ -418,7 +479,6 @@ export default function Medicos() {
 
     const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);
 
-    // Loading skeleton enquanto busca detalhes
     if (selectedId && loadingDetalhe) {
         return (
             <div className="animate-fade-in space-y-6 max-w-4xl">

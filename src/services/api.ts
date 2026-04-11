@@ -18,6 +18,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         const msg = body?.error || body?.message || `Erro ${res.status}`;
         throw new Error(msg);
     }
+
+    if (res.status === 204 || res.headers.get("content-length") === "0") {
+        return undefined as T;
+    }
+
     return res.json();
 }
 
@@ -109,6 +114,78 @@ export const medicosApi = {
         request<Medico>(`/medicos/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
 };
 
+// ─────────────────────────────────────────────
+// HORÁRIOS DE ATENDIMENTO DO MÉDICO
+// ─────────────────────────────────────────────
+
+// DayOfWeek do Java mapeado para português
+export const DIA_SEMANA_LABEL: Record<string, string> = {
+    MONDAY: "Segunda",
+    TUESDAY: "Terça",
+    WEDNESDAY: "Quarta",
+    THURSDAY: "Quinta",
+    FRIDAY: "Sexta",
+    SATURDAY: "Sábado",
+    SUNDAY: "Domingo",
+};
+
+export const DIAS_SEMANA_ORDER = [
+    "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY",
+];
+
+export interface DiaHorario {
+    id: string;
+    diaSemana: string;       // "MONDAY", "TUESDAY", etc.
+    horaInicio: string;      // "08:00"
+    horaFim: string;         // "12:00"
+    duracaoPadrao: number;   // 30
+}
+
+export interface HorarioTrabalhoResponse {
+    medicoId: string;
+    horarios: DiaHorario[];
+}
+
+function parseLocalTime(value: any): string {
+    if (!value) return "";
+    if (typeof value === "string") return value.slice(0, 5);
+    if (Array.isArray(value))
+        return `${String(value[0]).padStart(2, "0")}:${String(value[1]).padStart(2, "0")}`;
+    return "";
+}
+
+export const horariosApi = {
+    buscarPorMedico: async (medicoId: string | number): Promise<HorarioTrabalhoResponse> => {
+        const res = await request<any>(`/medicos/${medicoId}/horarios`);
+        return {
+            medicoId: res.medicoId,
+            horarios: (res.horarios ?? []).map((h: any) => ({
+                id: h.id,
+                diaSemana: h.diaSemana,
+                horaInicio: parseLocalTime(h.horaInicio),
+                horaFim: parseLocalTime(h.horaFim),
+                duracaoPadrao: h.duracaoPadrao,
+            })),
+        };
+    },
+
+    salvar: (medicoId: string | number, horarios: Omit<DiaHorario, "id">[]) =>
+        request<HorarioTrabalhoResponse>(`/medicos/${medicoId}/horarios`, {
+            method: "POST",
+            body: JSON.stringify({
+                horarios: horarios.map((h) => ({
+                    diaSemana: h.diaSemana,
+                    horaInicio: h.horaInicio,
+                    horaFim: h.horaFim,
+                    duracaoPadrao: h.duracaoPadrao,
+                })),
+            }),
+        }),
+
+    deletarUm: (medicoId: string | number, horarioId: string) =>
+        request(`/medicos/${medicoId}/horarios/${horarioId}`, { method: "DELETE" }),
+};
+
 export interface Consulta {
     id?: string | number;
     pacienteId: string | number;
@@ -124,21 +201,25 @@ export interface Consulta {
 }
 
 export const consultasApi = {
-    listar: async () => {
-        const res = await request<any[]>("/consultas");
+    listar: async (dataInicio?: string, dataFim?: string) => {
+        const params = new URLSearchParams();
+        if (dataInicio) params.append("dataInicio", dataInicio);
+        if (dataFim) params.append("dataFim", dataFim);
+
+        const res = await request<any[]>(`/consultas?${params.toString()}`);
         return res.map((c) => {
             const [data, horario] = (c.dataHora || "").split("T");
             const dataBr = data ? data.split("-").reverse().join("/") : "";
             return {
                 id: c.id,
-                pacienteId: c.pacienteId ?? "",
-                medicoId: c.medicoId ?? "",
-                pacienteNome: c.nomePaciente,
-                medicoNome: c.nomeMedico,
-                medicoEspecialidade: c.especialidadeMedico,
+                pacienteId: c.pacienteId ?? c.paciente?.id ?? "",
+                medicoId: c.medicoId ?? c.medico?.id ?? "",
+                pacienteNome: c.nomePaciente ?? c.paciente?.nome,
+                medicoNome: c.nomeMedico ?? c.medico?.nome,
+                medicoEspecialidade: c.especialidadeMedico ?? c.medico?.especialidade,
                 tipoConsulta: c.tipoConsulta,
                 data: dataBr,
-                horario: horario,
+                horario,
                 status: c.status,
                 observacoes: c.observacoes,
             } as Consulta;
@@ -180,11 +261,10 @@ export const consultasApi = {
         request(`/consultas/${id}/cancelar`, { method: "PUT" }),
 
     mudarStatus: async (id: string | number, status: "EM_ANDAMENTO" | "REALIZADA" | "CONFIRMADA" | "AGENDADA") => {
-        // Busca os dados completos da consulta para obter pacienteId e medicoId reais
         const completa = await request<any>(`/consultas/${id}`);
         const pacienteId = completa.paciente?.id;
         const medicoId = completa.medico?.id;
-        const dataHora = completa.dataHora; // já está em ISO no backend
+        const dataHora = completa.dataHora;
         if (!pacienteId || !medicoId) throw new Error("IDs de paciente/médico não encontrados");
         return request(`/consultas/${id}`, {
             method: "PATCH",
@@ -347,10 +427,10 @@ export const historicoClinicoApi = {
 export interface Convenio {
     id?: string | number;
     nome: string;
-    registroANS?: string;       // backend: registroANS (ConvenioDTO)
+    registroANS?: string;
     cnpj?: string;
     telefone?: string;
-    diasParaFaturamento?: number; // backend: diasParaFaturamento
+    diasParaFaturamento?: number;
     ativo?: boolean;
 }
 
@@ -394,12 +474,12 @@ export interface ConfiguracaoClinica {
     duracaoPadraoConsulta?: number;
 }
 
-function parseLocalTime(value: any): string | undefined {
-    if (!value) return undefined;
-    if (typeof value === "string") return value.slice(0, 5);
-    if (Array.isArray(value)) return `${String(value[0]).padStart(2, "0")}:${String(value[1]).padStart(2, "0")}`;
-    return undefined;
-}
+// function parseLocalTime(value: any): string | undefined {
+//     if (!value) return undefined;
+//     if (typeof value === "string") return value.slice(0, 5);
+//     if (Array.isArray(value)) return `${String(value[0]).padStart(2, "0")}:${String(value[1]).padStart(2, "0")}`;
+//     return undefined;
+// }
 
 export const configuracoesApi = {
     buscar: async (): Promise<ConfiguracaoClinica | null> => {
@@ -433,9 +513,7 @@ export const configuracoesApi = {
 };
 
 // ─────────────────────────────────────────────
-// ANAMNESE — alinhado com backend
-// AnamneseController: POST /anamneses, GET /anamneses/{id}
-// Anamnese vem embutida em GET /consultas/{id}
+// ANAMNESE
 // ─────────────────────────────────────────────
 export interface Anamnese {
     id?: string;
@@ -488,7 +566,6 @@ export const anamneseApi = {
                 prescricoes: [],
             }),
         }),
-    // Não há PATCH no backend - envia novo POST (recria anamnese)
     atualizar: (id: string, dados: Partial<Anamnese>) =>
         request<Anamnese>("/anamneses", {
             method: "POST",
@@ -508,8 +585,7 @@ export const anamneseApi = {
 };
 
 // ─────────────────────────────────────────────
-// PRESCRIÇÕES — endpoint dedicado POST /prescricoes/{consultaId}
-// Backend: PrescricaoController.insert(@RequestBody PrescricaoDTO, @PathVariable UUID consultaId)
+// PRESCRIÇÕES
 // ─────────────────────────────────────────────
 export interface Prescricao {
     id?: string;
@@ -528,7 +604,6 @@ export const prescricoesApi = {
     listarPorConsulta: async (consultaId: string | number): Promise<Prescricao[]> => {
         try {
             const consulta = await request<any>(`/consultas/${consultaId}`);
-            // Backend retorna prescrições vinculadas à anamnese da consulta
             const prescricoes = consulta.prescricoes ?? consulta.anamnese?.prescricoes ?? [];
             return prescricoes.map((p: any) => ({
                 id: p.id,
@@ -546,8 +621,6 @@ export const prescricoesApi = {
             return [];
         }
     },
-    // Adiciona uma única prescrição via endpoint dedicado POST /prescricoes/{consultaId}
-    // O backend exige que a anamnese da consulta já exista antes de prescrever
     adicionar: (consultaId: string | number, prescricao: Omit<Prescricao, "id" | "consultaId">) =>
         request<Prescricao>(`/prescricoes/consulta/${consultaId}`, {
             method: "POST",
