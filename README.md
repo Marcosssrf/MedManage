@@ -1,75 +1,100 @@
-# React + TypeScript + Vite
+# MedManageFront
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interface web para o sistema de gerenciamento de clínicas médicas **MedManage**. Desenvolvida com React, TypeScript e Tailwind CSS.
 
-Currently, two official plugins are available:
+## Tecnologias
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 18** + **TypeScript**
+- **Vite**
+- **React Router DOM** (rotas protegidas por perfil)
+- **TanStack Query** (React Query) para gerenciamento de estado assíncrono
+- **Tailwind CSS** + **shadcn/ui**
+- **Lucide React** (ícones)
+- **Sonner** (notificações toast)
+- **jsPDF** (geração de PDF de prescrições)
 
-## React Compiler
+## Funcionalidades
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+- Login com autenticação JWT e controle de acesso por perfil (ADMIN, MEDICO, SECRETARIA)
+- Dashboard com resumo gerencial (total de pacientes, médicos, consultas do dia e faturamento)
+- Cadastro e gestão completa de pacientes com histórico clínico
+- Cadastro e gestão de médicos com horários de atendimento por dia da semana
+- Agendamento de consultas com detalhe completo (anamnese, prescrições, histórico)
+- Geração de PDF de prescrições diretamente no navegador
+- Gestão de pagamentos e confirmação
+- Gestão de convênios
+- Gerenciamento de usuários (apenas ADMIN)
+- Configurações gerais da clínica (apenas ADMIN)
+- Sessão com expiração automática por JWT
 
-Note: This will impact Vite dev & build performances.
+## Estrutura do Projeto
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── assets/          # Imagens estáticas
+├── components/      # Componentes reutilizáveis (forms, layout, paginação, PDF)
+│   └── ui/          # Componentes shadcn/ui
+├── consultas/       # Componentes específicos da tela de consultas
+├── context/         # AuthContext (estado global de autenticação)
+├── hooks/           # Hooks customizados (permissões, paginação, toast, mobile)
+├── lib/             # Utilitários do shadcn/ui
+├── pages/           # Páginas da aplicação
+├── services/        # Camada de comunicação com a API
+│   ├── api.ts       # Todos os endpoints (pacientes, médicos, consultas, etc.)
+│   └── auth.ts      # Login, logout e controle de token
+└── utils/           # Funções auxiliares e utilitários de segurança
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Perfis de Acesso
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Perfil      | Rotas disponíveis                                                        |
+|-------------|--------------------------------------------------------------------------|
+| ADMIN       | Todas as rotas, incluindo Usuários e Configurações                       |
+| SECRETARIA  | Dashboard, Pacientes, Médicos, Consultas, Pagamentos, Convênios          |
+| MEDICO      | Dashboard, Pacientes, Consultas (somente as próprias)                    |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Rotas são protegidas pelo componente `ProtectedRoute` com validação de perfil.
+
+## Configuração
+
+### Pré-requisitos
+
+- Node.js 18+
+- Backend [MedManage](https://github.com/Marcosssrf/MedManage) em execução
+
+### Variáveis de ambiente
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+VITE_API_URL=http://localhost:8080
 ```
+
+### Executando localmente
+
+```bash
+# Clone o repositório
+git clone https://github.com/Marcosssrf/MedManageFront
+cd MedManageFront
+
+# Instale as dependências
+npm install
+
+# Configure a variável de ambiente
+echo "VITE_API_URL=http://localhost:8080" > .env
+
+# Execute em modo de desenvolvimento
+npm run dev
+```
+
+A aplicação ficará disponível em `http://localhost:5173`.
+
+### Build para produção
+
+```bash
+npm run build
+```
+
+## Backend
+
+A API consumida por este frontend está disponível em: [MedManage](https://github.com/Marcosssrf/MedManage)
