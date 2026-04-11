@@ -1,58 +1,45 @@
+// HorarioTrabalhoController.java
 package com.clinica.controller;
 
-import com.clinica.dto.HorarioTrabalhoMedicoDTO;
-import com.clinica.dto.resposta.HorarioTrabalhoMedicoResponseDTO;
-import com.clinica.dto.update.HorarioTrabalhoMedicoUpdateDTO;
-import com.clinica.model.HistoricoClinico;
-import com.clinica.model.HorarioTrabalhoMedico;
+import com.clinica.dto.HorarioTrabalhoRequestDTO;
+import com.clinica.dto.resposta.HorarioTrabalhoResponseDTO;
 import com.clinica.service.HorarioTrabalhoMedicoService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(value = "/horarios")
+@RequestMapping("/medicos/{medicoId}/horarios")
 public class HorarioTrabalhoMedicoController {
 
-    @Autowired
-    HorarioTrabalhoMedicoService horarioTrabalhoMedicoService;
+    private final HorarioTrabalhoMedicoService service;
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-    public ResponseEntity<List<HorarioTrabalhoMedicoResponseDTO>> findAll() {
-        return ResponseEntity.ok(horarioTrabalhoMedicoService.findAll());
+    public HorarioTrabalhoMedicoController(HorarioTrabalhoMedicoService service) {
+        this.service = service;
     }
-
-    @GetMapping(value = "/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-    public ResponseEntity<HorarioTrabalhoMedicoResponseDTO> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(horarioTrabalhoMedicoService.findById(id));
-    }
-//
-//    @GetMapping(value = "/medico/{medicoId}")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-//    public ResponseEntity<List<HorarioTrabalhoMedico>> findByPacienteId(@PathVariable UUID medicoId) {
-//        List<HorarioTrabalhoMedico> horarios = horarioTrabalhoMedicoService.findByMedicoId(medicoId);
-//        return ResponseEntity.ok().body(horarios);
-//    }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA', 'MEDICO')")
-    public ResponseEntity<List<HorarioTrabalhoMedicoResponseDTO>> insert(@RequestBody @Valid HorarioTrabalhoMedicoDTO dto) {
-        List<HorarioTrabalhoMedicoResponseDTO> response = horarioTrabalhoMedicoService.insert(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<HorarioTrabalhoResponseDTO> salvar(
+            @PathVariable UUID medicoId,
+            @RequestBody @Valid HorarioTrabalhoRequestDTO request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.salvar(medicoId, request));
     }
 
-    @PatchMapping(value = "/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA', 'MEDICO')")
-    public ResponseEntity<HorarioTrabalhoMedicoResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid HorarioTrabalhoMedicoUpdateDTO dto) {
-        return ResponseEntity.ok(horarioTrabalhoMedicoService.patch(id, dto));
+    @GetMapping
+    public ResponseEntity<HorarioTrabalhoResponseDTO> buscar(@PathVariable UUID medicoId) {
+        return ResponseEntity.ok(service.buscarPorMedico(medicoId));
     }
 
+    @DeleteMapping("/{horarioId}")
+    public ResponseEntity<Void> deletarUm(
+            @PathVariable UUID medicoId,
+            @PathVariable UUID horarioId
+    ) {
+        service.deletarUm(medicoId, horarioId);
+        return ResponseEntity.noContent().build();
+    }
 }

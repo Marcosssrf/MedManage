@@ -5,12 +5,10 @@ import com.clinica.dto.resposta.*;
 import com.clinica.dto.update.ConsultaUpdateDTO;
 import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.exception.RegraDeNegocioException;
-import com.clinica.model.Consulta;
-import com.clinica.model.Medico;
-import com.clinica.model.Paciente;
-import com.clinica.model.User;
+import com.clinica.model.*;
 import com.clinica.model.enums.StatusConsulta;
 import com.clinica.repository.ConsultaRepository;
+import com.clinica.repository.HorarioTrabalhoMedicoRepository;
 import com.clinica.repository.MedicoRepository;
 import com.clinica.repository.PacienteRepository;
 import com.clinica.security.SecurityService;
@@ -18,6 +16,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -41,25 +40,30 @@ public class ConsultaService {
     @Autowired
 	SecurityService securityService;
 
+	@Autowired
+	HorarioTrabalhoMedicoRepository horarioTrabalhoMedicoRepository;
 
+	private Integer getDuracaoMedico(UUID medicoId, LocalDateTime dataHora){
+		DayOfWeek diaSemana = dataHora.getDayOfWeek();
+		System.out.println("Dia: " + diaSemana);
+		System.out.println("Resultado: " + horarioTrabalhoMedicoRepository
+				.findByMedicoIdAndDiaSemana(medicoId, diaSemana));
+		return horarioTrabalhoMedicoRepository
+				.findByMedicoIdAndDiaSemana(medicoId, diaSemana)
+				.map(HorarioTrabalhoMedico::getDuracaoPadrao)
+				.orElse(null);
 
-	/*
-	✓ implementar busca por nome do paciente ou medico
-	✓ data nao pode ser < que a atual										* prioridade
-	✓ nao pode existir 2 consultas com o mesmo medico no mesmo horario
-	✓ toda consulta comeca com agendada
-	✓ consulta so pode ser cancelada ate 24 horas antes
-	✓ paciente inativo nao pode agendar uma consulta
-	✓ medico tem que ter uma especialidade
-	✓ adicionar status no medico para poder inativar ele
-	✓ medico inativo nao pode ter uma consulta
-	✓ horario de atendimento (ex 08:00 as 18:00)
-	✓ uma consulta so pode ter UM pagamento, nao pode ter mais de um		* prioridade
-	✓ nao pode pagar uma consulta inexistente
-	✓ pagamento so com consulta realizda
-	✓ fluxo de status (agendada -> confirmada -> realizada)				* prioridade
-	relatorios (faturamento por mes, medico mais atendido)
-	*/
+	}
+
+	private Integer getDuracaoConsulta(UUID medicoId, LocalDateTime dataHora){
+		Integer duracaoMedico = getDuracaoMedico(medicoId, dataHora);
+
+		if(duracaoMedico != null){
+			return duracaoMedico;
+		}
+		Integer duracaoClinica = configuracaoClinicaService.getClinica().getDuracaoPadraoConsultas();
+		return duracaoClinica != null ? duracaoClinica : 60;
+	}
 
 
 	private LocalTime getInicio() {
@@ -113,10 +117,16 @@ public class ConsultaService {
 		consulta.setObservacoes(dto.observacoes());
 		consulta.setDataHora(dto.dataHora());
 		consulta.setTipoConsulta(dto.tipoConsulta());
-		consulta.setDuracaoPrevistaMinutos(configuracaoClinicaService.getClinica().getDuracaoPadraoConsultas());
 
-		boolean conflitoMedico = consultaRepository.existsByMedicoIdAndDataHora(medico.getId(), dto.dataHora());
-		boolean conflitoPaciente = consultaRepository.existsByPacienteIdAndDataHora(paciente.getId(), dto.dataHora());
+		Integer duracao = getDuracaoConsulta(medico.getId(), dto.dataHora());
+		consulta.setDuracaoPrevistaMinutos(duracao);
+
+		LocalDateTime fimNovaConsulta = dto.dataHora().plusMinutes(duracao);
+
+
+		boolean conflitoMedico = consultaRepository.existsConflitoMedico(medico.getId(), dto.dataHora(), fimNovaConsulta);
+
+		boolean conflitoPaciente = consultaRepository.existsConflitoPaciente(paciente.getId(), dto.dataHora(), fimNovaConsulta);
 
 		if(conflitoMedico){
 			throw new RegraDeNegocioException("Já existe uma consulta para esse médico nesse horário");
@@ -209,12 +219,12 @@ public class ConsultaService {
 	}
 
 	@Transactional
-	public List<ConsultaResponseGetAll> findByParams(LocalDateTime dataHora, String paciente, String medico) {
+	public List<ConsultaResponseGetAll> findByParams(LocalDateTime dataInicio, LocalDateTime dataFim, String paciente, String medico) {
 
 		String pacienteFiltro = paciente != null ? "%" + paciente.toLowerCase() + "%" : null;
 		String medicoFiltro = medico != null ? "%" + medico.toLowerCase() + "%" : null;
 
-		return consultaRepository.findByFiltrosAvancados(dataHora, pacienteFiltro, medicoFiltro);
+		return consultaRepository.findByFiltrosAvancados(dataInicio, dataFim, pacienteFiltro, medicoFiltro);
 	}
 
 	public ConsultaResponseDTO toDTO(Consulta consulta) {

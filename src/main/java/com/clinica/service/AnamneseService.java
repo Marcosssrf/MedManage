@@ -1,10 +1,12 @@
 package com.clinica.service;
 
 import com.clinica.dto.AnamneseDTO;
-import com.clinica.dto.PrescricaoDTO;
 import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.exception.RegraDeNegocioException;
-import com.clinica.model.*;
+import com.clinica.model.Anamnese;
+import com.clinica.model.Cid;
+import com.clinica.model.Consulta;
+import com.clinica.model.User;
 import com.clinica.model.enums.StatusConsulta;
 import com.clinica.repository.AnamneseRepository;
 import com.clinica.repository.CidRepository;
@@ -14,7 +16,6 @@ import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

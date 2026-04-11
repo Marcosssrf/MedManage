@@ -1,87 +1,109 @@
+// HorarioTrabalhoService.java
 package com.clinica.service;
 
-import com.clinica.dto.HorarioTrabalhoMedicoDTO;
-import com.clinica.dto.resposta.HorarioTrabalhoMedicoResponseDTO;
-import com.clinica.dto.update.HorarioTrabalhoMedicoUpdateDTO;
-import com.clinica.exception.EntidadeNaoEncontradaException;
-import com.clinica.exception.RegraDeNegocioException;
+import com.clinica.dto.DiaHorarioRequestDTO;
+import com.clinica.dto.HorarioTrabalhoRequestDTO;
+import com.clinica.dto.resposta.DiaHorarioResponseDTO;
+import com.clinica.dto.resposta.HorarioTrabalhoResponseDTO;
 import com.clinica.model.HorarioTrabalhoMedico;
 import com.clinica.model.Medico;
 import com.clinica.repository.HorarioTrabalhoMedicoRepository;
 import com.clinica.repository.MedicoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 public class HorarioTrabalhoMedicoService {
 
-    @Autowired
-    HorarioTrabalhoMedicoRepository horarioTrabalhoMedicoRepository;
+    private final HorarioTrabalhoMedicoRepository horarioRepository;
+    private final MedicoRepository medicoRepository;
 
-    @Autowired
-    MedicoRepository medicoRepository;
+    public HorarioTrabalhoMedicoService(HorarioTrabalhoMedicoRepository horarioRepository,
+                                  MedicoRepository medicoRepository) {
+        this.horarioRepository = horarioRepository;
+        this.medicoRepository = medicoRepository;
+    }
 
-    public List<HorarioTrabalhoMedicoResponseDTO> findAll() {
-        return horarioTrabalhoMedicoRepository.findAll()
-                .stream()
-                .map(this::toDTO)
+    @Transactional
+    public HorarioTrabalhoResponseDTO salvar(UUID medicoId, HorarioTrabalhoRequestDTO request) {
+        Medico medico = medicoRepository.findById(medicoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Médico não encontrado"));
+
+        long diasDistintos = request.horarios().stream()
+                .map(DiaHorarioRequestDTO::diaSemana)
+                .distinct()
+                .count();
+
+        if (diasDistintos != request.horarios().size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dias da semana duplicados na requisição");
+        }
+
+        request.horarios().forEach(r -> {
+            if (horarioRepository.existsByMedicoIdAndDiaSemana(medicoId, r.diaSemana())) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Já existe horário cadastrado para " + r.diaSemana() + " neste médico"
+                );
+            }
+        });
+
+        List<HorarioTrabalhoMedico> entidades = request.horarios().stream()
+                .map(r -> new HorarioTrabalhoMedico(
+                        medico,
+                        r.diaSemana(),
+                        r.horaInicio(),
+                        r.horaFim(),
+                        r.duracaoPadrao()
+                ))
                 .toList();
+
+        horarioRepository.saveAll(entidades);
+
+        return toResponse(medicoId, entidades);
     }
 
-    public HorarioTrabalhoMedicoResponseDTO findById(UUID id) {
-        HorarioTrabalhoMedico horario = horarioTrabalhoMedicoRepository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Horário médico não encontrado"));
-        return toDTO(horario);
-    }
-//
-//    public List<HorarioTrabalhoMedico> findByMedicoId(UUID medicoId) {
-//        return horarioTrabalhoMedicoRepository.findByMedicoId(medicoId);
-//    }
-
-    public List<HorarioTrabalhoMedicoResponseDTO> insert(HorarioTrabalhoMedicoDTO dto) {
-        Medico medico = medicoRepository.findById(dto.medicoId())
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
-
-        if (!medico.getAtivo()) {
-            throw new RegraDeNegocioException("Médico desativado");
+    public HorarioTrabalhoResponseDTO buscarPorMedico(UUID medicoId) {
+        if (!medicoRepository.existsById(medicoId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Médico não encontrado");
         }
 
-        HorarioTrabalhoMedico horario = new HorarioTrabalhoMedico();
-        horario.setMedico(medico);
-        horario.setDiasSemana(dto.diasSemana());
-        horario.setHoraInicio(dto.horaInicio());
-        horario.setHoraFim(dto.horaFim());
-        horario.setDuracaoPadrao(dto.duracaoPadrao());
-
-        return List.of(toDTO(horarioTrabalhoMedicoRepository.save(horario)));
+        List<HorarioTrabalhoMedico> horarios = horarioRepository.findByMedicoId(medicoId);
+        return toResponse(medicoId, horarios);
     }
 
-    public HorarioTrabalhoMedicoResponseDTO patch(UUID id, HorarioTrabalhoMedicoUpdateDTO dto) {
-        HorarioTrabalhoMedico horario = horarioTrabalhoMedicoRepository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Horário médico não encontrado"));
-
-        if (dto.diasSemana() != null && !dto.diasSemana().isEmpty()) {
-            horario.setDiasSemana(dto.diasSemana());
+    @Transactional
+    public void deletarPorMedico(UUID medicoId) {
+        if (!medicoRepository.existsById(medicoId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Médico não encontrado");
         }
-        if (dto.horaInicio() != null) horario.setHoraInicio(dto.horaInicio());
-        if (dto.horaFim() != null) horario.setHoraFim(dto.horaFim());
-        if (dto.duracaoPadrao() != null) horario.setDuracaoPadrao(dto.duracaoPadrao());
-
-        return toDTO(horarioTrabalhoMedicoRepository.save(horario));
+        horarioRepository.deleteByMedicoId(medicoId);
     }
 
-    private HorarioTrabalhoMedicoResponseDTO toDTO(HorarioTrabalhoMedico horario) {
-        return new HorarioTrabalhoMedicoResponseDTO(
-                horario.getId(),
-                horario.getMedico().getId(),
-                horario.getMedico().getNome(),
-                horario.getDiasSemana(),
-                horario.getHoraInicio(),
-                horario.getHoraFim(),
-                horario.getDuracaoPadrao()
-        );
+    private HorarioTrabalhoResponseDTO toResponse(UUID medicoId, List<HorarioTrabalhoMedico> horarios) {
+        List<DiaHorarioResponseDTO> dias = horarios.stream()
+                .map(DiaHorarioResponseDTO::from)
+                .sorted(Comparator.comparing(DiaHorarioResponseDTO::diaSemana))
+                .toList();
+
+        return new HorarioTrabalhoResponseDTO(medicoId, dias);
     }
+
+    @Transactional
+    public void deletarUm(UUID medicoId, UUID horarioId) {
+        HorarioTrabalhoMedico horario = horarioRepository.findById(horarioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Horário não encontrado"));
+
+        if (!horario.getMedico().getId().equals(medicoId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Horário não pertence a este médico");
+        }
+
+        horarioRepository.delete(horario);
+    }
+
 }

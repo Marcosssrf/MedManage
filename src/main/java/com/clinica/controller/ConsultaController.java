@@ -9,6 +9,7 @@ import com.clinica.service.ConsultaService;
 import com.clinica.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -33,7 +34,8 @@ public class ConsultaController {
 	@GetMapping
 	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
 	public ResponseEntity<List<ConsultaResponseGetAll>> findByParams(
-			@RequestParam(value = "dataHora", required = false) LocalDateTime dataHora,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim,
 			@RequestParam(value = "paciente", required = false) String paciente,
 			@RequestParam(value = "medico", required = false) String medico
 //    @RequestParam(value = "pagina", defaultValue = "0") Integer pagina,
@@ -47,7 +49,7 @@ public class ConsultaController {
 		if (role.equals("ROLE_MEDICO")) {
 			medico = userService.findByUsername(username).medico().nome();
 		}
-		List<ConsultaResponseGetAll> paginaResultado = consultaService.findByParams(dataHora, paciente, medico);
+		List<ConsultaResponseGetAll> paginaResultado = consultaService.findByParams(dataInicio, dataFim, paciente, medico);
 
 		return ResponseEntity.ok(paginaResultado);
 	}

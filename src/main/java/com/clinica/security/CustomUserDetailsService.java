@@ -1,7 +1,7 @@
 package com.clinica.security;
 
-import com.clinica.model.User;
 import com.clinica.exception.EntidadeNaoEncontradaException;
+import com.clinica.model.User;
 import com.clinica.service.UserService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

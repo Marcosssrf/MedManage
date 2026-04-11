@@ -27,25 +27,23 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	// 2. QUERY OTIMIZADA PARA A LISTAGEM (Solução do Postgres bytea)
 	// ==============================================================================
 	@Query("""
-        SELECT new com.clinica.dto.resposta.ConsultaResponseGetAll(
-            c.id, 
-            c.dataHora, 
-            p.nome, 
-            m.nome, 
-            m.especialidade,
-            CAST(c.status AS string),
-            CAST(c.tipoConsulta AS string),
-            c.observacoes 
-        ) 
-        FROM Consulta c 
-        JOIN c.paciente p 
-        JOIN c.medico m
-        WHERE (CAST(:dataHora AS timestamp) IS NULL OR c.dataHora = :dataHora)
-          AND (CAST(:paciente AS string) IS NULL OR LOWER(p.nome) LIKE :paciente)
-          AND (CAST(:medico AS string) IS NULL OR LOWER(m.nome) LIKE :medico)
-    """)
+    SELECT new com.clinica.dto.resposta.ConsultaResponseGetAll(
+        c.id, c.dataHora, p.nome, m.nome, m.especialidade,
+        CAST(c.status AS string),
+        CAST(c.tipoConsulta AS string),
+        c.observacoes
+    )
+    FROM Consulta c
+    JOIN c.paciente p
+    JOIN c.medico m
+    WHERE (CAST(:dataInicio AS java.time.LocalDateTime) IS NULL OR c.dataHora >= :dataInicio)
+      AND (CAST(:dataFim    AS java.time.LocalDateTime) IS NULL OR c.dataHora <= :dataFim)
+      AND (:paciente IS NULL OR LOWER(p.nome) LIKE :paciente)
+      AND (:medico   IS NULL OR LOWER(m.nome) LIKE :medico)
+""")
 	List<ConsultaResponseGetAll> findByFiltrosAvancados(
-			@Param("dataHora") LocalDateTime dataHora,
+			@Param("dataInicio") LocalDateTime dataInicio,
+			@Param("dataFim") LocalDateTime dataFim,
 			@Param("paciente") String paciente,
 			@Param("medico") String medico
 	);
@@ -72,8 +70,19 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 	@EntityGraph(attributePaths = {"medico", "paciente"})
 	List<Consulta> findByMedicoNomeContainingIgnoreCase(String nome);
 
-	@EntityGraph(attributePaths = {"medico", "paciente"})
-	List<Consulta> findByStatus(StatusConsulta status);
+	@Query("""
+    SELECT new com.clinica.dto.resposta.ConsultaResponseGetAll(
+        c.id, c.dataHora, p.nome, m.nome, m.especialidade,
+        CAST(c.status AS string),
+        CAST(c.tipoConsulta AS string),
+        c.observacoes
+    )
+    FROM Consulta c
+    JOIN c.paciente p
+    JOIN c.medico m
+    WHERE c.status = :status
+""")
+	List<ConsultaResponseGetAll> findByStatusDTO(@Param("status") StatusConsulta status);
 
 	@EntityGraph(attributePaths = {"medico", "paciente"})
 	List<Consulta> findByDataHora(LocalDateTime dataHora);
@@ -97,4 +106,31 @@ public interface ConsultaRepository extends JpaRepository<Consulta, UUID>, JpaSp
 
 	boolean existsByMedicoIdAndDataHoraAndIdNot(UUID medicoId, LocalDateTime dataHora, UUID id);
 	boolean existsByPacienteIdAndDataHoraAndIdNot(UUID pacienteId, LocalDateTime dataHora, UUID id);
+
+	@Query("""
+    SELECT COUNT(c) > 0 FROM Consulta c
+    WHERE c.medico.id = :medicoId
+    AND c.status != 'CANCELADA'
+    AND c.dataHora < :fim
+    AND FUNCTION('TIMESTAMPADD', MINUTE, c.duracaoPrevistaMinutos, c.dataHora) > :inicio
+""")
+	boolean existsConflitoMedico(
+			@Param("medicoId") UUID medicoId,
+			@Param("inicio") LocalDateTime inicio,
+			@Param("fim") LocalDateTime fim
+	);
+
+	@Query("""
+    SELECT COUNT(c) > 0 FROM Consulta c
+    WHERE c.paciente.id = :pacienteId
+    AND c.status != 'CANCELADA'
+    AND c.dataHora < :fim
+    AND FUNCTION('TIMESTAMPADD', MINUTE, c.duracaoPrevistaMinutos, c.dataHora) > :inicio
+""")
+	boolean existsConflitoPaciente(
+			@Param("pacienteId") UUID pacienteId,
+			@Param("inicio") LocalDateTime inicio,
+			@Param("fim") LocalDateTime fim
+	);
+
 }

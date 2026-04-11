@@ -6,6 +6,7 @@ import com.clinica.model.enums.StatusPagamento;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.UUID;
@@ -65,5 +66,14 @@ public interface PagamentoRepository extends JpaRepository<Pagamento, UUID> {
         LEFT JOIN p.convenio cv
     """)
 	List<PagamentoResponseDTO> buscarListagemOtimizada();
+
+	@Query("""
+    SELECT EXTRACT(MONTH FROM p.dataPagamento), SUM(p.valor)
+    FROM Pagamento p
+    WHERE p.statusPagamento = 'PAGO'
+    AND EXTRACT(YEAR FROM p.dataPagamento) = :ano
+    GROUP BY EXTRACT(MONTH FROM p.dataPagamento)
+""")
+	List<Object[]> faturamentoPorAno(@Param("ano") int ano);
 
 }

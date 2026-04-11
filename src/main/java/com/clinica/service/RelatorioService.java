@@ -26,34 +26,27 @@ public class RelatorioService {
 	PagamentoRepository pagamentoRepository;
 
 	public Map<Month, Double> faturamentoPorMes(int ano) {
-
-		List<Pagamento> pagamentos = pagamentoRepository.findByStatusPagamento(StatusPagamento.PAGO);
+		List<Object[]> resultado = pagamentoRepository.faturamentoPorAno(ano);
 
 		Map<Month, Double> faturamento = new HashMap<>();
-
-		for (Pagamento pagamento : pagamentos) {
-			if (pagamento.getDataPagamento().getYear() == ano) {
-
-				Month mes = pagamento.getDataPagamento().getMonth();
-
-				faturamento.put(mes, faturamento.getOrDefault(mes, 0.0) + pagamento.getValor().doubleValue());}}
-
+		for (Object[] row : resultado) {
+			int mesNumero = ((Double) row[0]).intValue();
+			double valor  = ((Number) row[1]).doubleValue();
+			faturamento.put(Month.of(mesNumero), valor);
+		}
 		return faturamento;
 	}
 
 	public MedicoMaisAtendidoDTO medicoMaisAtendido() {
+		List<Object[]> resultado = consultaRepository.medicoMaisAtendido();
 
-		List<Consulta> consultas = consultaRepository
-				.findByStatus(StatusConsulta.REALIZADA);
+		if (resultado.isEmpty()) return null;
 
-		Map<Medico, Long> contador = new HashMap<>();
+		Object[] top = resultado.get(0);
+		String nome = (String) top[0];
+		Long total = (Long) top[1];
 
-		for (Consulta consulta : consultas) {
-			Medico medico = consulta.getMedico();
-			contador.put(medico, contador.getOrDefault(medico, 0L) + 1);
-		}
-
-		return contador.entrySet().stream().max(Map.Entry.comparingByValue()).map(e -> new MedicoMaisAtendidoDTO(e.getKey().getId(), e.getKey().getNome(), e.getValue())).orElse(null);
+		return new MedicoMaisAtendidoDTO(null, nome, total);
 	}
 
 }
