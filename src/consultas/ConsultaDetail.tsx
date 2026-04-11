@@ -4,7 +4,7 @@ import { ArrowLeft, ClipboardList, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { consultasApi, configuracoesApi } from "../services/api";
+import { consultasApi, configuracoesApi, anamneseApi } from "../services/api";
 import type { Consulta } from "../services/api";
 import { FormCadastroConsulta } from "../components/Form-Consulta";
 import { AnamneseForm, AnamneseView } from "../components/Form-Anamnese";
@@ -34,10 +34,8 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
 
     const { data: anamnese } = useQuery({
         queryKey: ["anamnese", consulta.id],
-        queryFn: () => {
-            const { anamneseApi } = require("../services/api");
-            return anamneseApi.buscarPorConsulta(consulta.id!);
-        },
+        // Removido o 'require'. Agora usa a importação direta lá do topo
+        queryFn: () => anamneseApi.buscarPorConsulta(consulta.id!),
         enabled: consultaAtiva(consulta.status),
     });
 

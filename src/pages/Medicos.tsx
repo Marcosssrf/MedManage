@@ -36,15 +36,16 @@ const Field = ({ label, value }: { label: string; value?: string }) => (
 // Horário form dialog
 // ─────────────────────────────────────────────
 
-// Dias já cadastrados são bloqueados para evitar conflito 409
 function HorarioDialog({
     open,
     onOpenChange,
+    initial,
     diasJaCadastrados,
     onSave,
 }: {
     open: boolean;
     onOpenChange: (v: boolean) => void;
+    initial?: DiaHorario;
     diasJaCadastrados: string[];
     onSave: (horarios: Omit<DiaHorario, "id">[]) => void;
 }) {
@@ -53,9 +54,8 @@ function HorarioDialog({
     const [horaFim, setHoraFim] = useState("18:00");
     const [duracaoPadrao, setDuracaoPadrao] = useState(60);
 
-
     const handleOpenChange = (v: boolean) => {
-        if (v) {
+        if (v && !initial) {
             setDiasSelecionados([]);
             setHoraInicio("08:00");
             setHoraFim("18:00");
@@ -66,12 +66,19 @@ function HorarioDialog({
 
     useEffect(() => {
         if (open) {
-            setDiasSelecionados([]);
-            setHoraInicio("08:00");
-            setHoraFim("18:00");
-            setDuracaoPadrao(60);
+            if (initial) {
+                setDiasSelecionados([initial.diaSemana]);
+                setHoraInicio(initial.horaInicio);
+                setHoraFim(initial.horaFim);
+                setDuracaoPadrao(initial.duracaoPadrao);
+            } else {
+                setDiasSelecionados([]);
+                setHoraInicio("08:00");
+                setHoraFim("18:00");
+                setDuracaoPadrao(60);
+            }
         }
-    }, [open]);
+    }, [open, initial]);
 
     const toggleDia = (dia: string) =>
         setDiasSelecionados(prev =>
@@ -84,7 +91,9 @@ function HorarioDialog({
         if (horaFim <= horaInicio) { toast.error("O horário de fim deve ser após o início."); return; }
         if (duracaoPadrao < 5) { toast.error("Duração mínima é 5 minutos."); return; }
 
-        const apenasNovos = diasSelecionados.filter(dia => !diasJaCadastrados.includes(dia));
+        const apenasNovos = diasSelecionados.filter(dia =>
+            !diasJaCadastrados.includes(dia) || (initial && dia === initial.diaSemana)
+        );
 
         if (apenasNovos.length === 0) {
             toast.error("Todos os dias selecionados já estão cadastrados.");
@@ -97,21 +106,20 @@ function HorarioDialog({
             horaFim,
             duracaoPadrao,
         })));
-        onOpenChange(false);
     };
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Adicionar Horário</DialogTitle>
+                    <DialogTitle>{initial ? "Editar Horário" : "Adicionar Horário"}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                     <div>
                         <label className="text-sm font-medium block mb-2">Dias da semana</label>
                         <div className="flex flex-wrap gap-2">
                             {DIAS_SEMANA_ORDER.map((dia) => {
-                                const bloqueado = diasJaCadastrados.includes(dia);
+                                const bloqueado = diasJaCadastrados.includes(dia) && dia !== initial?.diaSemana;
                                 const selecionado = diasSelecionados.includes(dia);
                                 return (
                                     <button
@@ -207,14 +215,12 @@ function MedicoDetail({
     const { data: horarioData, isLoading: loadingHorarios } = useQuery({
         queryKey: ["horarios", medico.id],
         queryFn: () => horariosApi.buscarPorMedico(medico.id!),
-        // Se o médico não tiver horários ainda, a API retorna 404 — tratamos como lista vazia
         retry: false,
     });
 
     const horarios: DiaHorario[] = horarioData?.horarios ?? [];
     const diasCadastrados = horarios.map(h => h.diaSemana);
 
-    // Adicionar horário (POST com um único dia)
     const adicionarMutation = useMutation({
         mutationFn: (horarios: Omit<DiaHorario, "id">[]) =>
             horariosApi.salvar(medico.id!, horarios),
@@ -224,33 +230,20 @@ function MedicoDetail({
                 horarios: [...(old?.horarios ?? []), ...data.horarios],
             }));
             toast.success("Horário(s) adicionado(s)!");
-            setHorarioDialogOpen(false); // fecha só depois que salvou
+            setHorarioDialogOpen(false);
         },
         onError: (err: Error) => toast.error(err.message || "Erro ao salvar horário."),
     });
 
-    // Editar horário: deleta todos e recria com os novos dados
-    // (a API não tem PATCH por dia individual; a abordagem mais simples é recriar)
     const editarMutation = useMutation({
-        mutationFn: async (updated: Omit<DiaHorario, "id">) => {
-            // Remove o dia antigo e reenvia todos com o dia atualizado
-            const novosHorarios = horarios
-                .filter(h => h.id !== editingHorario?.id)
-                .map(h => ({
-                    diaSemana: h.diaSemana,
-                    horaInicio: h.horaInicio,
-                    horaFim: h.horaFim,
-                    duracaoPadrao: h.duracaoPadrao,
-                }));
-            novosHorarios.push(updated);
-            await horariosApi.deletarTodos(medico.id!);
-            if (novosHorarios.length > 0) {
-                await horariosApi.salvar(medico.id!, novosHorarios);
-            }
+        mutationFn: async (updatedHorarios: Omit<DiaHorario, "id">[]) => {
+            if (!editingHorario?.id) throw new Error("Horário não encontrado para edição.");
+            await horariosApi.deletarUm(medico.id!, editingHorario.id);
+            await horariosApi.salvar(medico.id!, updatedHorarios);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["horarios", medico.id] });
-            toast.success("Horário atualizado!");
+            toast.success("Horário(s) atualizado(s)!");
             setHorarioDialogOpen(false);
             setEditingHorario(undefined);
         },
@@ -268,7 +261,11 @@ function MedicoDetail({
     });
 
     const handleSaveHorario = (horarios: Omit<DiaHorario, "id">[]) => {
-        adicionarMutation.mutate(horarios);
+        if (editingHorario) {
+            editarMutation.mutate(horarios);
+        } else {
+            adicionarMutation.mutate(horarios);
+        }
     };
 
     const isSaving = adicionarMutation.isPending || editarMutation.isPending || removerMutation.isPending;

@@ -33,14 +33,15 @@ function FormPagamento({ onSuccess }: { onSuccess: () => void }) {
     const [formaPagamento, setFormaPagamento] = useState("");
     const [tipoPagamento, setTipoPagamento] = useState("");
     const [data, setData] = useState(new Date().toISOString().split("T")[0]);
+
     const { data: pagamentos = [] } = useQuery({
         queryKey: ["pagamentos"],
-        queryFn: pagamentosApi.listar,
+        queryFn: () => pagamentosApi.listar(),
     });
 
     const { data: consultas = [] } = useQuery({
         queryKey: ["consultas"],
-        queryFn: consultasApi.listar,
+        queryFn: () => consultasApi.listar(),
     });
 
     const consultasRealizadas = consultas.filter((c) => {
@@ -56,7 +57,7 @@ function FormPagamento({ onSuccess }: { onSuccess: () => void }) {
         .slice(0, 6);
 
     const mutation = useMutation({
-        mutationFn: pagamentosApi.registrar,
+        mutationFn: (dadosPagamento: Omit<Pagamento, "id" | "status">) => pagamentosApi.registrar(dadosPagamento),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
             toast.success("Pagamento registrado com sucesso!");
@@ -205,7 +206,7 @@ export default function Pagamentos() {
 
     const { data: pagamentos = [], isLoading, error } = useQuery({
         queryKey: ["pagamentos"],
-        queryFn: pagamentosApi.listar,
+        queryFn: () => pagamentosApi.listar(),
     });
 
     const confirmarMutation = useMutation({
