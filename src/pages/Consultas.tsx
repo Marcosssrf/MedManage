@@ -12,6 +12,7 @@ import { ConsultaDetail } from "../consultas/ConsultaDetail";
 import { MedicoFiltro } from "../consultas/SharedComponents";
 import { DAYS_PT, STATUS_STYLE, STATUS_LEGEND } from "../consultas/constants";
 import { getWeekDays, formatKey, isToday, buildWeekRange } from "../utils/utils";
+import { useIsMobile } from "../hooks/use-mobile";
 
 export default function Consultas() {
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -24,6 +25,7 @@ export default function Consultas() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     const { canAddConsulta, canCancelarConsulta } = usePermissions();
+    const isMobile = useIsMobile();
 
     const role = String(user?.role ?? "").toUpperCase();
     const isAdminOrSecretaria = role === "ADMIN" || role === "SECRETARIA";
@@ -59,7 +61,6 @@ export default function Consultas() {
     const horaFechamento = config?.horarioFechamento ? parseInt(config.horarioFechamento.split(":")[0], 10) : 18;
     const HOURS = Array.from({ length: horaFechamento - horaAbertura }, (_, i) => i + horaAbertura);
 
-    // Filtro por médico no frontend
     const filtered = consultas.filter((c) => {
         if (!isAdminOrSecretaria) return true;
         if (!medicoFiltroId) return true;
@@ -74,8 +75,17 @@ export default function Consultas() {
             return c.data === formatKey(day) && h === hour;
         });
 
-    const goBack = () => { const d = new Date(selectedDate); d.setDate(d.getDate() - 7); setSelectedDate(d); };
-    const goNext = () => { const d = new Date(selectedDate); d.setDate(d.getDate() + 7); setSelectedDate(d); };
+    // Navegação semana (desktop) e dia (mobile)
+    const goBack = () => {
+        const d = new Date(selectedDate);
+        d.setDate(d.getDate() - (isMobile ? 1 : 7));
+        setSelectedDate(d);
+    };
+    const goNext = () => {
+        const d = new Date(selectedDate);
+        d.setDate(d.getDate() + (isMobile ? 1 : 7));
+        setSelectedDate(d);
+    };
 
     if (selectedConsulta) {
         return (
@@ -88,6 +98,9 @@ export default function Consultas() {
         );
     }
 
+    // No mobile, mostra apenas o dia selecionado
+    const visibleDays = isMobile ? [selectedDate] : weekDays;
+
     return (
         <div className="animate-fade-in space-y-5">
             {/* Header */}
@@ -95,7 +108,8 @@ export default function Consultas() {
                 <div>
                     <h1 className="text-2xl font-semibold">Consultas</h1>
                     <p className="text-muted-foreground text-sm mt-1">
-                        Agenda semanal{config && ` · ${config.horarioAbertura?.slice(0, 5) ?? "--"} às ${config.horarioFechamento?.slice(0, 5) ?? "--"}`}
+                        {isMobile ? "Agenda diária" : "Agenda semanal"}
+                        {config && ` · ${config.horarioAbertura?.slice(0, 5) ?? "--"} às ${config.horarioFechamento?.slice(0, 5) ?? "--"}`}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -113,13 +127,16 @@ export default function Consultas() {
                 </div>
             </div>
 
-            {/* Navegação semanal */}
+            {/* Navegação */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={goBack}><ChevronLeft className="w-4 h-4" /></Button>
                     <Button variant="outline" size="icon" onClick={goNext}><ChevronRight className="w-4 h-4" /></Button>
                     <span className="text-sm font-medium">
-                        {weekDays[0].toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} — {weekDays[6].toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                        {isMobile
+                            ? selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })
+                            : `${weekDays[0].toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} — ${weekDays[6].toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}`
+                        }
                     </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -133,12 +150,15 @@ export default function Consultas() {
                 </div>
             </div>
 
-            {/* Grade semanal */}
+            {/* Grade */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
                 {/* Cabeçalho dos dias */}
-                <div className="grid border-b border-border sticky top-0 bg-card z-10" style={{ gridTemplateColumns: "56px repeat(7, 1fr)" }}>
+                <div
+                    className="grid border-b border-border sticky top-0 bg-card z-10"
+                    style={{ gridTemplateColumns: `56px repeat(${visibleDays.length}, 1fr)` }}
+                >
                     <div className="border-r border-border" />
-                    {weekDays.map((day, i) => (
+                    {visibleDays.map((day, i) => (
                         <div key={i} className={`py-3 text-center border-r border-border last:border-0 ${isToday(day) ? "bg-primary/5" : ""}`}>
                             <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{DAYS_PT[day.getDay()]}</p>
                             <p className={`text-lg font-bold mt-0.5 w-9 h-9 flex items-center justify-center mx-auto rounded-full ${isToday(day) ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
@@ -157,12 +177,12 @@ export default function Consultas() {
                             <div
                                 key={hour}
                                 className="grid border-b border-border last:border-0"
-                                style={{ gridTemplateColumns: "56px repeat(7, 1fr)", minHeight: "72px" }}
+                                style={{ gridTemplateColumns: `56px repeat(${visibleDays.length}, 1fr)`, minHeight: "72px" }}
                             >
                                 <div className="border-r border-border text-xs text-muted-foreground text-right pr-2 pt-2">
                                     {String(hour).padStart(2, "0")}:00
                                 </div>
-                                {weekDays.map((day, di) => {
+                                {visibleDays.map((day, di) => {
                                     const items = bySlot(day, hour);
                                     return (
                                         <div
