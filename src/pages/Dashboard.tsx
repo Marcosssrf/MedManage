@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { pacientesApi, medicosApi, consultasApi, pagamentosApi, relatoriosApi } from "../services/api";
+import { consultasApi, relatoriosApi } from "../services/api";
 import { Users, Stethoscope, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle, CalendarCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";

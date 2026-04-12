@@ -2,6 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { pacientesApi, conveniosApi, type Paciente, type Convenio } from "../services/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { Label } from "./ui/label";
+import { X } from "lucide-react";
 
 interface FormData {
   nome: string;
@@ -24,14 +28,6 @@ interface FormData {
 }
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
-
-interface CampoProps {
-  id: string;
-  label: string;
-  required?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}
 
 interface ViaCepResponse {
   erro?: boolean;
@@ -70,96 +66,80 @@ const maskPhone = (v: string): string => {
 const maskCEP = (v: string): string =>
   v.replace(/\D/g, "").slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2");
 
-const fieldsetStyle: React.CSSProperties = {
-  border: "1px solid #e5e5e5",
-  borderRadius: 10,
-  padding: "1.25rem 1.5rem",
-  marginBottom: "1.25rem",
-};
+// ── Shared field wrapper ───────────────────────────────────────────────────
+interface CampoProps {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}
 
-const legendStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 500,
-  color: "#888",
-  padding: "0 8px",
-  textTransform: "uppercase",
-  letterSpacing: "0.04em",
-};
+const Campo = ({ label, required, error, children }: CampoProps) => (
+  <div className="space-y-1.5">
+    <Label className={error ? "text-destructive" : ""}>
+      {label}
+      {required && <span className="text-destructive ml-1">*</span>}
+    </Label>
+    {children}
+    {error && <p className="text-xs text-destructive">{error}</p>}
+  </div>
+);
 
-const grid2: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 12,
-};
+// ── Native select styled to match shadcn Input ─────────────────────────────
+interface NativeSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  hasError?: boolean;
+}
 
-const btnSecStyle: React.CSSProperties = {
-  height: 36,
-  border: "1px solid #ddd",
-  borderRadius: 6,
-  background: "transparent",
-  fontSize: 13,
-  cursor: "pointer",
-  padding: "0 12px",
-  fontFamily: "inherit",
-};
+const NativeSelect = ({ hasError, className = "", ...props }: NativeSelectProps) => (
+  <select
+    className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+            disabled:cursor-not-allowed disabled:opacity-50
+            ${hasError ? "border-destructive" : "border-input"}
+            ${className}`}
+    {...props}
+  />
+);
 
-const btnPrimaryStyle: React.CSSProperties = {
-  height: 40,
-  padding: "0 28px",
-  borderRadius: 6,
-  border: "1px solid #ccc",
-  background: "transparent",
-  fontSize: 14,
-  fontWeight: 500,
-  cursor: "pointer",
-  fontFamily: "inherit",
-};
+// ── Section card ───────────────────────────────────────────────────────────
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+    <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">{title}</p>
+    {children}
+  </div>
+);
 
-// ── Props agora aceita initialData para modo edição ──────────────────────────
 interface Props {
   onSuccess?: () => void;
   initialData?: Paciente;
 }
 
-const Campo = ({ id, label, required, error, children }: CampoProps) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-    <label htmlFor={id} style={{ fontSize: 13, color: "#666" }}>
-      {label} {required && <span style={{ color: "red", marginLeft: 2 }}>*</span>}
-    </label>
-    {children}
-    {error && <span style={{ color: "red", fontSize: 12 }}>{error}</span>}
-  </div>
-);
-
 export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
   const isEditing = !!initialData;
 
-  // Pré-preenche o form com os dados do paciente quando em modo edição
   const [form, setForm] = useState<FormData>(() =>
-    initialData
-      ? {
-        nome: initialData.nome ?? "",
-        dataNascimento: initialData.dataNascimento ?? "",
-        sexo: initialData.sexo ?? "",
-        estadoCivil: initialData.estadoCivil ?? "",
-        cpf: initialData.cpf ?? "",
-        email: initialData.email ?? "",
-        telefone: initialData.telefone ?? "",
-        cep: initialData.cep ?? "",
-        logradouro: initialData.logradouro ?? "",
-        numero: initialData.numero ?? "",
-        complemento: initialData.complemento ?? "",
-        bairro: initialData.bairro ?? "",
-        cidade: initialData.cidade ?? "",
-        uf: initialData.uf ?? "",
-        convenioId: initialData.convenio?.id ? String(initialData.convenio.id) : "",
-        numeroCarteirinha: initialData.numeroCarteirinha ?? "",
-        dataVencimentoCarteirinha: initialData.dataVencimentoCarteirinha ?? "",
-      }
-      : initialForm
+    initialData ? {
+      nome: initialData.nome ?? "",
+      dataNascimento: initialData.dataNascimento ?? "",
+      sexo: initialData.sexo ?? "",
+      estadoCivil: initialData.estadoCivil ?? "",
+      cpf: initialData.cpf ?? "",
+      email: initialData.email ?? "",
+      telefone: initialData.telefone ?? "",
+      cep: initialData.cep ?? "",
+      logradouro: initialData.logradouro ?? "",
+      numero: initialData.numero ?? "",
+      complemento: initialData.complemento ?? "",
+      bairro: initialData.bairro ?? "",
+      cidade: initialData.cidade ?? "",
+      uf: initialData.uf ?? "",
+      convenioId: initialData.convenio?.id ? String(initialData.convenio.id) : "",
+      numeroCarteirinha: initialData.numeroCarteirinha ?? "",
+      dataVencimentoCarteirinha: initialData.dataVencimentoCarteirinha ?? "",
+    } : initialForm
   );
 
-  // Convênio autocomplete state
+  // Convênio autocomplete
   const [convenioQuery, setConvenioQuery] = useState(initialData?.convenio?.nome ?? "");
   const [convenioOpen, setConvenioOpen] = useState(false);
   const convenioRef = useRef<HTMLDivElement>(null);
@@ -174,12 +154,10 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
     c.nome.toLowerCase().includes(convenioQuery.toLowerCase())
   );
 
-  // Fecha dropdown ao clicar fora
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (convenioRef.current && !convenioRef.current.contains(e.target as Node)) {
+      if (convenioRef.current && !convenioRef.current.contains(e.target as Node))
         setConvenioOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -192,12 +170,7 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
   const mutation = useMutation({
     mutationFn: (data: FormData) => {
       const payload: any = { ...data };
-      // Mapeia convenioId para o formato esperado pela api
-      if (data.convenioId) {
-        payload.convenioId = data.convenioId;
-      } else {
-        delete payload.convenioId;
-      }
+      if (!data.convenioId) delete payload.convenioId;
       if (!data.numeroCarteirinha) delete payload.numeroCarteirinha;
       if (!data.dataVencimentoCarteirinha) delete payload.dataVencimentoCarteirinha;
       return isEditing
@@ -216,13 +189,11 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
   });
 
   const set = (campo: keyof FormData, valor: string) => {
-    setForm((prev => ({ ...prev, [campo]: valor })));
+    setForm(prev => ({ ...prev, [campo]: valor }));
     setErrors(prev => ({ ...prev, [campo]: undefined }));
   };
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ): void => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target;
     if (name === "cpf") return set("cpf", maskCPF(value));
     if (name === "telefone") return set("telefone", maskPhone(value));
@@ -232,28 +203,25 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
 
   const buscarCep = async (): Promise<void> => {
     const cep = form.cep.replace(/\D/g, "");
-    if (cep.length !== 8) {
-      setErrors((prev) => ({ ...prev, cep: "CEP inválido" }));
-      return;
-    }
+    if (cep.length !== 8) { setErrors(prev => ({ ...prev, cep: "CEP inválido" })); return; }
     setBuscandoCep(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const data: ViaCepResponse = await res.json();
       if (data.erro) {
-        setErrors((prev) => ({ ...prev, cep: "CEP não encontrado" }));
+        setErrors(prev => ({ ...prev, cep: "CEP não encontrado" }));
       } else {
-        setForm((prev) => ({
+        setForm(prev => ({
           ...prev,
           logradouro: data.logradouro ?? "",
           bairro: data.bairro ?? "",
           cidade: data.localidade ?? "",
           uf: data.uf ?? "",
         }));
-        setErrors((prev) => ({ ...prev, cep: undefined }));
+        setErrors(prev => ({ ...prev, cep: undefined }));
       }
     } catch {
-      setErrors((prev) => ({ ...prev, cep: "Erro ao buscar CEP" }));
+      setErrors(prev => ({ ...prev, cep: "Erro ao buscar CEP" }));
     }
     setBuscandoCep(false);
   };
@@ -264,283 +232,215 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
     if (!form.dataNascimento) erros.dataNascimento = "Campo obrigatório";
     if (!form.sexo) erros.sexo = "Campo obrigatório";
     if (!form.estadoCivil) erros.estadoCivil = "Campo obrigatório";
-    if (!form.cpf || form.cpf.replace(/\D/g, "").length !== 11)
-      erros.cpf = "CPF inválido";
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      erros.email = "E-mail inválido";
+    if (!form.cpf || form.cpf.replace(/\D/g, "").length !== 11) erros.cpf = "CPF inválido";
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) erros.email = "E-mail inválido";
     return erros;
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     const erros = validate();
-    if (Object.keys(erros).length > 0) {
-      setErrors(erros);
-      return;
-    }
+    if (Object.keys(erros).length > 0) { setErrors(erros); return; }
     mutation.mutate(form);
   };
 
-  const inputStyle = (campo: keyof FormData): React.CSSProperties => ({
-    height: 36,
-    padding: "0 10px",
-    border: `1px solid ${errors[campo] ? "red" : "#ddd"}`,
-    borderRadius: 6,
-    fontSize: 14,
-    fontFamily: "inherit",
-  });
-
-  const selectStyle = (campo: keyof FormData): React.CSSProperties => ({
-    ...inputStyle(campo),
-    background: "white",
-  });
-
   return (
-    <div style={{ maxWidth: 680, fontFamily: "sans-serif" }}>
-      <form onSubmit={handleSubmit} noValidate>
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
-        <fieldset style={fieldsetStyle}>
-          <legend style={legendStyle}>Dados Pessoais</legend>
-          <div style={grid2}>
-            <div style={{ gridColumn: "span 2" }}>
-              <Campo id="nome" label="Nome Completo" required error={errors.nome}>
-                <input
-                  id="nome" name="nome" type="text" value={form.nome} onChange={handleChange}
-                  style={inputStyle("nome")} placeholder="Ex: João da Silva" autoComplete="name"
-                />
-              </Campo>
-            </div>
-
-            <Campo id="dataNascimento" label="Data de Nascimento" required error={errors.dataNascimento}>
-              <input
-                id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento} onChange={handleChange}
-                style={inputStyle("dataNascimento")}
+      {/* Dados Pessoais */}
+      <Section title="Dados Pessoais">
+        <div className="space-y-3">
+          <Campo label="Nome Completo" required error={errors.nome}>
+            <Input
+              name="nome" value={form.nome} onChange={handleChange}
+              placeholder="Ex: João da Silva" autoComplete="name"
+              className={errors.nome ? "border-destructive" : ""}
+            />
+          </Campo>
+          <div className="grid grid-cols-2 gap-3">
+            <Campo label="Data de Nascimento" required error={errors.dataNascimento}>
+              <Input
+                type="date" name="dataNascimento" value={form.dataNascimento}
+                onChange={handleChange}
+                className={errors.dataNascimento ? "border-destructive" : ""}
               />
             </Campo>
-
-            <Campo id="sexo" label="Sexo biológico" required error={errors.sexo}>
-              <select id="sexo" name="sexo" value={form.sexo} onChange={handleChange} style={selectStyle("sexo")}>
+            <Campo label="Sexo biológico" required error={errors.sexo}>
+              <NativeSelect name="sexo" value={form.sexo} onChange={handleChange} hasError={!!errors.sexo}>
                 <option value="">Selecione</option>
                 <option value="masculino">Masculino</option>
                 <option value="feminino">Feminino</option>
                 <option value="nao_informado">Prefiro não informar</option>
-              </select>
+              </NativeSelect>
             </Campo>
-
-            <Campo id="estadoCivil" label="Estado civil" required error={errors.estadoCivil}>
-              <select id="estadoCivil" name="estadoCivil" value={form.estadoCivil} onChange={handleChange} style={selectStyle("estadoCivil")}>
+            <Campo label="Estado Civil" required error={errors.estadoCivil}>
+              <NativeSelect name="estadoCivil" value={form.estadoCivil} onChange={handleChange} hasError={!!errors.estadoCivil}>
                 <option value="">Selecione</option>
                 <option value="solteiro">Solteiro(a)</option>
                 <option value="casado">Casado(a)</option>
                 <option value="divorciado">Divorciado(a)</option>
                 <option value="viuvo">Viúvo(a)</option>
                 <option value="uniao_estavel">União estável</option>
-              </select>
+              </NativeSelect>
             </Campo>
-
-            <Campo id="cpf" label="CPF" required error={errors.cpf}>
-              <input
-                id="cpf" name="cpf" type="text"
-                value={form.cpf} onChange={handleChange}
-                style={{ ...inputStyle("cpf"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
-                inputMode="numeric" maxLength={14}
-                placeholder="000.000.000-00"
+            <Campo label="CPF" required error={errors.cpf}>
+              <Input
+                name="cpf" value={form.cpf} onChange={handleChange}
+                inputMode="numeric" maxLength={14} placeholder="000.000.000-00"
                 disabled={isEditing}
+                className={errors.cpf ? "border-destructive" : ""}
               />
             </Campo>
           </div>
-        </fieldset>
+        </div>
+      </Section>
 
-        <fieldset style={fieldsetStyle}>
-          <legend style={legendStyle}>Contato</legend>
-          <div style={grid2}>
-            <Campo id="email" label="E-mail" required error={errors.email}>
-              <input
-                id="email" name="email" type="email"
-                value={form.email} onChange={handleChange}
-                style={inputStyle("email")} placeholder="exemplo@email.com"
-                inputMode="email" autoComplete="email"
-              />
-            </Campo>
+      {/* Contato */}
+      <Section title="Contato">
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="E-mail" required error={errors.email}>
+            <Input
+              type="email" name="email" value={form.email} onChange={handleChange}
+              placeholder="exemplo@email.com" autoComplete="email"
+              className={errors.email ? "border-destructive" : ""}
+            />
+          </Campo>
+          <Campo label="Telefone / Celular" required error={errors.telefone}>
+            <Input
+              name="telefone" value={form.telefone} onChange={handleChange}
+              inputMode="numeric" maxLength={15} placeholder="(00) 00000-0000"
+              className={errors.telefone ? "border-destructive" : ""}
+            />
+          </Campo>
+        </div>
+      </Section>
 
-            <Campo id="telefone" label="Telefone / celular" required error={errors.telefone}>
-              <input
-                id="telefone" name="telefone" type="text"
-                value={form.telefone} onChange={handleChange}
-                style={inputStyle("telefone")}
-                inputMode="numeric" maxLength={15}
-                placeholder="(00) 00000-0000"
-              />
-            </Campo>
-          </div>
-        </fieldset>
-
-        <fieldset style={fieldsetStyle}>
-          <legend style={legendStyle}>Convênio</legend>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Autocomplete de convênio */}
-            <Campo id="convenio" label="Convênio">
-              <div ref={convenioRef} style={{ position: "relative" }}>
-                <input
-                  id="convenio"
-                  type="text"
-                  value={convenioQuery}
-                  onChange={(e) => {
-                    setConvenioQuery(e.target.value);
-                    setConvenioOpen(true);
-                    if (!e.target.value) {
-                      set("convenioId", "");
-                    }
-                  }}
-                  onFocus={() => setConvenioOpen(true)}
-                  style={inputStyle("convenioId")}
-                  placeholder="Digite para buscar convênio..."
-                  autoComplete="off"
-                />
-                {/* Botão limpar */}
-                {convenioQuery && (
+      {/* Convênio */}
+      <Section title="Convênio">
+        <Campo label="Convênio">
+          <div ref={convenioRef} className="relative">
+            <Input
+              value={convenioQuery}
+              onChange={(e) => {
+                setConvenioQuery(e.target.value);
+                setConvenioOpen(true);
+                if (!e.target.value) set("convenioId", "");
+              }}
+              onFocus={() => setConvenioOpen(true)}
+              placeholder="Digite para buscar convênio..."
+              autoComplete="off"
+              className="pr-8"
+            />
+            {convenioQuery && (
+              <button
+                type="button"
+                onClick={() => { setConvenioQuery(""); set("convenioId", ""); setConvenioOpen(false); }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+            {convenioOpen && conveniosFiltrados.length > 0 && (
+              <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                <button
+                  type="button"
+                  className="w-full text-left px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors border-b border-border/50"
+                  onMouseDown={() => { setConvenioQuery(""); set("convenioId", ""); setConvenioOpen(false); }}
+                >
+                  — Sem convênio (particular)
+                </button>
+                {conveniosFiltrados.map((c) => (
                   <button
+                    key={c.id}
                     type="button"
-                    onClick={() => { setConvenioQuery(""); set("convenioId", ""); setConvenioOpen(false); }}
-                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#999", fontSize: 16, lineHeight: 1 }}
+                    className={`w-full text-left px-3 py-2.5 text-sm hover:bg-muted transition-colors border-b border-border/50 last:border-0
+                                            ${form.convenioId === String(c.id) ? "font-medium bg-muted/50" : ""}`}
+                    onMouseDown={() => {
+                      setConvenioQuery(c.nome);
+                      set("convenioId", String(c.id));
+                      setConvenioOpen(false);
+                    }}
                   >
-                    ×
+                    {c.nome}
                   </button>
-                )}
-                {convenioOpen && conveniosFiltrados.length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "white", border: "1px solid #ddd", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", marginTop: 2, maxHeight: 200, overflowY: "auto" }}>
-                    <div
-                      style={{ padding: "8px 12px", fontSize: 13, color: "#888", cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
-                      onMouseDown={() => { setConvenioQuery(""); set("convenioId", ""); setConvenioOpen(false); }}
-                    >
-                      — Sem convênio (particular)
-                    </div>
-                    {conveniosFiltrados.map((c) => (
-                      <div
-                        key={c.id}
-                        onMouseDown={() => {
-                          setConvenioQuery(c.nome);
-                          set("convenioId", String(c.id));
-                          setConvenioOpen(false);
-                        }}
-                        style={{
-                          padding: "8px 12px", fontSize: 14, cursor: "pointer",
-                          background: form.convenioId === String(c.id) ? "#f0faf6" : "white",
-                          fontWeight: form.convenioId === String(c.id) ? 500 : 400,
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = form.convenioId === String(c.id) ? "#f0faf6" : "white")}
-                      >
-                        {c.nome}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Campo>
-
-            {/* Campos de carteirinha — só aparecem quando um convênio está selecionado */}
-            {form.convenioId && (
-              <div style={grid2}>
-                <Campo id="numeroCarteirinha" label="Número da Carteirinha">
-                  <input
-                    id="numeroCarteirinha" name="numeroCarteirinha" type="text"
-                    value={form.numeroCarteirinha} onChange={handleChange}
-                    style={inputStyle("numeroCarteirinha")}
-                    placeholder="Ex: 0012345678901"
-                  />
-                </Campo>
-                <Campo id="dataVencimentoCarteirinha" label="Vencimento da Carteirinha">
-                  <input
-                    id="dataVencimentoCarteirinha" name="dataVencimentoCarteirinha" type="date"
-                    value={form.dataVencimentoCarteirinha} onChange={handleChange}
-                    style={inputStyle("dataVencimentoCarteirinha")}
-                  />
-                </Campo>
+                ))}
               </div>
             )}
           </div>
-        </fieldset>
+        </Campo>
 
-        <fieldset style={fieldsetStyle}>
-          <legend style={legendStyle}>Endereço</legend>
-          <div style={{ display: "grid", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "end" }}>
-              <Campo id="cep" label="CEP" error={errors.cep}>
-                <input
-                  id="cep" name="cep" type="text"
-                  value={form.cep} onChange={handleChange}
-                  style={inputStyle("cep")}
-                  inputMode="numeric" maxLength={9}
-                  placeholder="00000-000"
-                />
-              </Campo>
-              <button type="button" onClick={buscarCep} disabled={buscandoCep} style={btnSecStyle}>
-                {buscandoCep ? "Buscando..." : "Buscar endereço"}
-              </button>
-            </div>
-
-            <Campo id="logradouro" label="Logradouro" error={errors.logradouro}>
-              <input
-                id="logradouro" name="logradouro" type="text"
-                value={form.logradouro} onChange={handleChange}
-                style={inputStyle("logradouro")}
-                autoComplete="street-address"
+        {form.convenioId && (
+          <div className="grid grid-cols-2 gap-3">
+            <Campo label="Número da Carteirinha">
+              <Input
+                name="numeroCarteirinha" value={form.numeroCarteirinha}
+                onChange={handleChange} placeholder="Ex: 0012345678901"
               />
             </Campo>
+            <Campo label="Vencimento da Carteirinha">
+              <Input
+                type="date" name="dataVencimentoCarteirinha"
+                value={form.dataVencimentoCarteirinha} onChange={handleChange}
+              />
+            </Campo>
+          </div>
+        )}
+      </Section>
 
-            <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 12 }}>
-              <Campo id="numero" label="Número" error={errors.numero}>
-                <input
-                  id="numero" name="numero" type="text"
-                  value={form.numero} onChange={handleChange}
-                  style={inputStyle("numero")}
-                  inputMode="numeric" maxLength={10}
-                />
-              </Campo>
-              <Campo id="complemento" label="Complemento" error={errors.complemento}>
-                <input
-                  id="complemento" name="complemento" type="text"
-                  value={form.complemento} onChange={handleChange}
-                  style={inputStyle("complemento")}
-                  placeholder="Apto, bloco, sala..."
+      {/* Endereço */}
+      <Section title="Endereço">
+        <div className="space-y-3">
+          <div className="flex gap-3 items-end">
+            <div className="w-44">
+              <Campo label="CEP" error={errors.cep}>
+                <Input
+                  name="cep" value={form.cep} onChange={handleChange}
+                  inputMode="numeric" maxLength={9} placeholder="00000-000"
+                  className={errors.cep ? "border-destructive" : ""}
                 />
               </Campo>
             </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px", gap: 12 }}>
-              <Campo id="bairro" label="Bairro" error={errors.bairro}>
-                <input id="bairro" name="bairro" type="text" value={form.bairro} onChange={handleChange} style={inputStyle("bairro")} />
-              </Campo>
-              <Campo id="cidade" label="Cidade" error={errors.cidade}>
-                <input id="cidade" name="cidade" type="text" value={form.cidade} onChange={handleChange} style={inputStyle("cidade")} />
-              </Campo>
-              <Campo id="uf" label="UF" error={errors.uf}>
-                <select id="uf" name="uf" value={form.uf} onChange={handleChange} style={selectStyle("uf")}>
-                  <option value="">—</option>
-                  {ESTADOS_BR.map((uf) => (
-                    <option key={uf} value={uf}>{uf}</option>
-                  ))}
-                </select>
+            <Button type="button" variant="outline" onClick={buscarCep} disabled={buscandoCep}>
+              {buscandoCep ? "Buscando..." : "Buscar endereço"}
+            </Button>
+          </div>
+          <Campo label="Logradouro">
+            <Input name="logradouro" value={form.logradouro} onChange={handleChange} autoComplete="street-address" />
+          </Campo>
+          <div className="grid grid-cols-3 gap-3">
+            <Campo label="Número">
+              <Input name="numero" value={form.numero} onChange={handleChange} inputMode="numeric" maxLength={10} />
+            </Campo>
+            <div className="col-span-2">
+              <Campo label="Complemento">
+                <Input name="complemento" value={form.complemento} onChange={handleChange} placeholder="Apto, bloco, sala..." />
               </Campo>
             </div>
           </div>
-        </fieldset>
-
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-          <button
-            type="submit"
-            style={{ ...btnPrimaryStyle, opacity: mutation.isPending ? 0.6 : 1, cursor: mutation.isPending ? "not-allowed" : "pointer" }}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending
-              ? (isEditing ? "Salvando..." : "Cadastrando...")
-              : (isEditing ? "Salvar alterações" : "Cadastrar paciente")
-            }
-          </button>
+          <div className="grid grid-cols-3 gap-3">
+            <Campo label="Bairro">
+              <Input name="bairro" value={form.bairro} onChange={handleChange} />
+            </Campo>
+            <Campo label="Cidade">
+              <Input name="cidade" value={form.cidade} onChange={handleChange} />
+            </Campo>
+            <Campo label="UF">
+              <NativeSelect name="uf" value={form.uf} onChange={handleChange}>
+                <option value="">—</option>
+                {ESTADOS_BR.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+              </NativeSelect>
+            </Campo>
+          </div>
         </div>
+      </Section>
 
-      </form>
-    </div>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={mutation.isPending}>
+          {mutation.isPending
+            ? (isEditing ? "Salvando..." : "Cadastrando...")
+            : (isEditing ? "Salvar alterações" : "Cadastrar paciente")}
+        </Button>
+      </div>
+    </form>
   );
 };

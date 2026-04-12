@@ -2,6 +2,9 @@ import { useState } from "react";
 import { medicosApi, type Medico } from "../services/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { Label } from "./ui/label";
 
 interface FormData {
     nome: string;
@@ -25,14 +28,6 @@ interface FormData {
 }
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
-
-interface CampoProps {
-    id: string;
-    label: string;
-    required?: boolean;
-    error?: string;
-    children: React.ReactNode;
-}
 
 interface ViaCepResponse {
     erro?: boolean;
@@ -89,35 +84,46 @@ const maskPhone = (v: string): string => {
 const maskCEP = (v: string): string =>
     v.replace(/\D/g, "").slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2");
 
-const fieldsetStyle: React.CSSProperties = {
-    border: "1px solid #e5e5e5", borderRadius: 10,
-    padding: "1.25rem 1.5rem", marginBottom: "1.25rem",
-};
-const legendStyle: React.CSSProperties = {
-    fontSize: 12, fontWeight: 500, color: "#888",
-    padding: "0 8px", textTransform: "uppercase", letterSpacing: "0.04em",
-};
-const grid2: React.CSSProperties = {
-    display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12,
-};
-const btnSecStyle: React.CSSProperties = {
-    height: 36, border: "1px solid #ddd", borderRadius: 6,
-    background: "transparent", fontSize: 13, cursor: "pointer",
-    padding: "0 12px", fontFamily: "inherit",
-};
-const btnPrimaryStyle: React.CSSProperties = {
-    height: 40, padding: "0 28px", borderRadius: 6, border: "1px solid #ccc",
-    background: "transparent", fontSize: 14, fontWeight: 500,
-    cursor: "pointer", fontFamily: "inherit",
-};
+// ── Shared field wrapper ───────────────────────────────────────────────────
+interface CampoProps {
+    label: string;
+    required?: boolean;
+    error?: string;
+    children: React.ReactNode;
+}
 
-const Campo = ({ id, label, required, error, children }: CampoProps) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <label htmlFor={id} style={{ fontSize: 13, color: "#666" }}>
-            {label} {required && <span style={{ color: "red", marginLeft: 2 }}>*</span>}
-        </label>
+const Campo = ({ label, required, error, children }: CampoProps) => (
+    <div className="space-y-1.5">
+        <Label className={error ? "text-destructive" : ""}>
+            {label}
+            {required && <span className="text-destructive ml-1">*</span>}
+        </Label>
         {children}
-        {error && <span style={{ color: "red", fontSize: 12 }}>{error}</span>}
+        {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+);
+
+// ── Native select styled to match shadcn Input ─────────────────────────────
+interface NativeSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+    hasError?: boolean;
+}
+
+const NativeSelect = ({ hasError, className = "", ...props }: NativeSelectProps) => (
+    <select
+        className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
+            disabled:cursor-not-allowed disabled:opacity-50
+            ${hasError ? "border-destructive" : "border-input"}
+            ${className}`}
+        {...props}
+    />
+);
+
+// ── Section card ───────────────────────────────────────────────────────────
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">{title}</p>
+        {children}
     </div>
 );
 
@@ -169,7 +175,7 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
     });
 
     const set = (campo: keyof FormData, valor: string) => {
-        setForm((prev => ({ ...prev, [campo]: valor })));
+        setForm(prev => ({ ...prev, [campo]: valor }));
         setErrors(prev => ({ ...prev, [campo]: undefined }));
     };
 
@@ -183,22 +189,25 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
 
     const buscarCep = async (): Promise<void> => {
         const cep = form.cep.replace(/\D/g, "");
-        if (cep.length !== 8) { setErrors((prev) => ({ ...prev, cep: "CEP inválido" })); return; }
+        if (cep.length !== 8) { setErrors(prev => ({ ...prev, cep: "CEP inválido" })); return; }
         setBuscandoCep(true);
         try {
             const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const data: ViaCepResponse = await res.json();
             if (data.erro) {
-                setErrors((prev) => ({ ...prev, cep: "CEP não encontrado" }));
+                setErrors(prev => ({ ...prev, cep: "CEP não encontrado" }));
             } else {
-                setForm((prev) => ({
-                    ...prev, logradouro: data.logradouro ?? "",
-                    bairro: data.bairro ?? "", cidade: data.localidade ?? "", uf: data.uf ?? "",
+                setForm(prev => ({
+                    ...prev,
+                    logradouro: data.logradouro ?? "",
+                    bairro: data.bairro ?? "",
+                    cidade: data.localidade ?? "",
+                    uf: data.uf ?? "",
                 }));
-                setErrors((prev) => ({ ...prev, cep: undefined }));
+                setErrors(prev => ({ ...prev, cep: undefined }));
             }
         } catch {
-            setErrors((prev) => ({ ...prev, cep: "Erro ao buscar CEP" }));
+            setErrors(prev => ({ ...prev, cep: "Erro ao buscar CEP" }));
         }
         setBuscandoCep(false);
     };
@@ -210,6 +219,9 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
         if (!form.sexo) erros.sexo = "Campo obrigatório";
         if (!form.estadoCivil) erros.estadoCivil = "Campo obrigatório";
         if (!form.cpf || form.cpf.replace(/\D/g, "").length !== 11) erros.cpf = "CPF inválido";
+        if (!form.crm.trim()) erros.crm = "Campo obrigatório";
+        if (!form.crmEstado) erros.crmEstado = "Campo obrigatório";
+        if (!form.especialidade) erros.especialidade = "Campo obrigatório";
         if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) erros.email = "E-mail inválido";
         return erros;
     };
@@ -221,185 +233,186 @@ export const FormCadastroMedico = ({ onSuccess, initialData }: Props) => {
         mutation.mutate(form);
     };
 
-    const inputStyle = (campo: keyof FormData): React.CSSProperties => ({
-        height: 36, padding: "0 10px",
-        border: `1px solid ${errors[campo] ? "red" : "#ddd"}`,
-        borderRadius: 6, fontSize: 14, fontFamily: "inherit",
-    });
-    const selectStyle = (campo: keyof FormData): React.CSSProperties => ({ ...inputStyle(campo), background: "white" });
-
     return (
-        <div style={{ maxWidth: 680, fontFamily: "sans-serif" }}>
-            <form onSubmit={handleSubmit} noValidate>
-                <fieldset style={fieldsetStyle}>
-                    <legend style={legendStyle}>Dados Pessoais</legend>
-                    <div style={grid2}>
-                        <div style={{ gridColumn: "span 2" }}>
-                            <Campo id="nome" label="Nome Completo" required error={errors.nome}>
-                                <input id="nome" name="nome" type="text" value={form.nome} onChange={handleChange}
-                                    style={inputStyle("nome")} placeholder="Ex: Dr. João da Silva" autoComplete="name" />
-                            </Campo>
-                        </div>
-                        <Campo id="dataNascimento" label="Data de Nascimento" required error={errors.dataNascimento}>
-                            <input id="dataNascimento" name="dataNascimento" type="date" value={form.dataNascimento}
-                                onChange={handleChange} style={inputStyle("dataNascimento")} />
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+
+            {/* Dados Pessoais */}
+            <Section title="Dados Pessoais">
+                <div className="space-y-3">
+                    <Campo label="Nome Completo" required error={errors.nome}>
+                        <Input
+                            name="nome" value={form.nome} onChange={handleChange}
+                            placeholder="Ex: Dr. João da Silva" autoComplete="name"
+                            className={errors.nome ? "border-destructive" : ""}
+                        />
+                    </Campo>
+                    <div className="grid grid-cols-2 gap-3">
+                        <Campo label="Data de Nascimento" required error={errors.dataNascimento}>
+                            <Input
+                                type="date" name="dataNascimento" value={form.dataNascimento}
+                                onChange={handleChange}
+                                className={errors.dataNascimento ? "border-destructive" : ""}
+                            />
                         </Campo>
-                        <Campo id="sexo" label="Sexo biológico" required error={errors.sexo}>
-                            <select id="sexo" name="sexo" value={form.sexo} onChange={handleChange} style={selectStyle("sexo")}>
+                        <Campo label="Sexo biológico" required error={errors.sexo}>
+                            <NativeSelect name="sexo" value={form.sexo} onChange={handleChange} hasError={!!errors.sexo}>
                                 <option value="">Selecione</option>
                                 <option value="masculino">Masculino</option>
                                 <option value="feminino">Feminino</option>
                                 <option value="nao_informado">Prefiro não informar</option>
-                            </select>
+                            </NativeSelect>
                         </Campo>
-                        <Campo id="estadoCivil" label="Estado civil" required error={errors.estadoCivil}>
-                            <select id="estadoCivil" name="estadoCivil" value={form.estadoCivil} onChange={handleChange} style={selectStyle("estadoCivil")}>
+                        <Campo label="Estado Civil" required error={errors.estadoCivil}>
+                            <NativeSelect name="estadoCivil" value={form.estadoCivil} onChange={handleChange} hasError={!!errors.estadoCivil}>
                                 <option value="">Selecione</option>
                                 <option value="solteiro">Solteiro(a)</option>
                                 <option value="casado">Casado(a)</option>
                                 <option value="divorciado">Divorciado(a)</option>
                                 <option value="viuvo">Viúvo(a)</option>
                                 <option value="uniao_estavel">União estável</option>
-                            </select>
+                            </NativeSelect>
                         </Campo>
-                        <Campo id="cpf" label="CPF" required error={errors.cpf}>
-                            <input id="cpf" name="cpf" type="text" value={form.cpf} onChange={handleChange}
-                                style={{ ...inputStyle("cpf"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
-                                inputMode="numeric" maxLength={14} placeholder="000.000.000-00" disabled={isEditing} />
-                        </Campo>
-                    </div>
-                </fieldset>
-
-                <fieldset style={fieldsetStyle}>
-                    <legend style={legendStyle}>Dados profissionais</legend>
-                    <div style={grid2}>
-                        <Campo id="crm" label="CRM" required error={errors.crm}>
-                            <input id="crm" name="crm" type="text" value={form.crm} onChange={handleChange}
-                                style={{ ...inputStyle("crm"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
-                                inputMode="numeric" maxLength={6} placeholder="000000" disabled={isEditing} />
-                        </Campo>
-                        <Campo id="crmEstado" label="Estado do CRM" required error={errors.crmEstado}>
-                            <select id="crmEstado" name="crmEstado" value={form.crmEstado} onChange={handleChange}
-                                style={{ ...selectStyle("crmEstado"), ...(isEditing ? { background: "#f5f5f5", color: "#999", cursor: "not-allowed" } : {}) }}
-                                disabled={isEditing}>
-                                <option value="">Selecione</option>
-                                {ESTADOS_BR.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
-                            </select>
-                        </Campo>
-                        <div style={{ gridColumn: "span 2" }}>
-                            <Campo id="especialidade" label="Especialidade" required error={errors.especialidade}>
-                                <select id="especialidade" name="especialidade" value={form.especialidade} onChange={handleChange} style={selectStyle("especialidade")}>
-                                    <option value="">Selecione</option>
-                                    {ESPECIALIDADES.map((esp) => <option key={esp} value={esp}>{esp}</option>)}
-                                </select>
-                            </Campo>
-                        </div>
-                    </div>
-                </fieldset>
-
-                <fieldset style={fieldsetStyle}>
-                    <legend style={legendStyle}>Contato</legend>
-                    <div style={grid2}>
-                        <Campo id="email" label="E-mail" required error={errors.email}>
-                            <input id="email" name="email" type="email" value={form.email} onChange={handleChange}
-                                style={inputStyle("email")} placeholder="exemplo@email.com" inputMode="email" autoComplete="email" />
-                        </Campo>
-                        <Campo id="telefone" label="Telefone / celular" required error={errors.telefone}>
-                            <input id="telefone" name="telefone" type="text" value={form.telefone} onChange={handleChange}
-                                style={inputStyle("telefone")} inputMode="numeric" maxLength={15} placeholder="(00) 00000-0000" />
+                        <Campo label="CPF" required error={errors.cpf}>
+                            <Input
+                                name="cpf" value={form.cpf} onChange={handleChange}
+                                inputMode="numeric" maxLength={14} placeholder="000.000.000-00"
+                                disabled={isEditing}
+                                className={errors.cpf ? "border-destructive" : ""}
+                            />
                         </Campo>
                     </div>
-                </fieldset>
-
-                <fieldset style={fieldsetStyle}>
-                    <legend style={legendStyle}>Endereço</legend>
-                    <div style={{ display: "grid", flexDirection: "column", gap: 12 }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12, alignItems: "end" }}>
-                            <Campo id="cep" label="CEP" error={errors.cep}>
-                                <input id="cep" name="cep" type="text" value={form.cep} onChange={handleChange}
-                                    style={inputStyle("cep")} inputMode="numeric" maxLength={9} placeholder="00000-000" />
-                            </Campo>
-                            <button type="button" onClick={buscarCep} disabled={buscandoCep} style={btnSecStyle}>
-                                {buscandoCep ? "Buscando..." : "Buscar endereço"}
-                            </button>
-                        </div>
-                        <Campo id="logradouro" label="Logradouro" error={errors.logradouro}>
-                            <input id="logradouro" name="logradouro" type="text" value={form.logradouro} onChange={handleChange}
-                                style={inputStyle("logradouro")} autoComplete="street-address" />
-                        </Campo>
-                        <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 12 }}>
-                            <Campo id="numero" label="Número" error={errors.numero}>
-                                <input id="numero" name="numero" type="text" value={form.numero} onChange={handleChange}
-                                    style={inputStyle("numero")} inputMode="numeric" maxLength={10} />
-                            </Campo>
-                            <Campo id="complemento" label="Complemento" error={errors.complemento}>
-                                <input id="complemento" name="complemento" type="text" value={form.complemento} onChange={handleChange}
-                                    style={inputStyle("complemento")} placeholder="Apto, bloco, sala..." />
-                            </Campo>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 80px", gap: 12 }}>
-                            <Campo id="bairro" label="Bairro" error={errors.bairro}>
-                                <input id="bairro" name="bairro" type="text" value={form.bairro} onChange={handleChange} style={inputStyle("bairro")} />
-                            </Campo>
-                            <Campo id="cidade" label="Cidade" error={errors.cidade}>
-                                <input id="cidade" name="cidade" type="text" value={form.cidade} onChange={handleChange} style={inputStyle("cidade")} />
-                            </Campo>
-                            <Campo id="uf" label="UF" error={errors.uf}>
-                                <select id="uf" name="uf" value={form.uf} onChange={handleChange} style={selectStyle("uf")}>
-                                    <option value="">—</option>
-                                    {ESTADOS_BR.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
-                                </select>
-                            </Campo>
-                        </div>
-                    </div>
-                </fieldset>
-
-                {/* Status Ativo/Inativo */}
-                <fieldset style={fieldsetStyle}>
-                    <legend style={legendStyle}>Status</legend>
-                    <label style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", userSelect: "none" }}>
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={form.ativo}
-                            onClick={() => setForm(f => ({ ...f, ativo: !f.ativo }))}
-                            style={{
-                                position: "relative", display: "inline-flex",
-                                height: 24, width: 44, alignItems: "center",
-                                borderRadius: 9999, border: "none", cursor: "pointer",
-                                backgroundColor: form.ativo ? "#6366f1" : "#d1d5db",
-                                transition: "background-color 0.2s",
-                            }}
-                        >
-                            <span style={{
-                                display: "inline-block", height: 16, width: 16,
-                                transform: form.ativo ? "translateX(24px)" : "translateX(4px)",
-                                borderRadius: 9999, backgroundColor: "white",
-                                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                                transition: "transform 0.2s",
-                            }} />
-                        </button>
-                        <span style={{ fontSize: 14, fontWeight: 500 }}>
-                            {form.ativo ? "Médico Ativo" : "Médico Inativo"}
-                        </span>
-                        <span style={{ fontSize: 12, color: "#888" }}>
-                            {form.ativo ? "(aparece nas listagens e pode ter consultas)" : "(não aparece nas listagens ativas)"}
-                        </span>
-                    </label>
-                </fieldset>
-
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-                    <button
-                        type="submit"
-                        style={{ ...btnPrimaryStyle, opacity: mutation.isPending ? 0.6 : 1, cursor: mutation.isPending ? "not-allowed" : "pointer" }}
-                        disabled={mutation.isPending}
-                    >
-                        {mutation.isPending
-                            ? (isEditing ? "Salvando..." : "Cadastrando...")
-                            : (isEditing ? "Salvar alterações" : "Cadastrar médico")}
-                    </button>
                 </div>
-            </form>
-        </div>
+            </Section>
+
+            {/* Dados Profissionais */}
+            <Section title="Dados Profissionais">
+                <div className="grid grid-cols-2 gap-3">
+                    <Campo label="CRM" required error={errors.crm}>
+                        <Input
+                            name="crm" value={form.crm} onChange={handleChange}
+                            inputMode="numeric" maxLength={6} placeholder="000000"
+                            disabled={isEditing}
+                            className={errors.crm ? "border-destructive" : ""}
+                        />
+                    </Campo>
+                    <Campo label="Estado do CRM" required error={errors.crmEstado}>
+                        <NativeSelect name="crmEstado" value={form.crmEstado} onChange={handleChange} disabled={isEditing} hasError={!!errors.crmEstado}>
+                            <option value="">Selecione</option>
+                            {ESTADOS_BR.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                        </NativeSelect>
+                    </Campo>
+                    <div className="col-span-2">
+                        <Campo label="Especialidade" required error={errors.especialidade}>
+                            <NativeSelect name="especialidade" value={form.especialidade} onChange={handleChange} hasError={!!errors.especialidade}>
+                                <option value="">Selecione</option>
+                                {ESPECIALIDADES.map(esp => <option key={esp} value={esp}>{esp}</option>)}
+                            </NativeSelect>
+                        </Campo>
+                    </div>
+                </div>
+            </Section>
+
+            {/* Contato */}
+            <Section title="Contato">
+                <div className="grid grid-cols-2 gap-3">
+                    <Campo label="E-mail" required error={errors.email}>
+                        <Input
+                            type="email" name="email" value={form.email} onChange={handleChange}
+                            placeholder="exemplo@email.com" autoComplete="email"
+                            className={errors.email ? "border-destructive" : ""}
+                        />
+                    </Campo>
+                    <Campo label="Telefone / Celular" required error={errors.telefone}>
+                        <Input
+                            name="telefone" value={form.telefone} onChange={handleChange}
+                            inputMode="numeric" maxLength={15} placeholder="(00) 00000-0000"
+                            className={errors.telefone ? "border-destructive" : ""}
+                        />
+                    </Campo>
+                </div>
+            </Section>
+
+            {/* Endereço */}
+            <Section title="Endereço">
+                <div className="space-y-3">
+                    <div className="flex gap-3 items-end">
+                        <div className="w-44">
+                            <Campo label="CEP" error={errors.cep}>
+                                <Input
+                                    name="cep" value={form.cep} onChange={handleChange}
+                                    inputMode="numeric" maxLength={9} placeholder="00000-000"
+                                    className={errors.cep ? "border-destructive" : ""}
+                                />
+                            </Campo>
+                        </div>
+                        <Button type="button" variant="outline" onClick={buscarCep} disabled={buscandoCep}>
+                            {buscandoCep ? "Buscando..." : "Buscar endereço"}
+                        </Button>
+                    </div>
+                    <Campo label="Logradouro" error={errors.logradouro}>
+                        <Input name="logradouro" value={form.logradouro} onChange={handleChange} autoComplete="street-address" />
+                    </Campo>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Campo label="Número">
+                            <Input name="numero" value={form.numero} onChange={handleChange} inputMode="numeric" maxLength={10} />
+                        </Campo>
+                        <div className="col-span-2">
+                            <Campo label="Complemento">
+                                <Input name="complemento" value={form.complemento} onChange={handleChange} placeholder="Apto, bloco, sala..." />
+                            </Campo>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <Campo label="Bairro">
+                            <Input name="bairro" value={form.bairro} onChange={handleChange} />
+                        </Campo>
+                        <Campo label="Cidade">
+                            <Input name="cidade" value={form.cidade} onChange={handleChange} />
+                        </Campo>
+                        <Campo label="UF">
+                            <NativeSelect name="uf" value={form.uf} onChange={handleChange}>
+                                <option value="">—</option>
+                                {ESTADOS_BR.map(uf => <option key={uf} value={uf}>{uf}</option>)}
+                            </NativeSelect>
+                        </Campo>
+                    </div>
+                </div>
+            </Section>
+
+            {/* Status */}
+            {/* <Section title="Status">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={form.ativo}
+                        onClick={() => setForm(f => ({ ...f, ativo: !f.ativo }))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                            ${form.ativo ? "bg-primary" : "bg-muted"}`}
+                    >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform
+                            ${form.ativo ? "translate-x-6" : "translate-x-1"}`}
+                        />
+                    </button>
+                    <div>
+                        <p className="text-sm font-medium">{form.ativo ? "Médico Ativo" : "Médico Inativo"}</p>
+                        <p className="text-xs text-muted-foreground">
+                            {form.ativo
+                                ? "Aparece nas listagens e pode ter consultas"
+                                : "Não aparece nas listagens ativas"}
+                        </p>
+                    </div>
+                </label>
+            </Section> */}
+
+            <div className="flex justify-end">
+                <Button type="submit" disabled={mutation.isPending}>
+                    {mutation.isPending
+                        ? (isEditing ? "Salvando..." : "Cadastrando...")
+                        : (isEditing ? "Salvar alterações" : "Cadastrar médico")}
+                </Button>
+            </div>
+        </form>
     );
 };

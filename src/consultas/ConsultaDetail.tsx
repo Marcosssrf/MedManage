@@ -34,7 +34,6 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
 
     const { data: anamnese } = useQuery({
         queryKey: ["anamnese", consulta.id],
-        // Removido o 'require'. Agora usa a importação direta lá do topo
         queryFn: () => anamneseApi.buscarPorConsulta(consulta.id!),
         enabled: consultaAtiva(consulta.status),
     });
