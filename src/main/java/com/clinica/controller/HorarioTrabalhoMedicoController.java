@@ -7,6 +7,7 @@ import com.clinica.service.HorarioTrabalhoMedicoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -22,6 +23,7 @@ public class HorarioTrabalhoMedicoController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
     public ResponseEntity<HorarioTrabalhoResponseDTO> salvar(
             @PathVariable UUID medicoId,
             @RequestBody @Valid HorarioTrabalhoRequestDTO request
@@ -30,11 +32,13 @@ public class HorarioTrabalhoMedicoController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
     public ResponseEntity<HorarioTrabalhoResponseDTO> buscar(@PathVariable UUID medicoId) {
         return ResponseEntity.ok(service.buscarPorMedico(medicoId));
     }
 
     @DeleteMapping("/{horarioId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
     public ResponseEntity<Void> deletarUm(
             @PathVariable UUID medicoId,
             @PathVariable UUID horarioId

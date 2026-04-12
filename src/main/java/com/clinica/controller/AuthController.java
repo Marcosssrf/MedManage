@@ -27,21 +27,16 @@ public class AuthController {
 
     @PostMapping("/token")
     public ResponseEntity<AuthTokenResponseDTO> token(@RequestBody @Valid AuthRequestDTO request) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.username(), request.senha())
-            );
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.username(), request.senha())
+        );
 
-            String token = jwtTokenService.generateToken(authentication.getName());
+        String token = jwtTokenService.generateToken(authentication.getName());
 
-            return ResponseEntity.ok(new AuthTokenResponseDTO(
-                    token,
-                    "Bearer",
-                    jwtTokenService.getExpirationSeconds()
-            ));
-        } catch (Exception e) {
-            e.printStackTrace(); // ← vai aparecer no console com a causa real
-            throw e;
-        }
+        return ResponseEntity.ok(new AuthTokenResponseDTO(
+                token,
+                "Bearer",
+                jwtTokenService.getExpirationSeconds()
+        ));
     }
 }

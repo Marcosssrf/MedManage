@@ -5,6 +5,7 @@ public enum TipoConsulta {
     RETORNO,
     URGENCIA,
     EXAME,
+    ROTINA,
     TELEMEDICINA,
     PRE_OPERATORIO,
     POS_OPERATORIO

@@ -1,6 +1,7 @@
 package com.clinica.service;
 
 import com.clinica.dto.ConfiguracaoClinicaDTO;
+import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.model.ConfiguracaoClinica;
 import com.clinica.repository.ConfiguracaoClinicaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,12 @@ public class ConfiguracaoClinicaService {
     ConfiguracaoClinicaRepository configuracaoClinicaRepository;
 
     public ConfiguracaoClinica getClinica(){
-        return configuracaoClinicaRepository.findAll().get(0);
+        return configuracaoClinicaRepository.findAll()
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(
+                        "Configuração da clínica não encontrada. Cadastre-a em POST /configuracoes"
+                ));
     }
 
     public ConfiguracaoClinica insert(ConfiguracaoClinicaDTO dto){

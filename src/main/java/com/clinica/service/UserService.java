@@ -91,17 +91,14 @@ public class UserService {
         }
         if (dto.medico() != null && dto.medico().id() != null) {
             if (user.getRole() == Role.MEDICO) {
-                Medico medicoVinculado = medicoRepository.findById(dto.medico().id())
-                        .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
-
-                user.setMedico(medicoVinculado);
-            }
-            if(user.getRole() == Role.MEDICO){
                 Medico medico = medicoRepository.findById(dto.medico().id())
                         .orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
-                if(medico.getAtivo() != true){
+
+                if (!medico.getAtivo()) {
                     throw new RegraDeNegocioException("Médico desativado");
                 }
+
+                user.setMedico(medico);
             }
         }
         if (user.getRole() != Role.MEDICO) {

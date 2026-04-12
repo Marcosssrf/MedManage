@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -170,10 +171,12 @@ public class ConsultaService {
 		LocalTime horario = novaDataHora.toLocalTime();
 		LocalDateTime dataHoje = LocalDateTime.now();
 
-		if (!horario.isBefore(getInicio()) == false || horario.isAfter(getFim()))
+		if (horario.isBefore(getInicio()) || horario.isAfter(getFim()))
 			throw new RegraDeNegocioException("Fora do horário de atendimento");
+
 		if (!novaDataHora.isAfter(dataHoje))
 			throw new RegraDeNegocioException("Data de atendimento deve ser futura");
+
 		if (paciente.getDataVencimentoCarteirinha() != null &&
 				paciente.getDataVencimentoCarteirinha().isBefore(dataHoje.toLocalDate()))
 			throw new RegraDeNegocioException("Carteirinha do paciente vencida");
