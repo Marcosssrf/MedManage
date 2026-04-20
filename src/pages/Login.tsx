@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { toast } from "sonner";
-import { Stethoscope } from "lucide-react";
+import {useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {useAuth} from "../context/AuthContext";
+import {Button} from "../components/ui/button";
+import {Input} from "../components/ui/input";
+import {toast} from "sonner";
+import {Stethoscope} from "lucide-react";
 
 export default function Login() {
     const [username, setUsername] = useState("");

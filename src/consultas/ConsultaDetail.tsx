@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ClipboardList, Pencil, X } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { consultasApi, configuracoesApi, anamneseApi, historicoClinicoApi } from "../services/api";
-import type { Consulta, HistoricoClinico } from "../services/api";
-import { FormCadastroConsulta } from "../components/Form-Consulta";
-import { AnamneseForm, AnamneseView } from "../components/Form-Anamnese";
-import { PrescricoesPanel } from "./PrescricoesPanel";
-import { ProcedimentosTissPanel } from "./ProcedimentosTissPanel";
-import { STATUS_STYLE } from "./constants";
-import { consultaAtiva } from "../utils/utils";
+import {useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {ArrowLeft, ClipboardList, Pencil, X} from "lucide-react";
+import {toast} from "sonner";
+import {Button} from "../components/ui/button";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../components/ui/dialog";
+import type {Consulta, HistoricoClinico} from "../services/api";
+import {anamneseApi, configuracoesApi, consultasApi, historicoClinicoApi} from "../services/api";
+import {FormCadastroConsulta} from "../components/Form-Consulta";
+import {AnamneseForm, AnamneseView} from "../components/Form-Anamnese";
+import {PrescricoesPanel} from "./PrescricoesPanel";
+import {ProcedimentosTissPanel} from "./ProcedimentosTissPanel";
+import {STATUS_STYLE} from "./constants";
+import {consultaAtiva} from "../utils/utils";
 
 interface Props {
     consulta: Consulta;

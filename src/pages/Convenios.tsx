@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { conveniosApi, type Convenio } from "../services/api";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
-import { Plus, Pencil, ShieldAlert } from "lucide-react";
-import { toast } from "sonner";
+import {useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {type Convenio, conveniosApi} from "../services/api";
+import {Button} from "../components/ui/button";
+import {Input} from "../components/ui/input";
+import {Label} from "../components/ui/label";
+import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "../components/ui/dialog";
+import {Pencil, Plus, ShieldAlert} from "lucide-react";
+import {toast} from "sonner";
 
 const EMPTY: Omit<Convenio, "id"> = {
     nome: "", registroANS: "", cnpj: "", telefone: "", diasParaFaturamento: 30, ativo: true,

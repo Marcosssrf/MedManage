@@ -1,13 +1,24 @@
-import { NavLink, Outlet } from "react-router-dom";
+import {NavLink, Outlet, useNavigate} from "react-router-dom";
 import {
-    LayoutDashboard, Users, Stethoscope, CalendarDays, CreditCard,
-    LogOut, Menu, X, ShieldCheck, BarChart2, Settings, ShieldAlert, Moon, Sun
+    BarChart2,
+    CalendarDays,
+    CreditCard,
+    LayoutDashboard,
+    LogOut,
+    Menu,
+    Moon,
+    Settings,
+    ShieldAlert,
+    ShieldCheck,
+    Stethoscope,
+    Sun,
+    Users,
+    X
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDarkMode } from "../hooks/useDarkMode";
+import {useAuth} from "../context/AuthContext";
+import {useEffect, useState} from "react";
+import {useQueryClient} from "@tanstack/react-query";
+import {useDarkMode} from "../hooks/useDarkMode";
 
 const navSections = [
     {

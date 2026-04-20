@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { authService } from "../services/auth";
-import type { AuthUser } from "../services/auth";
+import {createContext, ReactNode, useCallback, useContext, useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import type {AuthUser} from "../services/auth";
+import {authService} from "../services/auth";
 
 interface AuthContextType {
     user: AuthUser | null;
@@ -13,15 +14,30 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(authService.getUser());
+    const navigate = useNavigate();
+
+    const logout = useCallback(() => {
+        authService.logout();
+        setUser(null);
+        navigate("/login", { replace: true });
+    }, [navigate]);
+
+    // Verifica token expirado proativamente a cada 30s
+    useEffect(() => {
+        const check = () => {
+            if (user && !authService.isAuthenticated()) {
+                logout();
+            }
+        };
+
+        check(); // checa imediatamente ao montar
+        const interval = setInterval(check, 30_000);
+        return () => clearInterval(interval);
+    }, [user, logout]);
 
     const login = async (username: string, senha: string) => {
         const loggedUser = await authService.login(username, senha);
         setUser(loggedUser);
-    };
-
-    const logout = () => {
-        authService.logout();
-        setUser(null);
     };
 
     return (

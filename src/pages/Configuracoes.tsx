@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { configuracoesApi, type ConfiguracaoClinica } from "../services/api";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Save, Bell, Mail, MessageSquare, Clock } from "lucide-react";
-import { toast } from "sonner";
+import {useEffect, useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {type ConfiguracaoClinica, configuracoesApi} from "../services/api";
+import {Button} from "../components/ui/button";
+import {Input} from "../components/ui/input";
+import {Label} from "../components/ui/label";
+import {Bell, Clock, Mail, MessageSquare, Save} from "lucide-react";
+import {toast} from "sonner";
 
 // ─── Notificações (configuração local, salva no localStorage) ───
 const NOTIF_KEY = "medmanage-notif-config";

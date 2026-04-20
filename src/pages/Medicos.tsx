@@ -1,26 +1,25 @@
-import { FormCadastroMedico } from "../components/Form-Medico";
-import { SkeletonTableBody } from "../components/ui/skeleton";
+import {FormCadastroMedico} from "../components/Form-Medico";
+import {SkeletonTableBody} from "../components/ui/skeleton";
 import {
-    medicosApi,
+    DIA_SEMANA_LABEL,
+    type DiaHorario,
+    DIAS_SEMANA_ORDER,
     horariosApi,
     type Medico,
-    type DiaHorario,
-    DIA_SEMANA_LABEL,
-    DIAS_SEMANA_ORDER,
+    type MedicoResumo,
+    medicosApi,
 } from "../services/api";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import {
-    Plus, Search, Users, ArrowLeft, Pencil, Trash2,
-    BadgeCheck, Stethoscope, Clock
-} from "lucide-react";
-import { usePermissions } from "../hooks/usePermissions";
-import { usePagination } from "../hooks/usePagination";
-import Pagination from "../components/Pagination";
-import { toast } from "sonner";
+import {keepPreviousData, useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useEffect, useState} from "react";
+import {Button} from "../components/ui/button";
+import {Input} from "../components/ui/input";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../components/ui/dialog";
+import {ArrowLeft, ChevronLeft, ChevronRight, Clock, Loader2, Pencil, Plus, Search, Trash2, Users,} from "lucide-react";
+import {usePermissions} from "../hooks/usePermissions";
+import {useDebounce} from "../hooks/useDebounce";
+import {toast} from "sonner";
+
+const PAGE_SIZE = 20;
 
 // ─────────────────────────────────────────────
 // Shared Field component
@@ -34,16 +33,103 @@ const Field = ({ label, value }: { label: string; value?: string }) => (
 );
 
 // ─────────────────────────────────────────────
+// Paginação servidor
+// ─────────────────────────────────────────────
+
+function PaginacaoServidor({
+                               paginaAtual,
+                               totalPaginas,
+                               totalElementos,
+                               tamanhoPagina,
+                               onMudar,
+                               isLoading,
+                           }: {
+    paginaAtual:    number;
+    totalPaginas:   number;
+    totalElementos: number;
+    tamanhoPagina:  number;
+    onMudar:        (p: number) => void;
+    isLoading:      boolean;
+}) {
+    const inicio = paginaAtual * tamanhoPagina + 1;
+    const fim    = Math.min((paginaAtual + 1) * tamanhoPagina, totalElementos);
+
+    if (totalPaginas <= 1) {
+        return (
+            <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
+                {totalElementos} médico{totalElementos !== 1 ? "s" : ""} encontrado{totalElementos !== 1 ? "s" : ""}
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+            <p className="text-xs text-muted-foreground">
+                {inicio}–{fim} de {totalElementos} médico{totalElementos !== 1 ? "s" : ""}
+            </p>
+            <div className="flex items-center gap-1">
+                <Button
+                    variant="ghost" size="sm"
+                    onClick={() => onMudar(paginaAtual - 1)}
+                    disabled={paginaAtual === 0 || isLoading}
+                    className="h-8 w-8 p-0"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                </Button>
+
+                {Array.from({ length: totalPaginas }, (_, i) => i)
+                    .filter(i =>
+                        i === 0 ||
+                        i === totalPaginas - 1 ||
+                        Math.abs(i - paginaAtual) <= 1
+                    )
+                    .reduce<(number | "…")[]>((acc, curr, idx, arr) => {
+                        if (idx > 0 && curr - (arr[idx - 1] as number) > 1) acc.push("…");
+                        acc.push(curr);
+                        return acc;
+                    }, [])
+                    .map((item, i) =>
+                        item === "…" ? (
+                            <span key={`dots-${i}`} className="px-1 text-xs text-muted-foreground">…</span>
+                        ) : (
+                            <Button
+                                key={item}
+                                variant={item === paginaAtual ? "default" : "ghost"}
+                                size="sm"
+                                onClick={() => onMudar(item as number)}
+                                disabled={isLoading}
+                                className="h-8 w-8 p-0 text-xs"
+                            >
+                                {(item as number) + 1}
+                            </Button>
+                        )
+                    )
+                }
+
+                <Button
+                    variant="ghost" size="sm"
+                    onClick={() => onMudar(paginaAtual + 1)}
+                    disabled={paginaAtual >= totalPaginas - 1 || isLoading}
+                    className="h-8 w-8 p-0"
+                >
+                    <ChevronRight className="w-4 h-4" />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────
 // Horário form dialog
 // ─────────────────────────────────────────────
 
 function HorarioDialog({
-    open,
-    onOpenChange,
-    initial,
-    diasJaCadastrados,
-    onSave,
-}: {
+                           open,
+                           onOpenChange,
+                           initial,
+                           diasJaCadastrados,
+                           onSave,
+                       }: {
     open: boolean;
     onOpenChange: (v: boolean) => void;
     initial?: DiaHorario;
@@ -131,11 +217,11 @@ function HorarioDialog({
                                         title={bloqueado ? "Dia já cadastrado" : undefined}
                                         className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors
                                             ${selecionado
-                                                ? "bg-primary text-primary-foreground border-primary"
-                                                : bloqueado
-                                                    ? "bg-muted text-muted-foreground border-border opacity-40 cursor-not-allowed"
-                                                    : "bg-muted text-muted-foreground border-border hover:border-primary/50"
-                                            }`}
+                                            ? "bg-primary text-primary-foreground border-primary"
+                                            : bloqueado
+                                                ? "bg-muted text-muted-foreground border-border opacity-40 cursor-not-allowed"
+                                                : "bg-muted text-muted-foreground border-border hover:border-primary/50"
+                                        }`}
                                     >
                                         {DIA_SEMANA_LABEL[dia]}
                                     </button>
@@ -179,6 +265,7 @@ function HorarioDialog({
 // ─────────────────────────────────────────────
 // Toggle Ativo Button
 // ─────────────────────────────────────────────
+
 function ToggleAtivoMedicoButton({ ativo, onToggle }: { ativo: boolean; onToggle: () => void }) {
     return (
         <Button
@@ -187,7 +274,7 @@ function ToggleAtivoMedicoButton({ ativo, onToggle }: { ativo: boolean; onToggle
             className={`flex items-center gap-2 ${ativo
                 ? "text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/5"
                 : "text-primary hover:text-primary border-primary/30 hover:bg-primary/5"
-                }`}
+            }`}
         >
             {ativo ? "Desativar Médico" : "Reativar Médico"}
         </Button>
@@ -199,10 +286,10 @@ function ToggleAtivoMedicoButton({ ativo, onToggle }: { ativo: boolean; onToggle
 // ─────────────────────────────────────────────
 
 function MedicoDetail({
-    medico,
-    onBack,
-    canEdit,
-}: {
+                          medico,
+                          onBack,
+                          canEdit,
+                      }: {
     medico: Medico;
     onBack: () => void;
     canEdit: boolean;
@@ -212,7 +299,6 @@ function MedicoDetail({
     const [horarioDialogOpen, setHorarioDialogOpen] = useState(false);
     const [editingHorario, setEditingHorario] = useState<DiaHorario | undefined>();
 
-    // Busca horários da API
     const { data: horarioData, isLoading: loadingHorarios } = useQuery({
         queryKey: ["horarios", medico.id],
         queryFn: () => horariosApi.buscarPorMedico(medico.id!),
@@ -273,7 +359,6 @@ function MedicoDetail({
 
     return (
         <div className="animate-fade-in space-y-6 max-w-4xl">
-            {/* Back */}
             <button
                 onClick={onBack}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -282,18 +367,16 @@ function MedicoDetail({
                 Voltar
             </button>
 
-            {/* Header */}
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold">{medico.nome}</h1>
                 <span className={`text-xs px-3 py-1 rounded-full font-medium ${medico.ativo !== false
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground line-through"
-                    }`}>
+                }`}>
                     {medico.ativo !== false ? "Ativo" : "Inativo"}
                 </span>
             </div>
 
-            {/* Dados Cadastrais */}
             <div className="bg-card border border-border rounded-xl p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-5">
                     <Field label="CPF" value={medico.cpf} />
@@ -344,7 +427,6 @@ function MedicoDetail({
                 </div>
             )}
 
-            {/* Horários de Atendimento */}
             <div className="bg-card border border-border rounded-xl p-6 space-y-5">
                 <div className="flex items-center justify-between">
                     <h2 className="text-lg font-bold">Horários de Atendimento</h2>
@@ -418,7 +500,6 @@ function MedicoDetail({
                 )}
             </div>
 
-            {/* Edit dados dialog */}
             <Dialog open={editDadosOpen} onOpenChange={setEditDadosOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
@@ -431,7 +512,6 @@ function MedicoDetail({
                 </DialogContent>
             </Dialog>
 
-            {/* Horário dialog */}
             <HorarioDialog
                 open={horarioDialogOpen}
                 onOpenChange={(v) => { setHorarioDialogOpen(v); if (!v) setEditingHorario(undefined); }}
@@ -452,12 +532,26 @@ export default function Medicos() {
     const [search, setSearch] = useState("");
     const [selectedId, setSelectedId] = useState<string | number | null>(null);
     const [showInactive, setShowInactive] = useState(false);
+    const [page, setPage] = useState(0); // 0-based para o backend
 
     const { canAddMedico } = usePermissions();
 
-    const { data: medicos, isLoading, error } = useQuery({
-        queryKey: ["medicos", showInactive],
-        queryFn: () => medicosApi.listar(showInactive),
+    // Debounce de 400 ms
+    const searchDebounced = useDebounce(search, 400);
+
+    // Reseta para página 0 quando filtros mudam
+    useEffect(() => { setPage(0); }, [searchDebounced, showInactive]);
+
+    const { data, isLoading, isFetching, error } = useQuery({
+        queryKey: ["medicos", searchDebounced, showInactive, page],
+        queryFn: () => medicosApi.buscar({
+            search: searchDebounced || undefined,
+            ativo:  showInactive ? false : true,
+            page,
+            size: PAGE_SIZE,
+        }),
+        placeholderData: keepPreviousData,
+        staleTime: 30_000,
     });
 
     const { data: selectedMedico, isLoading: loadingDetalhe } = useQuery({
@@ -466,16 +560,9 @@ export default function Medicos() {
         enabled: !!selectedId,
     });
 
-    const filtered = medicos
-        ?.filter((m) =>
-            m.nome.toLowerCase().includes(search.toLowerCase()) ||
-            m.crm?.toLowerCase().includes(search.toLowerCase()) ||
-            m.especialidade?.toLowerCase().includes(search.toLowerCase()) ||
-            m.cpf?.includes(search)
-        )
-        .sort((a, b) => a.nome.localeCompare(b.nome));
+    const queryClient = useQueryClient();
 
-    const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);
+    // ── Detalhe ───────────────────────────────────────────────────────────────
 
     if (selectedId && loadingDetalhe) {
         return (
@@ -504,6 +591,12 @@ export default function Medicos() {
         );
     }
 
+    // ── Listagem ──────────────────────────────────────────────────────────────
+
+    const medicos        = data?.conteudo ?? [];
+    const totalPaginas   = data?.totalPaginas  ?? 1;
+    const totalElementos = data?.totalElementos ?? 0;
+
     return (
         <div className="animate-fade-in space-y-6">
             {/* Header */}
@@ -520,29 +613,34 @@ export default function Medicos() {
                 )}
             </div>
 
-            {/* Summary card */}
+            {/* Card resumo */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
                     <div className="bg-primary/10 p-3 rounded-lg">
                         <Users className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                        <p className="text-sm text-muted-foreground">Total de Médicos</p>
-                        <p className="text-2xl font-semibold">{medicos?.length ?? 0}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {searchDebounced || showInactive ? "Resultados encontrados" : "Total de médicos ativos"}
+                        </p>
+                        <p className="text-2xl font-semibold">{isLoading ? "—" : totalElementos}</p>
                     </div>
                 </div>
             </div>
 
-            {/* Search + toggle inativos */}
+            {/* Busca + toggle inativos */}
             <div className="flex items-center gap-3">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                        placeholder="Buscar médico por nome, CRM, CPF, especialidade..."
+                        placeholder="Buscar por nome, CRM, CPF, especialidade ou email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9"
+                        className="pl-9 pr-9"
                     />
+                    {search !== searchDebounced && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+                    )}
                 </div>
                 <label className="flex items-center gap-2 text-sm cursor-pointer select-none whitespace-nowrap">
                     <button
@@ -558,90 +656,98 @@ export default function Medicos() {
                 </label>
             </div>
 
-            {/* Table */}
-            <div className="bg-card rounded-xl border border-border overflow-hidden">
+            {/* Tabela */}
+            <div className={`bg-card rounded-xl border border-border overflow-hidden transition-opacity ${isFetching && !isLoading ? "opacity-70" : "opacity-100"}`}>
                 {isLoading ? (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-border bg-muted/50">
-                                    {["#","Nome","Especialidade","CRM","Status"].map(h => <th key={h} className="text-left py-3 px-4 font-medium text-muted-foreground">{h}</th>)}
-                                </tr>
+                            <tr className="border-b border-border bg-muted/50">
+                                {["#", "Nome", "Especialidade", "CRM", "Status"].map(h => (
+                                    <th key={h} className="text-left py-3 px-4 font-medium text-muted-foreground">{h}</th>
+                                ))}
+                            </tr>
                             </thead>
-                            <tbody><SkeletonTableBody rows={6} cols={5} /></tbody>
+                            <tbody><SkeletonTableBody rows={8} cols={5} /></tbody>
                         </table>
                     </div>
                 ) : error ? (
                     <div className="p-12 text-center text-muted-foreground">
                         Erro ao carregar médicos. Verifique o backend.
                     </div>
-                ) : !filtered?.length ? (
+                ) : medicos.length === 0 ? (
                     <div className="p-12 text-center text-muted-foreground">
                         <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                        <p>{search ? "Nenhum médico encontrado para a busca." : "Nenhum médico cadastrado."}</p>
+                        <p>{searchDebounced ? "Nenhum médico encontrado para a busca." : "Nenhum médico cadastrado."}</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-border bg-muted/50">
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">#</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Nome</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Especialidade</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">CRM</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
-                                </tr>
+                            <tr className="border-b border-border bg-muted/50">
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">#</th>
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Nome</th>
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Especialidade</th>
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">CRM</th>
+                                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {paginated.map((m, i) => (
-                                    <tr
-                                        key={m.id}
-                                        className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
-                                        onClick={() => setSelectedId(m.id!)}
-                                    >
-                                        <td className="py-3 px-4 text-muted-foreground">{(page - 1) * 10 + i + 1}</td>
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs">
-                                                    {m.nome.charAt(0).toUpperCase()}
-                                                </div>
-                                                <span className="font-medium">{m.nome}</span>
+                            {medicos.map((m: MedicoResumo, i: number) => (
+                                <tr
+                                    key={m.id}
+                                    className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer"
+                                    onClick={() => setSelectedId(m.id)}
+                                >
+                                    <td className="py-3 px-4 text-muted-foreground tabular-nums">
+                                        {page * PAGE_SIZE + i + 1}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs">
+                                                {m.nome.charAt(0).toUpperCase()}
                                             </div>
-                                        </td>
-                                        <td className="py-3 px-4 text-primary font-medium text-xs">{m.especialidade}</td>
-                                        <td className="py-3 px-4 font-mono text-xs text-muted-foreground">{m.crm}</td>
-                                        <td className="py-3 px-4">
-                                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${m.ativo !== false ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                                                {m.ativo !== false ? "Ativo" : "Inativo"}
+                                            <span className="font-medium">{m.nome}</span>
+                                        </div>
+                                    </td>
+                                    <td className="py-3 px-4 text-primary font-medium text-xs">{m.especialidade}</td>
+                                    <td className="py-3 px-4 font-mono text-xs text-muted-foreground">
+                                        {m.crm}/{m.crmEstado}
+                                    </td>
+                                    <td className="py-3 px-4">
+                                            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${m.ativo ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                                {m.ativo ? "Ativo" : "Inativo"}
                                             </span>
-                                        </td>
-                                    </tr>
-                                ))}
+                                    </td>
+                                </tr>
+                            ))}
                             </tbody>
                         </table>
-                        <Pagination
-                            page={page}
-                            totalPages={totalPages}
-                            onNext={next}
-                            onPrev={prev}
-                            onGoTo={goTo}
-                            total={filtered?.length ?? 0}
-                            perPage={10}
+
+                        <PaginacaoServidor
+                            paginaAtual={page}
+                            totalPaginas={totalPaginas}
+                            totalElementos={totalElementos}
+                            tamanhoPagina={PAGE_SIZE}
+                            onMudar={setPage}
+                            isLoading={isFetching}
                         />
-                        <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
-                            {filtered.length} médico{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
-                        </div>
                     </div>
                 )}
             </div>
 
-            {/* New medico dialog */}
+            {/* Dialog novo médico */}
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Cadastrar Médico</DialogTitle>
                     </DialogHeader>
-                    <FormCadastroMedico onSuccess={() => setOpen(false)} />
+                    <FormCadastroMedico
+                        onSuccess={() => {
+                            setOpen(false);
+                            queryClient.invalidateQueries({ queryKey: ["medicos"] });
+                        }}
+                    />
                 </DialogContent>
             </Dialog>
         </div>

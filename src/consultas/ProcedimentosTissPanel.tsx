@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CheckCircle, XCircle, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { procedimentosTissApi } from "../services/api";
-import type { Consulta, ProcedimentoTiss } from "../services/api";
+import {useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {CheckCircle, ChevronDown, ChevronUp, CreditCard, Plus, XCircle} from "lucide-react";
+import {toast} from "sonner";
+import {Button} from "../components/ui/button";
+import {Input} from "../components/ui/input";
+import {Label} from "../components/ui/label";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../components/ui/dialog";
+import type {Consulta, ProcedimentoTiss} from "../services/api";
+import {pagamentosApi, procedimentosTissApi} from "../services/api";
 
 // ─── Constantes ────────────────────────────────
 const TIPOS_ATENDIMENTO = [
@@ -54,11 +54,11 @@ const EMPTY_FORM = {
 
 // ─── Formulário de cadastro ─────────────────────
 function AddProcedimentoForm({
-    onSave,
-    onCancel,
-    loading,
-    consultaId,
-}: {
+                                 onSave,
+                                 onCancel,
+                                 loading,
+                                 consultaId,
+                             }: {
     onSave: (data: Omit<ProcedimentoTiss, "id" | "status" | "numeroAutorizacao">) => void;
     onCancel: () => void;
     loading: boolean;
@@ -162,28 +162,27 @@ function AddProcedimentoForm({
 
 // ─── Card de procedimento ───────────────────────
 function ProcedimentoCard({
-    proc,
-    onAutorizar,
-    onNegar,
-    onDeletar,
-    canEdit,
-}: {
+                              proc,
+                              onAutorizar,
+                              onNegar,
+                              canEdit,
+                          }: {
     proc: ProcedimentoTiss;
     onAutorizar: (id: string | number, num: string) => void;
     onNegar: (id: string | number) => void;
-    onDeletar: (id: string | number) => void;
     canEdit: boolean;
 }) {
     const [expanded, setExpanded] = useState(false);
     const [autorizacaoDialog, setAutorizacaoDialog] = useState(false);
     const [numeroAutorizacao, setNumeroAutorizacao] = useState("");
-    // Infere status caso o backend não retorne o campo atualizado
+
+    const statusReal = proc.statusAutorizacao ?? proc.status;
     const status: "PENDENTE" | "AUTORIZADO" | "NEGADO" =
-        proc.status === "AUTORIZADO" || proc.status === "NEGADO"
-            ? proc.status
+        statusReal === "AUTORIZADO" || statusReal === "NEGADO"
+            ? statusReal
             : proc.numeroAutorizacao
-            ? "AUTORIZADO"
-            : "PENDENTE";
+                ? "AUTORIZADO"
+                : "PENDENTE";
 
     return (
         <div className="border border-border rounded-lg p-4 space-y-2">
@@ -220,6 +219,7 @@ function ProcedimentoCard({
                         {proc.numeroAutorizacao && <span><strong>Autorização:</strong> {proc.numeroAutorizacao}</span>}
                         {proc.observacoes && <span className="col-span-2"><strong>Obs:</strong> {proc.observacoes}</span>}
                     </div>
+                    {/* Botões de ação apenas para PENDENTE — sem lixeira */}
                     {canEdit && status === "PENDENTE" && (
                         <div className="flex gap-2 pt-2">
                             <Button
@@ -237,26 +237,6 @@ function ProcedimentoCard({
                                 onClick={() => onNegar(proc.id!)}
                             >
                                 <XCircle className="w-3.5 h-3.5 mr-1" /> Negar
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-destructive ml-auto"
-                                onClick={() => onDeletar(proc.id!)}
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                        </div>
-                    )}
-                    {canEdit && status !== "PENDENTE" && (
-                        <div className="flex justify-end pt-2">
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-destructive"
-                                onClick={() => onDeletar(proc.id!)}
-                            >
-                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Remover
                             </Button>
                         </div>
                     )}
@@ -302,19 +282,37 @@ function ProcedimentoCard({
 
 // ─── Panel principal ────────────────────────────
 export function ProcedimentosTissPanel({
-    consulta,
-    canEdit,
-}: {
+                                           consulta,
+                                           canEdit,
+                                       }: {
     consulta: Consulta;
     canEdit: boolean;
 }) {
     const queryClient = useQueryClient();
     const [addOpen, setAddOpen] = useState(false);
+
     const { data: procedimentos = [], isLoading } = useQuery({
         queryKey: ["procedimentos-tiss", consulta.id],
         queryFn: () => procedimentosTissApi.buscarPorConsulta(consulta.id!),
         enabled: !!consulta.id,
     });
+
+    // Verifica se já existe pagamento PAGO ou PENDENTE para esta consulta
+    const { data: pagamentoExistente } = useQuery({
+        queryKey: ["pagamento-consulta", consulta.id],
+        queryFn: async () => {
+            const result = await pagamentosApi.buscar({ size: 100 });
+            return result.conteudo.find(
+                (p) =>
+                    String(p.consulta?.id) === String(consulta.id) &&
+                    (p.statusPagamento === "PAGO" || p.statusPagamento === "PENDENTE")
+            ) ?? null;
+        },
+        enabled: !!consulta.id,
+        staleTime: 0,
+    });
+
+    const jaTemPagamento = !!pagamentoExistente;
 
     const invalidate = () =>
         queryClient.invalidateQueries({ queryKey: ["procedimentos-tiss", consulta.id] }).then(() =>
@@ -328,10 +326,43 @@ export function ProcedimentosTissPanel({
         onError: () => toast.error("Erro ao cadastrar procedimento."),
     });
 
+    const gerarPagamentoMutation = useMutation({
+        mutationFn: () => procedimentosTissApi.gerarPagamento(consulta.id!),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
+            queryClient.invalidateQueries({ queryKey: ["pagamentos-totais"] });
+            queryClient.invalidateQueries({ queryKey: ["consultas-realizadas-sem-pagamento"] });
+            queryClient.invalidateQueries({ queryKey: ["pagamento-consulta", consulta.id] });
+            toast.success("Pagamento gerado com sucesso! Confira em Pagamentos.");
+        },
+        onError: (err: any) => {
+            const msg = err?.message ?? "";
+            if (msg.includes("já possui um pagamento")) {
+                queryClient.invalidateQueries({ queryKey: ["pagamento-consulta", consulta.id] });
+                toast.info("Esta consulta já possui pagamento registrado.");
+            } else {
+                toast.error(`Erro ao gerar pagamento: ${msg}`);
+            }
+        },
+    });
+
     const autorizarMutation = useMutation({
         mutationFn: ({ id, num }: { id: string | number; num: string }) =>
             procedimentosTissApi.autorizar(id, num),
-        onSuccess: () => { invalidate(); toast.success("Procedimento autorizado!"); },
+        onSuccess: async () => {
+            await invalidate();
+            toast.success("Procedimento autorizado!");
+
+            // Após recarregar, verifica se todos estão autorizados para gerar pagamento
+            const lista = await procedimentosTissApi.buscarPorConsulta(consulta.id!);
+            const todosOk = lista.length > 0 && lista.every(
+                (p) => (p.statusAutorizacao ?? p.status) === "AUTORIZADO" || !!p.numeroAutorizacao
+            );
+
+            if (todosOk && consulta.status === "REALIZADA" && !jaTemPagamento) {
+                gerarPagamentoMutation.mutate();
+            }
+        },
         onError: () => toast.error("Erro ao autorizar procedimento."),
     });
 
@@ -341,13 +372,13 @@ export function ProcedimentosTissPanel({
         onError: () => toast.error("Erro ao negar procedimento."),
     });
 
-    const deletarMutation = useMutation({
-        mutationFn: (id: string | number) => procedimentosTissApi.deletar(id),
-        onSuccess: () => { invalidate(); toast.success("Procedimento removido."); },
-        onError: () => toast.error("Erro ao remover procedimento."),
-    });
-
     const total = procedimentos.reduce((acc, p) => acc + (Number(p.valor) * (p.quantidade || 1)), 0);
+
+    const todosAutorizados = procedimentos.length > 0 &&
+        procedimentos.every(p =>
+            (p.statusAutorizacao ?? p.status) === "AUTORIZADO" || !!p.numeroAutorizacao
+        );
+    const consultaRealizada = consulta.status === "REALIZADA";
 
     return (
         <div className="space-y-4">
@@ -360,11 +391,30 @@ export function ProcedimentosTissPanel({
                         </p>
                     )}
                 </div>
-                {canEdit && !addOpen && (
-                    <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-                        <Plus className="w-4 h-4 mr-1.5" /> Adicionar
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {/* Botão só aparece se todos autorizados, consulta realizada e ainda não tem pagamento */}
+                    {canEdit && todosAutorizados && consultaRealizada && !jaTemPagamento && (
+                        <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => gerarPagamentoMutation.mutate()}
+                            disabled={gerarPagamentoMutation.isPending}
+                        >
+                            <CreditCard className="w-4 h-4 mr-1.5" />
+                            {gerarPagamentoMutation.isPending ? "Gerando..." : `Gerar Pagamento · R$ ${total.toFixed(2)}`}
+                        </Button>
+                    )}
+                    {jaTemPagamento && todosAutorizados && (
+                        <span className="text-xs text-green-600 flex items-center gap-1 font-medium">
+                            <CheckCircle className="w-3.5 h-3.5" /> Pagamento gerado
+                        </span>
+                    )}
+                    {canEdit && !addOpen && (
+                        <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+                            <Plus className="w-4 h-4 mr-1.5" /> Adicionar
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {addOpen && (
@@ -394,7 +444,6 @@ export function ProcedimentosTissPanel({
                             canEdit={canEdit}
                             onAutorizar={(id, num) => autorizarMutation.mutate({ id, num })}
                             onNegar={id => negarMutation.mutate(id)}
-                            onDeletar={id => deletarMutation.mutate(id)}
                         />
                     ))}
                 </div>

@@ -1,4 +1,4 @@
-import { authService } from "./auth";
+import {authService} from "./auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
@@ -32,48 +32,103 @@ const formatDateToBr = (dateString: string) => {
     return dateString.split("-").reverse().join("/");
 }
 
-export interface Paciente {
-    id?: string | number;
-    nome: string;
-    dataNascimento: string;
-    idade?: string;
-    sexo: string;
-    estadoCivil: string;
-    cpf: string;
-    email: string;
-    telefone: string;
-    cep?: string;
-    logradouro?: string;
-    numero?: string;
-    complemento?: string;
-    bairro?: string;
-    cidade?: string;
-    uf?: string;
-    ativo?: boolean;
-    convenio?: { id?: string | number; nome: string; };
-    numeroCarteirinha?: string;
-    dataVencimentoCarteirinha?: string;
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+// Envelope de paginação — espelha PaginaDTO.java do backend
+export interface PaginaDTO<T> {
+    conteudo:       T[];
+    paginaAtual:    number;   // 0-based (como o Spring)
+    totalPaginas:   number;
+    totalElementos: number;
+    tamanhoPagina:  number;
+    primeira:       boolean;
+    ultima:         boolean;
 }
 
+export interface PacienteResumo {
+    id:       string | number;
+    nome:     string;
+    cpf:      string;
+    telefone: string;
+    email:    string;
+    ativo:    boolean;
+}
+
+export interface Paciente {
+    id?:                        string | number;
+    nome:                       string;
+    cpf:                        string;
+    email?:                     string;
+    telefone?:                  string;
+    dataNascimento?:            string;
+    idade?:                     number | string;
+    sexo?:                      string;
+    estadoCivil?:               string;
+    cep?:                       string;
+    logradouro?:                string;
+    numero?:                    string;
+    complemento?:               string;
+    bairro?:                    string;
+    cidade?:                    string;
+    uf?:                        string;
+    numeroCarteirinha?:         string;
+    dataVencimentoCarteirinha?: string;
+    ativo?:                     boolean;
+    convenio?: { id: string | number; nome: string; } | null;
+}
+
+export interface PacienteBuscaParams {
+    search?: string;   // busca livre: nome, CPF, email, telefone
+    ativo?:  boolean;  // undefined = todos
+    page?:   number;   // 0-based
+    size?:   number;   // itens por página (padrão backend: 20)
+}
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+
 export const pacientesApi = {
-    listar: async (incluirInativos = false) => {
-        const url = incluirInativos ? "/pacientes?incluirInativos=true" : "/pacientes";
-        const res = await request<Paciente[]>(url);
-        return res as Paciente[];
+
+    // Busca paginada com filtro server-side
+    // Substitui o antigo `listar()` que carregava tudo de uma vez
+    buscar: async (params: PacienteBuscaParams = {}): Promise<PaginaDTO<PacienteResumo>> => {
+        const qs = new URLSearchParams();
+        if (params.search?.trim()) qs.set("search", params.search.trim());
+        if (params.ativo !== undefined) qs.set("ativo", String(params.ativo));
+        if (params.page  !== undefined) qs.set("page",  String(params.page));
+        if (params.size  !== undefined) qs.set("size",  String(params.size));
+
+        return request<PaginaDTO<PacienteResumo>>(`/pacientes?${qs.toString()}`);
     },
+
+    // Mantido para compatibilidade com partes do código que passam incluirInativos=true
+    // Internamente delega para buscar() com ativo=undefined
+    listar: async (incluirInativos = false): Promise<PacienteResumo[]> => {
+        const pagina = await pacientesApi.buscar({
+            ativo: incluirInativos ? undefined : true,
+            size: 100, // tamanho grande para quem ainda usa a listagem completa
+        });
+        return pagina.conteudo;
+    },
+
     buscarPorId: async (id: string | number) => {
         const p = await request<any>(`/pacientes/${id}`);
         return {
             ...p,
-            dataNascimento: p.dataNascimento ? formatDateToBr(p.dataNascimento) : "",
+            dataNascimento:            p.dataNascimento            ? formatDateToBr(p.dataNascimento)            : "",
             dataVencimentoCarteirinha: p.dataVencimentoCarteirinha ? formatDateToBr(p.dataVencimentoCarteirinha) : "",
         } as Paciente;
     },
+
     cadastrar: (data: Omit<Paciente, "id">) =>
         request<Paciente>("/pacientes", { method: "POST", body: JSON.stringify(data) }),
+
     atualizar: (id: string | number, dados: Partial<Paciente>) =>
         request<Paciente>(`/pacientes/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
 };
+
+// ─────────────────────────────────────────────
+// MÉDICOS
+// ─────────────────────────────────────────────
 
 export interface Medico {
     id?: string | number;
@@ -98,11 +153,39 @@ export interface Medico {
     ativo?: boolean;
 }
 
+export interface MedicoResumo {
+    id:           string;
+    nome:         string;
+    crm:          string;
+    crmEstado:    string;
+    especialidade: string;
+    email:        string;
+    telefone:     string;
+    ativo:        boolean;
+}
+
+export interface MedicoBuscaParams {
+    search?: string;
+    ativo?:  boolean;
+    page?:   number;
+    size?:   number;
+}
+
 export const medicosApi = {
-    listar: async (incluirInativos = false) => {
-        const url = incluirInativos ? "/medicos?incluirInativos=true" : "/medicos";
-        const res = await request<Medico[]>(url);
-        return res.map(m => ({ ...m, dataNascimento: formatDateToBr(m.dataNascimento) }));
+    buscar: async (params: MedicoBuscaParams = {}): Promise<PaginaDTO<MedicoResumo>> => {
+        const qs = new URLSearchParams();
+        if (params.search?.trim()) qs.set("search", params.search.trim());
+        if (params.ativo !== undefined) qs.set("ativo", String(params.ativo));
+        if (params.page  !== undefined) qs.set("page",  String(params.page));
+        if (params.size  !== undefined) qs.set("size",  String(params.size));
+        return request<PaginaDTO<MedicoResumo>>(`/medicos?${qs.toString()}`);
+    },
+    listar: async (incluirInativos = false): Promise<Medico[]> => {
+        const pagina = await medicosApi.buscar({
+            ativo: incluirInativos ? undefined : true,
+            size: 100,
+        });
+        return pagina.conteudo as unknown as Medico[];
     },
     buscarPorId: async (id: string | number) => {
         const m = await request<any>(`/medicos/${id}`);
@@ -297,34 +380,80 @@ export interface Pagamento {
     tipoPagamento: string;
     status: string;
     data: string;
+    numeroParcelas?: number;
+}
+
+export interface PagamentoResponseDTO {
+    id:              string | number;
+    tipoPagamento?:  string;
+    formaPagamento?: string;
+    dataPagamento?:  string; // "yyyy-MM-dd" vindo do backend
+    valor:           number;
+    numeroParcelas?: number;
+    convenio?:       { id: string; nome: string } | null;
+    statusPagamento?: string;
+    consulta?: {
+        id:           string;
+        pacienteNome: string;
+        medicoNome:   string;
+    } | null;
+}
+
+export interface PagamentoBuscaParams {
+    search?:     string;
+    status?:     string;         // "PAGO" | "PENDENTE" | "CANCELADO"
+    dataInicio?: string;         // "yyyy-MM-dd"
+    dataFim?:    string;         // "yyyy-MM-dd"
+    page?:       number;
+    size?:       number;
 }
 
 export const pagamentosApi = {
-    listar: async () => {
-        const res = await request<any[]>("/pagamentos");
-        return res.map((p) => ({
-            id: p.id,
-            consultaId: p.consulta?.id ?? "",
-            pacienteNome: p.consulta?.pacienteNome,
-            medicoNome: p.consulta?.medicoNome,
-            valor: p.valor,
-            convenio: p.convenio,
-            formaPagamento: p.formaPagamento,
-            tipoPagamento: p.tipoPagamento,
-            status: p.statusPagamento,
-            data: formatDateToBr(p.dataPagamento),
+
+    // Busca paginada server-side com filtros opcionais
+    buscar: async (params: PagamentoBuscaParams = {}): Promise<PaginaDTO<PagamentoResponseDTO>> => {
+        const qs = new URLSearchParams();
+        // search sempre enviado (mesmo vazio) para evitar erro de tipo null no Postgres
+        qs.set("search", params.search?.trim() ?? "");
+        if (params.status)          qs.set("status",     params.status);
+        if (params.dataInicio)      qs.set("dataInicio", params.dataInicio);
+        if (params.dataFim)         qs.set("dataFim",    params.dataFim);
+        if (params.page !== undefined) qs.set("page",    String(params.page));
+        if (params.size !== undefined) qs.set("size",    String(params.size));
+        return request<PaginaDTO<PagamentoResponseDTO>>(`/pagamentos?${qs.toString()}`);
+    },
+
+    // Mantido para compatibilidade com o FormPagamento (verificação de consultas já pagas)
+    listar: async (): Promise<Pagamento[]> => {
+        const pagina = await pagamentosApi.buscar({ size: 500 });
+        return pagina.conteudo.map((p) => ({
+            id:             p.id,
+            consultaId:     p.consulta?.id ?? "",
+            pacienteNome:   p.consulta?.pacienteNome,
+            medicoNome:     p.consulta?.medicoNome,
+            valor:          Number(p.valor),
+            convenio:       p.convenio?.nome,
+            formaPagamento: p.formaPagamento ?? "",
+            tipoPagamento:  p.tipoPagamento  ?? "",
+            status:         p.statusPagamento ?? "",
+            data:           p.dataPagamento
+                ? p.dataPagamento.split("-").reverse().join("/")
+                : "",
         } as Pagamento));
     },
+
     registrar: (data: Omit<Pagamento, "id" | "status" | "pacienteNome" | "medicoNome">) => {
         const body = {
-            consultaId: data.consultaId,
-            valor: data.valor,
-            formaPagamento: data.formaPagamento,
-            tipoPagamento: data.tipoPagamento,
-            dataPagamento: `${data.data}T00:00:00`,
+            consultaId:      data.consultaId,
+            valor:           data.valor,
+            formaPagamento:  data.formaPagamento,
+            tipoPagamento:   data.tipoPagamento,
+            dataPagamento:   `${data.data}T00:00:00`,
+            numeroParcelas:  data.numeroParcelas ?? 1,
         };
         return request<Pagamento>("/pagamentos", { method: "POST", body: JSON.stringify(body) });
     },
+
     confirmar: (id: string | number) =>
         request(`/pagamentos/${id}/confirmar`, { method: "PATCH" }),
 };
@@ -651,7 +780,8 @@ export interface ProcedimentoTiss {
     numeroGuia?: string;
     convenioNome?: string;
     observacoes?: string;
-    status?: "PENDENTE" | "AUTORIZADO" | "NEGADO";
+    status?: "PENDENTE" | "AUTORIZADO" | "NEGADO";           // alias local (ProcedimentosTissPanel usa este)
+    statusAutorizacao?: "PENDENTE" | "AUTORIZADO" | "NEGADO"; // campo real do backend
     numeroAutorizacao?: string;
 }
 
@@ -684,4 +814,7 @@ export const procedimentosTissApi = {
         request<void>(`/procedimentos-tiss/${id}`, {
             method: "DELETE",
         }),
+
+    gerarPagamento: (consultaId: string | number) =>
+        request<any>(`/procedimentos-tiss/consulta/${consultaId}/gerar-pagamento`, { method: "POST" }),
 };
