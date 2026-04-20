@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { consultasApi, configuracoesApi, medicosApi } from "../services/api";
@@ -14,6 +14,8 @@ import { DAYS_PT, STATUS_STYLE, STATUS_LEGEND } from "../consultas/constants";
 import { getWeekDays, formatKey, isToday, buildWeekRange } from "../utils/utils";
 import { useIsMobile } from "../hooks/use-mobile";
 
+const MAX_VISIBLE_PER_SLOT = 2;
+
 export default function Consultas() {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedConsulta, setSelectedConsulta] = useState<Consulta | null>(null);
@@ -21,6 +23,7 @@ export default function Consultas() {
     const [prefillDate, setPrefillDate] = useState("");
     const [prefillHour, setPrefillHour] = useState("");
     const [medicoFiltroId, setMedicoFiltroId] = useState<string | null>(null);
+    const [overflowSlot, setOverflowSlot] = useState<{ day: Date; hour: number; items: Consulta[] } | null>(null);
 
     const queryClient = useQueryClient();
     const { user } = useAuth();
@@ -70,10 +73,17 @@ export default function Consultas() {
     });
 
     const bySlot = (day: Date, hour: number) =>
-        filtered.filter((c) => {
-            const [h] = (c.horario ?? "").split(":").map(Number);
-            return c.data === formatKey(day) && h === hour;
-        });
+        filtered
+            .filter((c) => {
+                const [h] = (c.horario ?? "").split(":").map(Number);
+                return c.data === formatKey(day) && h === hour;
+            })
+            .sort((a, b) => {
+                const timeA = a.horario ?? "";
+                const timeB = b.horario ?? "";
+                if (timeA !== timeB) return timeA.localeCompare(timeB);
+                return (a.pacienteNome ?? "").localeCompare(b.pacienteNome ?? "", "pt-BR");
+            });
 
     // Navegação semana (desktop) e dia (mobile)
     const goBack = () => {
@@ -183,6 +193,8 @@ export default function Consultas() {
                                 </div>
                                 {visibleDays.map((day, di) => {
                                     const items = bySlot(day, hour);
+                                    const visible = items.slice(0, MAX_VISIBLE_PER_SLOT);
+                                    const overflow = items.length - MAX_VISIBLE_PER_SLOT;
                                     return (
                                         <div
                                             key={di}
@@ -200,7 +212,7 @@ export default function Consultas() {
                                                     <Plus className="w-4 h-4 text-muted-foreground/40" />
                                                 </div>
                                             )}
-                                            {items.map((c) => (
+                                            {visible.map((c) => (
                                                 <button
                                                     key={c.id}
                                                     onClick={(e) => { e.stopPropagation(); setSelectedConsulta(c); }}
@@ -210,6 +222,14 @@ export default function Consultas() {
                                                     <p className="opacity-70 truncate">{c.horario?.slice(0, 5)} · {c.medicoNome?.split(" ")[0]}</p>
                                                 </button>
                                             ))}
+                                            {overflow > 0 && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setOverflowSlot({ day, hour, items }); }}
+                                                    className="w-full text-left text-[11px] px-2 py-1 rounded-md bg-muted/60 text-muted-foreground hover:bg-muted transition-colors"
+                                                >
+                                                    +{overflow} mais
+                                                </button>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -241,6 +261,35 @@ export default function Consultas() {
                             queryClient.invalidateQueries({ queryKey: ["consultas"], exact: false });
                         }}
                     />
+                </DialogContent>
+            </Dialog>
+
+            {/* Dialog overflow de consultas no slot */}
+            <Dialog open={!!overflowSlot} onOpenChange={(open) => { if (!open) setOverflowSlot(null); }}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle className="text-base">
+                            {overflowSlot && (
+                                <>
+                                    {overflowSlot.day.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
+                                    {" · "}
+                                    {String(overflowSlot.hour).padStart(2, "0")}:00
+                                </>
+                            )}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-1.5 mt-1 max-h-[60vh] overflow-y-auto">
+                        {overflowSlot?.items.map((c) => (
+                            <button
+                                key={c.id}
+                                onClick={() => { setOverflowSlot(null); setSelectedConsulta(c); }}
+                                className={`w-full text-left text-[12px] px-3 py-2 rounded-lg border-l-2 transition-opacity hover:opacity-80 ${STATUS_STYLE[c.status] ?? "bg-muted border-border"}`}
+                            >
+                                <p className="font-semibold leading-tight">{c.pacienteNome}</p>
+                                <p className="opacity-70">{c.horario?.slice(0, 5)} · {c.medicoNome}</p>
+                            </button>
+                        ))}
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

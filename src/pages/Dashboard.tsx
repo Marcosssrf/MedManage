@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { consultasApi, relatoriosApi } from "../services/api";
 import { Users, Stethoscope, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle, CalendarCheck } from "lucide-react";
@@ -50,16 +51,21 @@ const MONTHS_EN = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY
 
 export default function Dashboard() {
     const { user } = useAuth();
+    const [showAllHoje, setShowAllHoje] = useState(false);
     const today = new Date().toLocaleDateString("pt-BR");
     const mesAtual = new Date().getMonth();
     const anoAtual = new Date().getFullYear();
     const hoje = new Date();
     const dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 19);
-    const dataFim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59).toISOString().slice(0, 19);
+    const dataFim = new Date(hoje.getFullYear(), hoje.getMonth() + 3, 0, 23, 59, 59).toISOString().slice(0, 19);
 
     // const { data: pacientes = [] } = useQuery({ queryKey: ["pacientes"], queryFn: pacientesApi.listar });
     // const { data: medicos = [] } = useQuery({ queryKey: ["medicos"], queryFn: medicosApi.listar });
-    const { data: consultas = [] } = useQuery({ queryKey: ["consultas", dataInicio, dataFim], queryFn: () => consultasApi.listar(dataInicio, dataFim) });
+    const medicoId = user?.role === "MEDICO" ? (user.medico?.id ?? "me") : "all";
+    const { data: consultas = [] } = useQuery({
+        queryKey: ["consultas", dataInicio, dataFim, medicoId],
+        queryFn: () => consultasApi.listar(dataInicio, dataFim),
+    });
     // const { data: pagamentos = [] } = useQuery({ queryKey: ["pagamentos"], queryFn: pagamentosApi.listar });
 
     const { data: resumo } = useQuery({
@@ -83,32 +89,52 @@ export default function Dashboard() {
     });
 
     const consultasFiltradas = user?.role === "MEDICO"
-        ? consultas.filter((c) => String(c.medicoId) === String(user.medico?.id))
+        ? consultas.filter((c) => {
+            if (user.medico?.id && c.medicoId && String(c.medicoId) !== "")
+                return String(c.medicoId) === String(user.medico.id);
+            if (user.medico?.nome && c.medicoNome)
+                return c.medicoNome === user.medico.nome;
+            return false;
+        })
         : consultas;
 
     const consultasHoje = consultasFiltradas.filter((c) =>
         c.data?.startsWith(today)
     );
 
+    // Para status/totais usa apenas o mês atual
+    const consultasMes = consultasFiltradas.filter((c) => {
+        const [dia, mes, ano] = (c.data ?? "").split("/").map(Number);
+        return ano === anoAtual && mes === mesAtual + 1;
+    });
+
     const proximasConsultas = consultasFiltradas
         .filter((c) => {
+            if (c.status === "CANCELADA" || c.status === "REALIZADA") return false;
             const [dia, mes, ano] = c.data.split("/").map(Number);
-            const dataConsulta = new Date(ano, mes - 1, dia);
-            const agora = new Date();
-            return dataConsulta >= agora && c.status !== "CANCELADA";
+            const [hora, minuto] = (c.horario ?? "00:00").split(":").map(Number);
+            const dataConsulta = new Date(ano, mes - 1, dia, hora, minuto);
+            return dataConsulta >= new Date();
         })
-        .sort((a, b) => a.data.localeCompare(b.data))
+        .sort((a, b) => {
+            const toDate = (c: typeof a) => {
+                const [dia, mes, ano] = c.data.split("/").map(Number);
+                const [hora, minuto] = (c.horario ?? "00:00").split(":").map(Number);
+                return new Date(ano, mes - 1, dia, hora, minuto).getTime();
+            };
+            return toDate(a) - toDate(b);
+        })
         .slice(0, 5);
 
     const faturamentoMes = faturamento
         ? (faturamento[MONTHS_EN[mesAtual]] ?? 0)
         : 0;
 
-    const totalConsultas = consultasFiltradas.length;
-    const agendadas = consultasFiltradas.filter((c) => c.status === "AGENDADA").length;
-    const confirmadas = consultasFiltradas.filter((c) => c.status === "CONFIRMADA").length;
-    const realizadas = consultasFiltradas.filter((c) => c.status === "REALIZADA").length;
-    const canceladas = consultasFiltradas.filter((c) => c.status === "CANCELADA").length;
+    const totalConsultas = consultasMes.length;
+    const agendadas = consultasMes.filter((c) => c.status === "AGENDADA").length;
+    const confirmadas = consultasMes.filter((c) => c.status === "CONFIRMADA").length;
+    const realizadas = consultasMes.filter((c) => c.status === "REALIZADA").length;
+    const canceladas = consultasMes.filter((c) => c.status === "CANCELADA").length;
 
     const formatValor = (v: number) =>
         v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -239,27 +265,35 @@ export default function Dashboard() {
                             <p className="text-sm">Nenhuma consulta agendada.</p>
                         </div>
                     ) : (
-                        <div className="space-y-2">
-                            {proximasConsultas.map((c) => (
-                                <div key={c.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/30 transition-colors">
-                                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm flex-shrink-0">
-                                        {c.pacienteNome?.charAt(0).toUpperCase()}
+                        <div className="divide-y divide-border">
+                            {proximasConsultas.map((c) => {
+                                const [dia, mes, ano] = c.data.split("/").map(Number);
+                                const [hora, minuto] = (c.horario ?? "00:00").split(":").map(Number);
+                                const dataConsulta = new Date(ano, mes - 1, dia, hora, minuto);
+                                const isHoje = dataConsulta.toDateString() === new Date().toDateString();
+                                const isAmanha = dataConsulta.toDateString() === new Date(Date.now() + 86400000).toDateString();
+                                const labelDia = isHoje ? "Hoje" : isAmanha ? "Amanhã" : c.data;
+                                return (
+                                    <div key={c.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                                            {c.pacienteNome?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium text-sm truncate">{c.pacienteNome}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{c.medicoNome}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <div className="text-right">
+                                                <p className="text-sm font-semibold tabular-nums">{c.horario?.slice(0, 5)}</p>
+                                                <p className={`text-xs font-medium ${isHoje ? "text-primary" : isAmanha ? "text-amber-500" : "text-muted-foreground"}`}>
+                                                    {labelDia}
+                                                </p>
+                                            </div>
+                                            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${c.status === "AGENDADA" ? "bg-amber-400" : "bg-blue-400"}`} />
+                                        </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-sm truncate">{c.pacienteNome}</p>
-                                        <p className="text-xs text-muted-foreground truncate">{c.medicoNome}</p>
-                                    </div>
-                                    <div className="text-right flex-shrink-0">
-                                        <p className="text-sm font-medium">{c.horario?.slice(0, 5)}</p>
-                                        <p className="text-xs text-muted-foreground">{c.data}</p>
-                                    </div>
-                                    <div className="flex-shrink-0">
-                                        {c.status === "AGENDADA" && <Clock className="w-4 h-4 text-amber-500" />}
-                                        {c.status === "CONFIRMADA" && <CheckCircle className="w-4 h-4 text-blue-500" />}
-                                        {c.status === "CANCELADA" && <XCircle className="w-4 h-4 text-destructive" />}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -268,46 +302,60 @@ export default function Dashboard() {
             {/* Consultas de hoje */}
             {consultasHoje.length > 0 && (
                 <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                    <h2 className="font-medium text-sm">Consultas de hoje</h2>
+                    <div className="flex items-center justify-between">
+                        <h2 className="font-medium text-sm">Consultas de hoje</h2>
+                        <span className="text-xs text-muted-foreground">{consultasHoje.length} consulta{consultasHoje.length !== 1 ? "s" : ""}</span>
+                    </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-border">
-                                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Paciente</th>
-                                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Médico</th>
-                                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Horário</th>
-                                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Status</th>
-                                </tr>
+                            <tr className="border-b border-border">
+                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Paciente</th>
+                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Médico</th>
+                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Horário</th>
+                                <th className="text-left py-2 px-3 font-medium text-muted-foreground">Status</th>
+                            </tr>
                             </thead>
                             <tbody>
-                                {consultasHoje
-                                    .sort((a, b) => (a.horario ?? "").localeCompare(b.horario ?? ""))
-                                    .map((c) => (
-                                        <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                                            <td className="py-2.5 px-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
-                                                        {c.pacienteNome?.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <span className="font-medium">{c.pacienteNome}</span>
+                            {consultasHoje
+                                .sort((a, b) => (a.horario ?? "").localeCompare(b.horario ?? ""))
+                                .slice(0, showAllHoje ? undefined : 10)
+                                .map((c) => (
+                                    <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                                        <td className="py-2.5 px-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">
+                                                    {c.pacienteNome?.charAt(0).toUpperCase()}
                                                 </div>
-                                            </td>
-                                            <td className="py-2.5 px-3 text-primary text-xs">{c.medicoNome}</td>
-                                            <td className="py-2.5 px-3 font-mono text-xs">{c.horario?.slice(0, 5)}</td>
-                                            <td className="py-2.5 px-3">
+                                                <span className="font-medium">{c.pacienteNome}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-2.5 px-3 text-primary text-xs">{c.medicoNome}</td>
+                                        <td className="py-2.5 px-3 font-mono text-xs">{c.horario?.slice(0, 5)}</td>
+                                        <td className="py-2.5 px-3">
                                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.status === "AGENDADA" ? "bg-amber-500/10 text-amber-600" :
                                                     c.status === "CONFIRMADA" ? "bg-blue-500/10 text-blue-600" :
                                                         c.status === "REALIZADA" ? "bg-green-500/10 text-green-600" :
                                                             "bg-destructive/10 text-destructive"
-                                                    }`}>
+                                                }`}>
                                                     {c.status}
                                                 </span>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
+                    {consultasHoje.length > 10 && (
+                        <button
+                            onClick={() => setShowAllHoje((v) => !v)}
+                            className="w-full text-sm text-muted-foreground hover:text-foreground py-2 border-t border-border transition-colors"
+                        >
+                            {showAllHoje
+                                ? "Mostrar menos ↑"
+                                : `Ver todas as ${consultasHoje.length} consultas ↓`}
+                        </button>
+                    )}
                 </div>
             )}
         </div>

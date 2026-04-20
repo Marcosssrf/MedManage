@@ -6,6 +6,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const navSections = [
     {
@@ -45,9 +46,11 @@ const dashboardItem = { to: "/", icon: LayoutDashboard, label: "Dashboard", role
 export default function AppLayout() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [menuOpen, setMenuOpen] = useState(false);
 
     const handleLogout = () => {
+        queryClient.clear();
         logout();
         navigate("/login");
     };

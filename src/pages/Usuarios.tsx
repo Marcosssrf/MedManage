@@ -88,7 +88,15 @@ export default function Usuarios() {
         try {
             const payload: any = { username: form.username.trim(), role: form.role, ativo: form.ativo };
             if (form.senha.trim()) payload.senha = form.senha.trim();
-            payload.medico = form.role === "MEDICO" && form.medicoId ? { id: form.medicoId } : null;
+            if (form.role === "MEDICO" && form.medicoId) {
+                // Tenta enviar como número (API Java espera Long), fallback para string
+                const idNum = Number(form.medicoId);
+                payload.medicoId = !isNaN(idNum) ? idNum : form.medicoId;
+                payload.medico = { id: !isNaN(idNum) ? idNum : form.medicoId };
+            } else {
+                payload.medico = null;
+                payload.medicoId = null;
+            }
             if (editingUser) {
                 await usuariosApi.atualizar(editingUser.id, payload);
                 toast.success("Usuário atualizado!");
@@ -224,7 +232,7 @@ export default function Usuarios() {
                                     <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione um médico..." /></SelectTrigger>
                                     <SelectContent>
                                         {medicos.map((m) => (
-                                            <SelectItem key={m.id} value={m.id as string}>Dr(a). {m.nome} — {m.crm}</SelectItem>
+                                            <SelectItem key={String(m.id)} value={String(m.id)}>Dr(a). {m.nome} — {m.crm}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
