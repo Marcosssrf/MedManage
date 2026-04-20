@@ -61,7 +61,7 @@ export interface Paciente {
     email?:                     string;
     telefone?:                  string;
     dataNascimento?:            string;
-    idade?:                     number | string;
+    idade?:                     string;
     sexo?:                      string;
     estadoCivil?:               string;
     cep?:                       string;
