@@ -152,24 +152,23 @@ export default function Consultas() {
 
             {/* Grade */}
             <div className="bg-card border border-border rounded-xl overflow-hidden">
-                {/* Cabeçalho dos dias */}
-                <div
-                    className="grid border-b border-border sticky top-0 bg-card z-10"
-                    style={{ gridTemplateColumns: `56px repeat(${visibleDays.length}, 1fr)` }}
-                >
-                    <div className="border-r border-border" />
-                    {visibleDays.map((day, i) => (
-                        <div key={i} className={`py-3 text-center border-r border-border last:border-0 ${isToday(day) ? "bg-primary/5" : ""}`}>
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{DAYS_PT[day.getDay()]}</p>
-                            <p className={`text-lg font-bold mt-0.5 w-9 h-9 flex items-center justify-center mx-auto rounded-full ${isToday(day) ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
-                                {day.getDate()}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Slots horários */}
-                <div className="overflow-y-auto max-h-[580px]">
+                {/* Slots horários + header dentro do mesmo scroll */}
+                <div className="overflow-y-scroll max-h-[640px]">
+                    {/* Cabeçalho dos dias — sticky dentro do scroll */}
+                    <div
+                        className="grid border-b border-border sticky top-0 bg-card z-10"
+                        style={{ gridTemplateColumns: `56px repeat(${visibleDays.length}, 1fr)` }}
+                    >
+                        <div className="border-r border-border" />
+                        {visibleDays.map((day, i) => (
+                            <div key={i} className={`py-3 text-center border-r border-border last:border-0 ${isToday(day) ? "bg-primary/5" : ""}`}>
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">{DAYS_PT[day.getDay()]}</p>
+                                <p className={`text-lg font-bold mt-0.5 w-9 h-9 flex items-center justify-center mx-auto rounded-full ${isToday(day) ? "bg-primary text-primary-foreground" : "text-foreground"}`}>
+                                    {day.getDate()}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
                     {isLoading ? (
                         <div className="p-12 text-center text-muted-foreground animate-pulse">Carregando agenda...</div>
                     ) : (
@@ -190,7 +189,7 @@ export default function Consultas() {
                                             className={`border-r border-border last:border-0 p-1 cursor-pointer group ${isToday(day) ? "bg-primary/[0.03]" : "hover:bg-muted/20"} transition-colors`}
                                             onClick={() => {
                                                 if (canAddConsulta) {
-                                                    setPrefillDate(day.toISOString().split("T")[0]);
+                                                    setPrefillDate(`${day.getFullYear()}-${String(day.getMonth()+1).padStart(2,"0")}-${String(day.getDate()).padStart(2,"0")}`);
                                                     setPrefillHour(`${String(hour).padStart(2, "0")}:00`);
                                                     setNewOpen(true);
                                                 }

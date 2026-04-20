@@ -169,19 +169,28 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
 
   const mutation = useMutation({
     mutationFn: (data: FormData) => {
-      const payload: any = { ...data };
-      if (!data.convenioId) delete payload.convenioId;
+      const { convenioId, ...rest } = data;
+      const payload: any = { ...rest };
+
+      // mapeia convenioId para o campo "convenio" (nome) que o backend espera
+      if (convenioId) {
+        const conv = convenios.find((c: any) => String(c.id) === convenioId);
+        if (conv) payload.convenio = conv.nome;
+      }
       if (!data.numeroCarteirinha) delete payload.numeroCarteirinha;
       if (!data.dataVencimentoCarteirinha) delete payload.dataVencimentoCarteirinha;
+
       return isEditing
         ? pacientesApi.atualizar(initialData!.id!, payload)
         : pacientesApi.cadastrar(payload);
     },
-    onSuccess: () => {
+    onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["pacientes"] });
+      queryClient.invalidateQueries({ queryKey: ["paciente", initialData?.id] });
+      queryClient.refetchQueries({ queryKey: ["pacientes"] });
       if (!isEditing) setForm(initialForm);
       toast.success(isEditing ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
-      onSuccess?.();
+      onSuccess?.(updated);
     },
     onError: (error: Error) => {
       toast.error(error.message || (isEditing ? "Erro ao atualizar paciente" : "Erro ao cadastrar paciente"));

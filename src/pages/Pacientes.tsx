@@ -39,11 +39,13 @@ function ToggleAtivoButton({ ativo, onToggle }: { ativo: boolean; onToggle: () =
 
 // ── Detail view component
 function PacienteDetail({
-    paciente,
+    paciente: pacienteInicial,
+    pacienteId,
     onBack,
     canEdit,
 }: {
     paciente: Paciente;
+    pacienteId?: string | number | null;
     onBack: () => void;
     canEdit: boolean;
 }) {
@@ -52,6 +54,15 @@ function PacienteDetail({
     const [editOpen, setEditOpen] = useState(false);
     const [editDadosOpen, setEditDadosOpen] = useState(false);
     const [form, setForm] = useState<HistoricoClinico>({} as HistoricoClinico);
+
+    // Busca dados atualizados do paciente (para refletir edições imediatamente)
+    const { data: pacienteAtualizado } = useQuery({
+        queryKey: ["paciente", pacienteId],
+        queryFn: () => pacientesApi.buscarPorId(pacienteId!),
+        enabled: !!pacienteId,
+        staleTime: 0,
+    });
+    const paciente = pacienteAtualizado ?? pacienteInicial;
 
     const { data: historico, isLoading: loadingHistorico } = useQuery({
         queryKey: ["historico", paciente.id],
@@ -283,12 +294,12 @@ function PacienteDetail({
 
                     {canEdit && !loadingHistorico && (
                         <Button
-                            variant="outline"
+                            variant={historico ? "outline" : "default"}
                             onClick={() => { setForm(historico ?? {} as HistoricoClinico); setEditOpen(true); }}
                             className="flex items-center gap-2"
                         >
                             <Pencil className="w-4 h-4" />
-                            Editar Histórico Clínico
+                            {historico ? "Editar Histórico Clínico" : "Criar Histórico Clínico"}
                         </Button>
                     )}
                 </>
@@ -302,7 +313,13 @@ function PacienteDetail({
                     </DialogHeader>
                     <FormCadastroPaciente
                         initialData={paciente}
-                        onSuccess={() => setEditDadosOpen(false)}
+                        onSuccess={() => {
+                            setEditDadosOpen(false);
+                            if (pacienteId) {
+                                queryClient.invalidateQueries({ queryKey: ["paciente", pacienteId] });
+                                queryClient.refetchQueries({ queryKey: ["paciente", pacienteId] });
+                            }
+                        }}
                     />
                 </DialogContent>
             </Dialog>
@@ -505,6 +522,7 @@ export default function Pacientes() {
         return (
             <PacienteDetail
                 paciente={selectedPaciente}
+                pacienteId={selectedId}
                 onBack={() => setSelectedId(null)}
                 canEdit={canAddPaciente}
             />
