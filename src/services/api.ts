@@ -635,3 +635,53 @@ export const prescricoesApi = {
             }),
         }),
 };
+// ─────────────────────────────────────────────
+// PROCEDIMENTOS TISS
+// ─────────────────────────────────────────────
+export interface ProcedimentoTiss {
+    id?: string | number;
+    consultaId: string | number;
+    codigoProcedimento: string;
+    descricao: string;
+    valor: number;
+    quantidade: number;
+    dataExecucao: string;
+    tipoAtendimento: string;
+    viaAcesso: string;
+    numeroGuia?: string;
+    convenioNome?: string;
+    observacoes?: string;
+    status?: "PENDENTE" | "AUTORIZADO" | "NEGADO";
+    numeroAutorizacao?: string;
+}
+
+export const procedimentosTissApi = {
+    listar: () => request<ProcedimentoTiss[]>("/procedimentos-tiss"),
+
+    buscarPorId: (id: string | number) =>
+        request<ProcedimentoTiss>(`/procedimentos-tiss/${id}`),
+
+    buscarPorConsulta: (consultaId: string | number) =>
+        request<ProcedimentoTiss[]>(`/procedimentos-tiss/consulta/${consultaId}`),
+
+    cadastrar: (dados: Omit<ProcedimentoTiss, "id" | "status" | "numeroAutorizacao">) =>
+        request<ProcedimentoTiss>("/procedimentos-tiss", {
+            method: "POST",
+            body: JSON.stringify(dados),
+        }),
+
+    autorizar: (id: string | number, numeroAutorizacao: string) =>
+        request<ProcedimentoTiss>(`/procedimentos-tiss/${id}/autorizar?numeroAutorizacao=${encodeURIComponent(numeroAutorizacao)}`, {
+            method: "PATCH",
+        }),
+
+    negar: (id: string | number) =>
+        request<ProcedimentoTiss>(`/procedimentos-tiss/${id}/negar`, {
+            method: "PATCH",
+        }),
+
+    deletar: (id: string | number) =>
+        request<void>(`/procedimentos-tiss/${id}`, {
+            method: "DELETE",
+        }),
+};

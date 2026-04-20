@@ -4,11 +4,12 @@ import { ArrowLeft, ClipboardList, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { consultasApi, configuracoesApi, anamneseApi } from "../services/api";
-import type { Consulta } from "../services/api";
+import { consultasApi, configuracoesApi, anamneseApi, historicoClinicoApi } from "../services/api";
+import type { Consulta, HistoricoClinico } from "../services/api";
 import { FormCadastroConsulta } from "../components/Form-Consulta";
 import { AnamneseForm, AnamneseView } from "../components/Form-Anamnese";
 import { PrescricoesPanel } from "./PrescricoesPanel";
+import { ProcedimentosTissPanel } from "./ProcedimentosTissPanel";
 import { STATUS_STYLE } from "./constants";
 import { consultaAtiva } from "../utils/utils";
 
@@ -24,6 +25,8 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
     const [view, setView] = useState<"info" | "anamnese">("info");
     const [editOpen, setEditOpen] = useState(false);
     const [historicoOpen, setHistoricoOpen] = useState(false);
+    const [historicoForm, setHistoricoForm] = useState<Partial<HistoricoClinico>>({});
+    const [historicoEditMode, setHistoricoEditMode] = useState(false);
     const [currentStatus, setCurrentStatus] = useState(consulta.status);
 
     const { data: config } = useQuery({
@@ -44,8 +47,22 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
         enabled: historicoOpen,
     });
 
+    const pacienteId = (consultaCompleta as any)?.paciente?.id ?? consulta.pacienteId ?? null;
     const historico = (consultaCompleta as any)?.historicoClinico ?? null;
     const historicoLoading = historicoOpen && !consultaCompleta;
+
+    const historicoMutation = useMutation({
+        mutationFn: (dados: Omit<HistoricoClinico, "id" | "imc">) =>
+            historico?.id
+                ? historicoClinicoApi.atualizar(String(historico.id), dados)
+                : historicoClinicoApi.cadastrar({ ...dados, pacienteId: pacienteId! }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["consulta-completa", consulta.id] });
+            setHistoricoEditMode(false);
+            toast.success(historico?.id ? "Histórico atualizado!" : "Histórico criado!");
+        },
+        onError: () => toast.error("Erro ao salvar histórico clínico."),
+    });
     const podeEditarClinico = canEdit && consultaAtiva(currentStatus);
     const statusLabel = currentStatus?.replace("_", " ") ?? "";
 
@@ -156,6 +173,13 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
                 </div>
             )}
 
+            {/* Procedimentos TISS */}
+            {consultaAtiva(currentStatus) && (
+                <div className="bg-card border border-border rounded-xl p-6">
+                    <ProcedimentosTissPanel consulta={consulta} canEdit={podeEditarClinico} />
+                </div>
+            )}
+
             {!consultaAtiva(currentStatus) && currentStatus !== "CANCELADA" && (
                 <div className="bg-muted/30 border border-border rounded-xl p-4 text-sm text-muted-foreground text-center">
                     Anamnese e prescrições disponíveis apenas quando a consulta estiver <strong>Em Andamento</strong> ou <strong>Realizada</strong>.
@@ -203,7 +227,7 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
             )}
 
             {/* Dialog Histórico Médico */}
-            <Dialog open={historicoOpen} onOpenChange={setHistoricoOpen}>
+            <Dialog open={historicoOpen} onOpenChange={(open) => { setHistoricoOpen(open); if (!open) setHistoricoEditMode(false); }}>
                 <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
@@ -213,9 +237,69 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
                     </DialogHeader>
                     {historicoLoading ? (
                         <div className="p-8 text-center text-muted-foreground animate-pulse">Carregando...</div>
-                    ) : !historico ? (
-                        <div className="py-8 text-center text-muted-foreground text-sm">
-                            Nenhum histórico clínico cadastrado para este paciente.
+                    ) : (historicoEditMode || !historico) ? (
+                        <div className="space-y-4 py-2">
+                            {!historico && (
+                                <p className="text-sm text-muted-foreground">Este paciente ainda não possui histórico clínico. Preencha os dados abaixo para criar.</p>
+                            )}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-sm font-medium block mb-1">Tipo Sanguíneo</label>
+                                    <input className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={historicoForm.tipoSanguineo ?? historico?.tipoSanguineo ?? ""} onChange={e => setHistoricoForm(f => ({ ...f, tipoSanguineo: e.target.value }))} placeholder="Ex: A+" />
+                                </div>
+                                <div />
+                                <div>
+                                    <label className="text-sm font-medium block mb-1">Peso (kg)</label>
+                                    <input type="number" step="0.1" className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={historicoForm.peso ?? historico?.peso ?? ""} onChange={e => setHistoricoForm(f => ({ ...f, peso: parseFloat(e.target.value) || undefined }))} placeholder="78.5" />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium block mb-1">Altura (m)</label>
+                                    <input type="number" step="0.01" className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring" value={historicoForm.altura ?? historico?.altura ?? ""} onChange={e => setHistoricoForm(f => ({ ...f, altura: parseFloat(e.target.value) || undefined }))} placeholder="1.75" />
+                                </div>
+                            </div>
+                            {[
+                                ["alergias", "Alergias", "Liste as alergias..."],
+                                ["doencasPreexistentes", "Doenças Preexistentes", "Ex: Diabetes tipo 2..."],
+                                ["cirurgiasPrevias", "Cirurgias Prévias", "Ex: Apendicectomia em 2015..."],
+                                ["historicoFamiliar", "Histórico Familiar", "Ex: Pai com infarto..."],
+                                ["medicamentosUso", "Medicamentos de Uso Contínuo", "Ex: Metformina 850mg..."],
+                            ].map(([field, label, placeholder]) => (
+                                <div key={field}>
+                                    <label className="text-sm font-medium block mb-1">{label}</label>
+                                    <textarea className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background resize-y min-h-[64px] focus:outline-none focus:ring-2 focus:ring-ring" value={(historicoForm as any)[field] ?? (historico as any)?.[field] ?? ""} onChange={e => setHistoricoForm(f => ({ ...f, [field]: e.target.value }))} placeholder={placeholder} />
+                                </div>
+                            ))}
+                            <div className="grid grid-cols-2 gap-3">
+                                {[
+                                    ["tabagismo", "Tabagismo"],
+                                    ["etilismo", "Etilismo"],
+                                    ["atividadeFisica", "Atividade Física"],
+                                    ["usoDrogas", "Uso de Drogas"],
+                                ].map(([field, label]) => {
+                                    const val = (historicoForm as any)[field] ?? (historico as any)?.[field] ?? false;
+                                    return (
+                                        <label key={field} className="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" className="rounded" checked={!!val} onChange={e => setHistoricoForm(f => ({ ...f, [field]: e.target.checked }))} />
+                                            <span className="text-sm">{label}</span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    className="flex-1"
+                                    disabled={historicoMutation.isPending}
+                                    onClick={() => {
+                                        const merged = { ...historico, ...historicoForm, pacienteId: pacienteId! };
+                                        historicoMutation.mutate(merged as any);
+                                    }}
+                                >
+                                    {historicoMutation.isPending ? "Salvando..." : historico ? "Salvar Alterações" : "Criar Histórico"}
+                                </Button>
+                                {historicoEditMode && (
+                                    <Button variant="outline" onClick={() => { setHistoricoEditMode(false); setHistoricoForm({}); }}>Cancelar</Button>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="space-y-5 py-2">
@@ -277,6 +361,11 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
                                         </span>
                                     ))}
                                 </div>
+                            </div>
+                            <div className="pt-2">
+                                <Button variant="outline" size="sm" onClick={() => { setHistoricoForm({}); setHistoricoEditMode(true); }}>
+                                    <Pencil className="w-4 h-4 mr-1.5" /> Editar Histórico
+                                </Button>
                             </div>
                         </div>
                     )}
