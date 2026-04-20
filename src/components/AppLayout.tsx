@@ -1,12 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom";
 import {
     LayoutDashboard, Users, Stethoscope, CalendarDays, CreditCard,
-    LogOut, Menu, X, ShieldCheck, BarChart2, Settings, ShieldAlert
+    LogOut, Menu, X, ShieldCheck, BarChart2, Settings, ShieldAlert, Moon, Sun
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDarkMode } from "../hooks/useDarkMode";
 
 const navSections = [
     {
@@ -48,6 +49,7 @@ export default function AppLayout() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [menuOpen, setMenuOpen] = useState(false);
+    const { isDark, toggle: toggleDark } = useDarkMode();
 
     const handleLogout = () => {
         queryClient.clear();
@@ -194,6 +196,15 @@ export default function AppLayout() {
                     <div className="flex-1">
                         <p className="text-sm font-semibold text-foreground">Bem-vindo ao MedManage</p>
                     </div>
+
+                    {/* Dark mode toggle */}
+                    <button
+                        onClick={toggleDark}
+                        className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+                        aria-label="Alternar tema"
+                    >
+                        {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
 
                     {/* User info + avatar */}
                     <div className="flex items-center gap-3">

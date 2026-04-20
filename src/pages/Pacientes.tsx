@@ -3,6 +3,7 @@ import { pacientesApi, historicoClinicoApi } from "../services/api";
 import type { Paciente, HistoricoClinico } from "../services/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { SkeletonTableBody } from "../components/ui/skeleton";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
@@ -586,8 +587,15 @@ export default function Pacientes() {
             {/* Table */}
             <div className="bg-card rounded-xl border border-border overflow-hidden">
                 {isLoading ? (
-                    <div className="p-12 text-center text-muted-foreground">
-                        <div className="animate-pulse">Carregando pacientes...</div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-border bg-muted/50">
+                                    {["#","Nome","CPF","Status"].map(h => <th key={h} className="text-left py-3 px-4 font-medium text-muted-foreground">{h}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody><SkeletonTableBody rows={8} cols={4} /></tbody>
+                        </table>
                     </div>
                 ) : error ? (
                     <div className="p-12 text-center text-muted-foreground">

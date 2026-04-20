@@ -4,8 +4,155 @@ import { configuracoesApi, type ConfiguracaoClinica } from "../services/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Save } from "lucide-react";
+import { Save, Bell, Mail, MessageSquare, Clock } from "lucide-react";
 import { toast } from "sonner";
+
+// ─── Notificações (configuração local, salva no localStorage) ───
+const NOTIF_KEY = "medmanage-notif-config";
+
+interface NotifConfig {
+    emailAtivo: boolean;
+    whatsappAtivo: boolean;
+    antecedenciaHoras: number;
+    emailRemetente: string;
+}
+
+const NOTIF_DEFAULT: NotifConfig = {
+    emailAtivo: false,
+    whatsappAtivo: false,
+    antecedenciaHoras: 24,
+    emailRemetente: "",
+};
+
+function NotificacoesSection() {
+    const [cfg, setCfg] = useState<NotifConfig>(() => {
+        try {
+            const stored = localStorage.getItem(NOTIF_KEY);
+            return stored ? { ...NOTIF_DEFAULT, ...JSON.parse(stored) } : NOTIF_DEFAULT;
+        } catch { return NOTIF_DEFAULT; }
+    });
+    const [saved, setSaved] = useState(false);
+
+    const handleSave = () => {
+        localStorage.setItem(NOTIF_KEY, JSON.stringify(cfg));
+        setSaved(true);
+        toast.success("Configurações de notificação salvas!");
+        setTimeout(() => setSaved(false), 2000);
+    };
+
+    const toggle = (key: keyof NotifConfig) =>
+        setCfg((c) => ({ ...c, [key]: !c[key] }));
+
+    const inputCls = "mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+    const switchCls = (on: boolean) =>
+        `relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${on ? "bg-primary" : "bg-muted"}`;
+
+    return (
+        <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+            <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-primary" />
+                <h2 className="font-bold text-base">Lembretes de Consulta</h2>
+            </div>
+            <p className="text-sm text-muted-foreground -mt-2">
+                Configure lembretes automáticos para reduzir faltas. As integrações de envio (email/WhatsApp) precisam ser configuradas no backend.
+            </p>
+
+            {/* Canal email */}
+            <div className="flex items-start justify-between gap-4 py-4 border-b border-border">
+                <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4 text-primary" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium">Lembrete por Email</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Envia um email ao paciente com os dados da consulta</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={cfg.emailAtivo}
+                    onClick={() => toggle("emailAtivo")}
+                    className={switchCls(cfg.emailAtivo)}
+                >
+                    <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transform ring-0 transition-transform ${cfg.emailAtivo ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+            </div>
+
+            {cfg.emailAtivo && (
+                <div className="space-y-1.5">
+                    <Label>Email remetente</Label>
+                    <input
+                        type="email"
+                        className={inputCls}
+                        placeholder="noreply@suaclinica.com"
+                        value={cfg.emailRemetente}
+                        onChange={(e) => setCfg((c) => ({ ...c, emailRemetente: e.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">Configure o SMTP no backend para que os emails sejam enviados.</p>
+                </div>
+            )}
+
+            {/* Canal WhatsApp */}
+            <div className="flex items-start justify-between gap-4 py-4 border-b border-border">
+                <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                        <MessageSquare className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium">Lembrete por WhatsApp</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Envia mensagem via API do WhatsApp Business</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={cfg.whatsappAtivo}
+                    onClick={() => toggle("whatsappAtivo")}
+                    className={switchCls(cfg.whatsappAtivo)}
+                >
+                    <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transform ring-0 transition-transform ${cfg.whatsappAtivo ? "translate-x-5" : "translate-x-0"}`} />
+                </button>
+            </div>
+
+            {cfg.whatsappAtivo && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+                    Integração com WhatsApp Business API necessária no backend. Configure o token e número no arquivo de ambiente do servidor.
+                </div>
+            )}
+
+            {/* Antecedência */}
+            <div className="flex items-start gap-3 py-2">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 text-accent" />
+                </div>
+                <div className="flex-1 space-y-1.5">
+                    <p className="text-sm font-medium">Antecedência do lembrete</p>
+                    <select
+                        className="w-full h-10 px-3 border border-border rounded-lg bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={cfg.antecedenciaHoras}
+                        onChange={(e) => setCfg((c) => ({ ...c, antecedenciaHoras: Number(e.target.value) }))}
+                        disabled={!cfg.emailAtivo && !cfg.whatsappAtivo}
+                    >
+                        <option value={1}>1 hora antes</option>
+                        <option value={2}>2 horas antes</option>
+                        <option value={6}>6 horas antes</option>
+                        <option value={12}>12 horas antes</option>
+                        <option value={24}>24 horas antes (1 dia)</option>
+                        <option value={48}>48 horas antes (2 dias)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+                <Button onClick={handleSave} variant="outline" size="sm" className="gap-2">
+                    <Save className="w-4 h-4" />
+                    {saved ? "Salvo!" : "Salvar notificações"}
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 const DEFAULT: ConfiguracaoClinica = {
     nomeClinica: "",
@@ -158,6 +305,9 @@ export default function Configuracoes() {
                     O calendário de consultas exibirá apenas os horários entre {form.horarioAbertura?.slice(0, 5) ?? "08:00"} e {form.horarioFechamento?.slice(0, 5) ?? "18:00"}.
                 </p>
             </div>
+
+            {/* Notificações */}
+            <NotificacoesSection />
 
             {/* Save button */}
             <div className="flex justify-end">

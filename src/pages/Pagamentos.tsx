@@ -7,13 +7,13 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/dialog";
-import { Plus, Search, CreditCard, TrendingUp, Clock, CheckCircle } from "lucide-react";
+import { Plus, Search, CreditCard, TrendingUp, Clock, CheckCircle, Download, X } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "../hooks/usePermissions";
 import { usePagination } from "../hooks/usePagination";
 import Pagination from "../components/Pagination";
-import { Navigate } from "react-router";
 import { useAuth } from "@/context/AuthContext";
+import { Skeleton, SkeletonTableBody } from "../components/ui/skeleton";
 
 const FORMA_PAGAMENTO = ["PIX", "CARTAO_CREDITO", "CARTAO_DEBITO", "DINHEIRO", "TRANSFERENCIA", "CONVENIO", "BOLETO"];
 const TIPO_PAGAMENTO = ["PARTICULAR", "CONVENIO", "PLANO_SAUDE"];
@@ -34,15 +34,8 @@ function FormPagamento({ onSuccess }: { onSuccess: () => void }) {
     const [tipoPagamento, setTipoPagamento] = useState("");
     const [data, setData] = useState(new Date().toISOString().split("T")[0]);
 
-    const { data: pagamentos = [] } = useQuery({
-        queryKey: ["pagamentos"],
-        queryFn: () => pagamentosApi.listar(),
-    });
-
-    const { data: consultas = [] } = useQuery({
-        queryKey: ["consultas"],
-        queryFn: () => consultasApi.listar(),
-    });
+    const { data: pagamentos = [] } = useQuery({ queryKey: ["pagamentos"], queryFn: () => pagamentosApi.listar() });
+    const { data: consultas = [] } = useQuery({ queryKey: ["consultas"], queryFn: () => consultasApi.listar() });
 
     const consultasRealizadas = consultas.filter((c) => {
         const jaTemPagamento = pagamentos.some((p) => String(p.consultaId) === String(c.id));
@@ -53,16 +46,11 @@ function FormPagamento({ onSuccess }: { onSuccess: () => void }) {
         .filter((c) =>
             (c.pacienteNome ?? "").toLowerCase().includes(consultaSearch.toLowerCase()) ||
             (c.medicoNome ?? "").toLowerCase().includes(consultaSearch.toLowerCase())
-        )
-        .slice(0, 6);
+        ).slice(0, 6);
 
     const mutation = useMutation({
-        mutationFn: (dadosPagamento: Omit<Pagamento, "id" | "status">) => pagamentosApi.registrar(dadosPagamento),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
-            toast.success("Pagamento registrado com sucesso!");
-            onSuccess();
-        },
+        mutationFn: (d: Omit<Pagamento, "id" | "status">) => pagamentosApi.registrar(d),
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pagamentos"] }); toast.success("Pagamento registrado!"); onSuccess(); },
         onError: () => toast.error("Erro ao registrar pagamento."),
     });
 
@@ -72,135 +60,88 @@ function FormPagamento({ onSuccess }: { onSuccess: () => void }) {
         if (!valor) return toast.error("Informe o valor.");
         if (!formaPagamento) return toast.error("Selecione a forma de pagamento.");
         if (!tipoPagamento) return toast.error("Selecione o tipo de pagamento.");
-
-        mutation.mutate({
-            consultaId: consultaSelecionada.id,
-            valor: parseFloat(valor),
-            formaPagamento,
-            tipoPagamento,
-            data,
-        });
+        mutation.mutate({ consultaId: consultaSelecionada.id, valor: parseFloat(valor), formaPagamento, tipoPagamento, data });
     };
 
-    const selectClass = "w-full h-10 px-3 border border-border rounded-lg bg-card text-sm text-foreground";
+    const sel = "w-full h-10 px-3 border border-border rounded-lg bg-card text-sm text-foreground";
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-
-            {/* Consulta com autocomplete */}
             <div className="space-y-1.5">
                 <label className="text-sm font-medium">Consulta <span className="text-destructive">*</span></label>
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                        className="pl-9"
-                        placeholder="Buscar por paciente ou médico..."
+                    <Input className="pl-9" placeholder="Buscar por paciente ou médico..."
                         value={consultaSelecionada ? consultaSelecionada.label : consultaSearch}
-                        onChange={(e) => {
-                            if (consultaSelecionada) return;
-                            setConsultaSearch(e.target.value);
-                            setShowSuggestions(true);
-                        }}
+                        onChange={(e) => { if (consultaSelecionada) return; setConsultaSearch(e.target.value); setShowSuggestions(true); }}
                         onFocus={() => setShowSuggestions(true)}
                         onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                         autoComplete="off"
                     />
                     {consultaSelecionada && (
-                        <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-lg leading-none"
-                            onClick={() => { setConsultaSelecionada(null); setConsultaSearch(""); }}
-                        >×</button>
+                        <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-lg"
+                            onClick={() => { setConsultaSelecionada(null); setConsultaSearch(""); }}>×</button>
                     )}
                     {showSuggestions && !consultaSelecionada && suggestions.length > 0 && (
                         <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg overflow-hidden">
                             {suggestions.map((c) => (
-                                <button
-                                    key={c.id}
-                                    type="button"
+                                <button key={c.id} type="button"
                                     className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted/50 transition-colors flex items-center gap-3"
-                                    onMouseDown={() => {
-                                        setConsultaSelecionada({
-                                            id: c.id!,
-                                            label: `${c.pacienteNome} — ${c.medicoNome} (${c.data} ${c.horario?.slice(0, 5)})`,
-                                        });
-                                        setConsultaSearch("");
-                                        setShowSuggestions(false);
-                                    }}
-                                >
-                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium flex-shrink-0">
-                                        {c.pacienteNome?.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <p className="font-medium">{c.pacienteNome}</p>
-                                        <p className="text-xs text-muted-foreground">{c.medicoNome} · {c.data} {c.horario?.slice(0, 5)}</p>
-                                    </div>
+                                    onMouseDown={() => { setConsultaSelecionada({ id: c.id!, label: `${c.pacienteNome} — ${c.medicoNome} (${c.data} ${c.horario?.slice(0, 5)})` }); setConsultaSearch(""); setShowSuggestions(false); }}>
+                                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-medium">{c.pacienteNome?.charAt(0).toUpperCase()}</div>
+                                    <div><p className="font-medium">{c.pacienteNome}</p><p className="text-xs text-muted-foreground">{c.medicoNome} · {c.data} {c.horario?.slice(0, 5)}</p></div>
                                 </button>
                             ))}
                         </div>
                     )}
                     {showSuggestions && !consultaSelecionada && consultaSearch.length > 0 && suggestions.length === 0 && (
-                        <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg p-3 text-sm text-muted-foreground text-center">
-                            Nenhuma consulta realizada encontrada.
-                        </div>
+                        <div className="absolute z-50 top-full mt-1 w-full bg-card border border-border rounded-lg shadow-lg p-3 text-sm text-muted-foreground text-center">Nenhuma consulta encontrada.</div>
                     )}
                 </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Valor (R$) <span className="text-destructive">*</span></label>
-                    <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0,00"
-                        value={valor}
-                        onChange={(e) => setValor(e.target.value)}
-                    />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="text-sm font-medium">Data <span className="text-destructive">*</span></label>
-                    <Input
-                        type="date"
-                        value={data}
-                        onChange={(e) => setData(e.target.value)}
-                    />
-                </div>
+                <div className="space-y-1.5"><label className="text-sm font-medium">Valor (R$) <span className="text-destructive">*</span></label>
+                    <Input type="number" min="0" step="0.01" placeholder="0,00" value={valor} onChange={(e) => setValor(e.target.value)} /></div>
+                <div className="space-y-1.5"><label className="text-sm font-medium">Data <span className="text-destructive">*</span></label>
+                    <Input type="date" value={data} onChange={(e) => setData(e.target.value)} /></div>
             </div>
-
-            <div className="space-y-1.5">
-                <label className="text-sm font-medium">Forma de Pagamento <span className="text-destructive">*</span></label>
-                <select className={selectClass} value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)}>
-                    <option value="">Selecione</option>
-                    {FORMA_PAGAMENTO.map((f) => (
-                        <option key={f} value={f}>{f.replace(/_/g, " ")}</option>
-                    ))}
-                </select>
-            </div>
-
-            <div className="space-y-1.5">
-                <label className="text-sm font-medium">Tipo de Pagamento <span className="text-destructive">*</span></label>
-                <select className={selectClass} value={tipoPagamento} onChange={(e) => setTipoPagamento(e.target.value)}>
-                    <option value="">Selecione</option>
-                    {TIPO_PAGAMENTO.map((t) => (
-                        <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
-                    ))}
-                </select>
-            </div>
-
+            <div className="space-y-1.5"><label className="text-sm font-medium">Forma de Pagamento <span className="text-destructive">*</span></label>
+                <select className={sel} value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)}>
+                    <option value="">Selecione</option>{FORMA_PAGAMENTO.map((f) => <option key={f} value={f}>{f.replace(/_/g, " ")}</option>)}</select></div>
+            <div className="space-y-1.5"><label className="text-sm font-medium">Tipo de Pagamento <span className="text-destructive">*</span></label>
+                <select className={sel} value={tipoPagamento} onChange={(e) => setTipoPagamento(e.target.value)}>
+                    <option value="">Selecione</option>{TIPO_PAGAMENTO.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}</select></div>
             <div className="flex justify-end pt-2">
-                <Button type="submit" disabled={mutation.isPending}>
-                    {mutation.isPending ? "Registrando..." : "Registrar pagamento"}
-                </Button>
+                <Button type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Registrando..." : "Registrar pagamento"}</Button>
             </div>
         </form>
     );
 }
 
+function exportToCSV(pagamentos: Pagamento[]) {
+    const headers = ["Paciente", "Médico", "Valor (R$)", "Forma", "Tipo", "Data", "Status"];
+    const rows = pagamentos.map((p) => [
+        p.pacienteNome ?? "—", p.medicoNome ?? "—",
+        p.valor.toFixed(2).replace(".", ","),
+        p.formaPagamento?.replace(/_/g, " ") ?? "",
+        p.tipoPagamento?.replace(/_/g, " ") ?? "",
+        p.data, p.status,
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(";")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `pagamentos_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exportado com sucesso!");
+}
+
 export default function Pagamentos() {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
+    const [filterStatus, setFilterStatus] = useState("");
+    const [filterDataInicio, setFilterDataInicio] = useState("");
+    const [filterDataFim, setFilterDataFim] = useState("");
     const queryClient = useQueryClient();
     const { isAdmin, isSecretaria } = usePermissions();
 
@@ -211,160 +152,144 @@ export default function Pagamentos() {
 
     const confirmarMutation = useMutation({
         mutationFn: (id: string | number) => pagamentosApi.confirmar(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["pagamentos"] });
-            toast.success("Pagamento confirmado!");
-        },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["pagamentos"] }); toast.success("Pagamento confirmado!"); },
         onError: () => toast.error("Erro ao confirmar pagamento."),
     });
 
-    const filtered = pagamentos
-        .filter((p) =>
-            (p.pacienteNome ?? "").toLowerCase().includes(search.toLowerCase()) ||
-            (p.medicoNome ?? "").toLowerCase().includes(search.toLowerCase()) ||
-            (p.data ?? "").toLowerCase().includes(search.toLowerCase())
-        )
-        .sort((a, b) => b.data.localeCompare(a.data));
+    const parseDateBr = (br: string) => br?.includes("/") ? br.split("/").reverse().join("-") : (br ?? "");
+    const hasFilters = filterStatus || filterDataInicio || filterDataFim;
 
-    const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered ?? [], 10);
+    const filtered = pagamentos.filter((p) => {
+        const q = search.toLowerCase();
+        const matchSearch = !search || (p.pacienteNome ?? "").toLowerCase().includes(q) || (p.medicoNome ?? "").toLowerCase().includes(q) || (p.data ?? "").includes(q);
+        const matchStatus = !filterStatus || p.status === filterStatus;
+        const iso = parseDateBr(p.data);
+        const matchInicio = !filterDataInicio || iso >= filterDataInicio;
+        const matchFim = !filterDataFim || iso <= filterDataFim;
+        return matchSearch && matchStatus && matchInicio && matchFim;
+    }).sort((a, b) => parseDateBr(b.data).localeCompare(parseDateBr(a.data)));
 
-    const total = pagamentos.reduce((acc, p) => acc + (p.valor ?? 0), 0);
+    const { paginated, page, totalPages, next, prev, goTo } = usePagination(filtered, 10);
+
+    const total = pagamentos.reduce((s, p) => s + (p.valor ?? 0), 0);
     const pago = pagamentos.filter((p) => p.status === "PAGO");
     const pendentes = pagamentos.filter((p) => p.status === "PENDENTE");
-    const totalConfirmado = pago.reduce((acc, p) => acc + (p.valor ?? 0), 0);
-
-    const formatValor = (v: number) =>
-        v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const totalConfirmado = pago.reduce((s, p) => s + (p.valor ?? 0), 0);
+    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const sel = "h-9 px-3 border border-border rounded-lg bg-card text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+    const canEdit = isAdmin || isSecretaria;
 
     return (
         <div className="animate-fade-in space-y-6">
-            <PageHeader
-                title="Pagamentos"
-                description="Gerencie os pagamentos da clínica"
-                action={(isAdmin || isSecretaria) ? (
-                    <Dialog open={open} onOpenChange={setOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="w-4 h-4 mr-2" />
-                                Novo Pagamento
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-lg">
-                            <DialogHeader>
-                                <DialogTitle>Registrar Pagamento</DialogTitle>
-                            </DialogHeader>
-                            <FormPagamento onSuccess={() => setOpen(false)} />
-                        </DialogContent>
-                    </Dialog>
+            <PageHeader title="Pagamentos" description="Gerencie os pagamentos da clínica"
+                action={canEdit ? (
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => exportToCSV(filtered)} disabled={!filtered.length}>
+                            <Download className="w-4 h-4 mr-2" />Exportar CSV
+                        </Button>
+                        <Dialog open={open} onOpenChange={setOpen}>
+                            <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" />Novo Pagamento</Button></DialogTrigger>
+                            <DialogContent className="max-w-lg">
+                                <DialogHeader><DialogTitle>Registrar Pagamento</DialogTitle></DialogHeader>
+                                <FormPagamento onSuccess={() => setOpen(false)} />
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 ) : undefined}
             />
 
-            {/* Cards resumo */}
+            {/* Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                        <CreditCard className="w-5 h-5 text-primary" />
+                {isLoading ? (
+                    [0,1,2].map(i => <div key={i} className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                        <Skeleton className="w-11 h-11 rounded-lg" />
+                        <div className="space-y-2 flex-1"><Skeleton className="h-3 w-24" /><Skeleton className="h-7 w-32" /></div>
+                    </div>)
+                ) : (<>
+                    <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                        <div className="bg-primary/10 p-3 rounded-lg"><CreditCard className="w-5 h-5 text-primary" /></div>
+                        <div><p className="text-sm text-muted-foreground">Total geral</p><p className="text-2xl font-semibold">{fmt(total)}</p></div>
                     </div>
-                    <div>
-                        <p className="text-sm text-muted-foreground">Total geral</p>
-                        <p className="text-2xl font-semibold">{formatValor(total)}</p>
+                    <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                        <div className="bg-green-500/10 p-3 rounded-lg"><TrendingUp className="w-5 h-5 text-green-500" /></div>
+                        <div><p className="text-sm text-muted-foreground">Confirmados</p><p className="text-2xl font-semibold text-green-600">{fmt(totalConfirmado)}</p></div>
                     </div>
-                </div>
-                <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                    <div className="bg-green-500/10 p-3 rounded-lg">
-                        <TrendingUp className="w-5 h-5 text-green-500" />
+                    <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
+                        <div className="bg-warning/10 p-3 rounded-lg"><Clock className="w-5 h-5 text-warning" /></div>
+                        <div><p className="text-sm text-muted-foreground">Pendentes</p><p className="text-2xl font-semibold">{pendentes.length}</p></div>
                     </div>
-                    <div>
-                        <p className="text-sm text-muted-foreground">Confirmados</p>
-                        <p className="text-2xl font-semibold text-green-600">{formatValor(totalConfirmado)}</p>
-                    </div>
-                </div>
-                <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
-                    <div className="bg-warning/10 p-3 rounded-lg">
-                        <Clock className="w-5 h-5 text-warning" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-muted-foreground">Pendentes</p>
-                        <p className="text-2xl font-semibold">{pendentes.length}</p>
-                    </div>
-                </div>
+                </>)}
             </div>
 
-            {/* Busca */}
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar por paciente, médico ou data..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9"
-                />
+            {/* Filtros */}
+            <div className="flex flex-wrap gap-3 items-center">
+                <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Buscar por paciente, médico ou data..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                </div>
+                <select className={sel} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                    <option value="">Todos os status</option>
+                    <option value="PAGO">Pago</option>
+                    <option value="PENDENTE">Pendente</option>
+                    <option value="CANCELADO">Cancelado</option>
+                </select>
+                <div className="flex items-center gap-2">
+                    <Input type="date" className="h-9 w-36" value={filterDataInicio} onChange={(e) => setFilterDataInicio(e.target.value)} title="Data início" />
+                    <span className="text-muted-foreground text-sm">até</span>
+                    <Input type="date" className="h-9 w-36" value={filterDataFim} onChange={(e) => setFilterDataFim(e.target.value)} title="Data fim" />
+                </div>
+                {hasFilters && (
+                    <Button variant="ghost" size="sm" onClick={() => { setFilterStatus(""); setFilterDataInicio(""); setFilterDataFim(""); }} className="text-muted-foreground">
+                        <X className="w-4 h-4 mr-1" />Limpar filtros
+                    </Button>
+                )}
             </div>
 
             {/* Tabela */}
             <div className="bg-card rounded-xl border border-border overflow-hidden">
-                {isLoading ? (
-                    <div className="p-12 text-center text-muted-foreground animate-pulse">
-                        Carregando pagamentos...
-                    </div>
-                ) : error ? (
-                    <div className="p-12 text-center text-muted-foreground">
-                        Erro ao carregar pagamentos. Verifique o backend.
-                    </div>
-                ) : !filtered.length ? (
+                {error ? (
+                    <div className="p-12 text-center text-muted-foreground">Erro ao carregar pagamentos. Verifique o backend.</div>
+                ) : !isLoading && !filtered.length ? (
                     <div className="p-12 text-center text-muted-foreground">
                         <CreditCard className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                        <p>{search ? "Nenhum pagamento encontrado." : "Nenhum pagamento registrado."}</p>
+                        <p>{search || hasFilters ? "Nenhum pagamento encontrado com esses filtros." : "Nenhum pagamento registrado."}</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border bg-muted/50">
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">#</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Paciente</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Médico</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Valor</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Forma</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Tipo</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Data</th>
-                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
-                                    {(isAdmin || isSecretaria) && (
-                                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ações</th>
-                                    )}
+                                    {["#","Paciente","Médico","Valor","Forma","Tipo","Data","Status"].map(h => (
+                                        <th key={h} className="text-left py-3 px-4 font-medium text-muted-foreground">{h}</th>
+                                    ))}
+                                    {canEdit && <th className="text-left py-3 px-4 font-medium text-muted-foreground">Ações</th>}
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginated.map((p, i) => (
+                                {isLoading ? (
+                                    <SkeletonTableBody rows={6} cols={canEdit ? 9 : 8} />
+                                ) : paginated.map((p, i) => (
                                     <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                                        <td className="py-3 px-4 text-muted-foreground">{i + 1}</td>
+                                        <td className="py-3 px-4 text-muted-foreground">{(page - 1) * 10 + i + 1}</td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs">
-                                                    {p.pacienteNome?.charAt(0).toUpperCase() ?? "?"}
-                                                </div>
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-xs">{p.pacienteNome?.charAt(0).toUpperCase() ?? "?"}</div>
                                                 <span className="font-medium">{p.pacienteNome ?? "—"}</span>
                                             </div>
                                         </td>
                                         <td className="py-3 px-4 text-sm text-primary">{p.medicoNome ?? "—"}</td>
-                                        <td className="py-3 px-4 font-semibold">{formatValor(p.valor)}</td>
-                                        <td className="py-3 px-4 text-muted-foreground text-xs">{p.formaPagamento?.replace("_", " ")}</td>
-                                        <td className="py-3 px-4 text-muted-foreground text-xs">{p.tipoPagamento?.replace("_", " ")}</td>
+                                        <td className="py-3 px-4 font-semibold">{fmt(p.valor)}</td>
+                                        <td className="py-3 px-4 text-muted-foreground text-xs">{p.formaPagamento?.replace(/_/g, " ")}</td>
+                                        <td className="py-3 px-4 text-muted-foreground text-xs">{p.tipoPagamento?.replace(/_/g, " ")}</td>
                                         <td className="py-3 px-4 text-muted-foreground">{p.data}</td>
                                         <td className="py-3 px-4">
-                                            <Badge className={`text-xs border ${STATUS_COLORS[p.status] ?? "bg-muted text-muted-foreground"}`}>
-                                                {p.status}
-                                            </Badge>
+                                            <Badge className={`text-xs border ${STATUS_COLORS[p.status] ?? "bg-muted text-muted-foreground"}`}>{p.status}</Badge>
                                         </td>
-                                        {(isAdmin || isSecretaria) && (
+                                        {canEdit && (
                                             <td className="py-3 px-4">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-green-600 hover:text-green-600 hover:bg-green-500/10"
+                                                <Button variant="ghost" size="sm" className="text-green-600 hover:text-green-600 hover:bg-green-500/10"
                                                     disabled={p.status === "PAGO" || confirmarMutation.isPending}
-                                                    onClick={() => confirmarMutation.mutate(p.id!)}
-                                                >
+                                                    onClick={() => confirmarMutation.mutate(p.id!)}>
                                                     <CheckCircle className="w-4 h-4 mr-1" />
                                                     {p.status === "PAGO" ? "Confirmado" : "Confirmar"}
                                                 </Button>
@@ -374,18 +299,14 @@ export default function Pagamentos() {
                                 ))}
                             </tbody>
                         </table>
-                        <Pagination
-                            page={page}
-                            totalPages={totalPages}
-                            onNext={next}
-                            onPrev={prev}
-                            onGoTo={goTo}
-                            total={filtered?.length ?? 0}
-                            perPage={10}
-                        />
-                        <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
-                            {filtered.length} pagamento{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
-                        </div>
+                        {!isLoading && (
+                            <>
+                                <Pagination page={page} totalPages={totalPages} onNext={next} onPrev={prev} onGoTo={goTo} total={filtered.length} perPage={10} />
+                                <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
+                                    {filtered.length} pagamento{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </div>

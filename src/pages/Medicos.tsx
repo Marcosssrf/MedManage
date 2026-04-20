@@ -1,4 +1,5 @@
 import { FormCadastroMedico } from "../components/Form-Medico";
+import { SkeletonTableBody } from "../components/ui/skeleton";
 import {
     medicosApi,
     horariosApi,
@@ -560,8 +561,15 @@ export default function Medicos() {
             {/* Table */}
             <div className="bg-card rounded-xl border border-border overflow-hidden">
                 {isLoading ? (
-                    <div className="p-12 text-center text-muted-foreground">
-                        <div className="animate-pulse">Carregando médicos...</div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-border bg-muted/50">
+                                    {["#","Nome","Especialidade","CRM","Status"].map(h => <th key={h} className="text-left py-3 px-4 font-medium text-muted-foreground">{h}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody><SkeletonTableBody rows={6} cols={5} /></tbody>
+                        </table>
                     </div>
                 ) : error ? (
                     <div className="p-12 text-center text-muted-foreground">
