@@ -2,6 +2,7 @@ package com.clinica.service;
 
 import com.clinica.dto.PagamentoDTO;
 import com.clinica.dto.resposta.PagamentoResponseDTO;
+import com.clinica.dto.resposta.PaginaDTO;
 import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.*;
@@ -14,6 +15,9 @@ import com.clinica.repository.ConvenioRepository;
 import com.clinica.repository.PagamentoRepository;
 import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -80,8 +84,9 @@ public class PagamentoService {
 			pagamento.setConvenio(null);
 			pagamento.setTipoPagamento(TipoPagamento.PARTICULAR);
 			pagamento.setFormaPagamento(dto.formaPagamento());
-			pagamento.setNumeroParcelas(dto.numeroParcelas());
-			pagamento.setStatusPagamento(StatusPagamento.PENDENTE);
+			pagamento.setNumeroParcelas(dto.numeroParcelas() != null ? dto.numeroParcelas() : 1);
+			// Respeita o status do DTO se fornecido (ex: geração automática via TISS), senão PENDENTE
+			pagamento.setStatusPagamento(dto.statusPagamento() != null ? dto.statusPagamento() : StatusPagamento.PENDENTE);
 		} else{
 			throw new RegraDeNegocioException("Tipo de pagamento inválido");
 		}
@@ -100,6 +105,32 @@ public class PagamentoService {
 	public PagamentoResponseDTO findById(UUID id) {
 		return toDTO(pagamentoRepository.findById(id)
 				.orElseThrow(() -> new EntidadeNaoEncontradaException("Pagamento não encontrado")));
+	}
+
+	// ─── Busca paginada ───────────────────────────────────────────────────────
+	/**
+	 * @param search     texto livre: nome do paciente ou do médico (null = sem filtro)
+	 * @param status     ex: "PAGO", "PENDENTE", "CANCELADO" (null = todos)
+	 * @param dataInicio início do intervalo de datas (null = sem limite inferior)
+	 * @param dataFim    fim do intervalo de datas (null = sem limite superior)
+	//	 * @param pagina     número da página, 0-based
+	//	 * @param tamanho    itens por página (máx. 100)
+	 */
+	public PaginaDTO<PagamentoResponseDTO> buscarPaginado(
+			String search, String status,
+			LocalDate dataInicio, LocalDate dataFim,
+			int page, int size) {
+
+		Pageable pageable = PageRequest.of(page, Math.min(size, 100),
+				Sort.by(Sort.Direction.DESC, "dataPagamento"));
+
+		LocalDate inicio = dataInicio != null ? dataInicio : LocalDate.of(2000, 1, 1);
+		LocalDate fim    = dataFim    != null ? dataFim    : LocalDate.of(2099, 12, 31);
+		String    busca  = (search != null && !search.isBlank()) ? search : null;
+		String    st     = (status != null && !status.isBlank()) ? status : null;
+
+		// Envolve o Page<> no PaginaDTO usando o método de() que já existe
+		return PaginaDTO.de(pagamentoRepository.buscarPaginado(busca, st, inicio, fim, pageable));
 	}
 
 	public PagamentoResponseDTO confirmarPagamento(UUID id){
@@ -153,17 +184,4 @@ public class PagamentoService {
 				consultaResumo
 		);
 	}
-
-//	public Pagamento update(UUID id, PagamentoDTO dto) {
-//		Pagamento pagamento = pagamentoRepository.getReferenceById(id);
-//		pagamento.setTipoPagamento(dto.tipoPagamento());
-//		pagamento.setFormaPagamento(dto.formaPagamento());
-//
-//		return pagamentoRepository.save(pagamento);
-//	}
-//
-//	public void delete(UUID id) {
-//		pagamentoRepository.deleteById(id);
-//	}
-
 }

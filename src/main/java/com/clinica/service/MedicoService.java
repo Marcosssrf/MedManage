@@ -1,6 +1,8 @@
 package com.clinica.service;
 
 import com.clinica.dto.MedicoDTO;
+import com.clinica.dto.resposta.MedicoResumoDTO;
+import com.clinica.dto.resposta.PaginaDTO;
 import com.clinica.dto.update.MedicoUpdateDTO;
 import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.model.Medico;
@@ -8,7 +10,11 @@ import com.clinica.model.User;
 import com.clinica.repository.MedicoRepository;
 import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +32,23 @@ public class MedicoService {
 	public Medico findById(UUID id) {
 		return medicoRepository.findById(id)
 				.orElseThrow(() -> new EntidadeNaoEncontradaException("Médico não encontrado"));
+	}
+
+	public PaginaDTO<MedicoResumoDTO> buscarPaginado(
+			String search, Boolean ativo, int pagina, int tamanho) {
+
+		String termo = StringUtils.hasText(search) ? search.trim() : null;
+		int tamanhoClamped = Math.min(Math.max(tamanho, 1), 100);
+		Pageable pageable = PageRequest.of(pagina, tamanhoClamped);
+
+		Page<MedicoResumoDTO> page;
+		if (ativo != null) {
+			page = medicoRepository.buscarPorAtivoESearch(ativo, termo, pageable);
+		} else {
+			page = medicoRepository.buscarTodosComSearch(termo, pageable);
+		}
+
+		return PaginaDTO.de(page);
 	}
 
 	public Medico insert(MedicoDTO dto){

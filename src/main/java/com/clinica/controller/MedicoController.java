@@ -1,6 +1,8 @@
 package com.clinica.controller;
 
 import com.clinica.dto.MedicoDTO;
+import com.clinica.dto.resposta.MedicoResumoDTO;
+import com.clinica.dto.resposta.PaginaDTO;
 import com.clinica.dto.update.MedicoUpdateDTO;
 import com.clinica.model.Medico;
 import com.clinica.service.MedicoService;
@@ -12,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,10 +24,13 @@ public class MedicoController {
 	MedicoService medicoService;
 
 	@GetMapping
-	@PreAuthorize("hasAnyRole('ADMIN', 'MEDICO', 'SECRETARIA')")
-	public ResponseEntity<List<Medico>> findAll() {
-		List<Medico> medicos = medicoService.findAll();
-		return ResponseEntity.ok().body(medicos);
+	public ResponseEntity<PaginaDTO<MedicoResumoDTO>> findAll(
+			@RequestParam(required = false)    String  search,
+			@RequestParam(required = false)    Boolean ativo,
+			@RequestParam(defaultValue = "0")  int     page,
+			@RequestParam(defaultValue = "20") int     size
+	) {
+		return ResponseEntity.ok(medicoService.buscarPaginado(search, ativo, page, size));
 	}
 
 	@GetMapping(value = "/{id}")

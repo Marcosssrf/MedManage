@@ -1,19 +1,25 @@
 package com.clinica.service;
 
+import com.clinica.dto.PagamentoDTO;
 import com.clinica.dto.ProcedimentoTISSDTO;
+import com.clinica.dto.resposta.PagamentoResponseDTO;
 import com.clinica.dto.resposta.ProcedimentoTISSResponseDTO;
 import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.exception.RegraDeNegocioException;
-import com.clinica.model.*;
-import com.clinica.model.enums.StatusAutorizacaoTISS;
-import com.clinica.model.enums.StatusConsulta;
+import com.clinica.model.Consulta;
+import com.clinica.model.Convenio;
+import com.clinica.model.Paciente;
+import com.clinica.model.ProcedimentoTISS;
+import com.clinica.model.enums.*;
 import com.clinica.repository.ConsultaRepository;
 import com.clinica.repository.ConvenioRepository;
+import com.clinica.repository.PagamentoRepository;
 import com.clinica.repository.ProcedimentoTISSRepository;
 import com.clinica.security.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +34,12 @@ public class ProcedimentoTISSService {
 
     @Autowired
     private ConvenioRepository convenioRepository;
+
+    @Autowired
+    private PagamentoService pagamentoService;
+
+    @Autowired
+    private PagamentoRepository pagamentoRepository;
 
     @Autowired
     private SecurityService securityService;
@@ -74,6 +86,47 @@ public class ProcedimentoTISSService {
         procedimento.setUsuario(securityService.obterUsuarioLogado());
 
         return toDTO(procedimentoTISSRepository.save(procedimento));
+    }
+
+    public PagamentoResponseDTO gerarPagamentoDaTISS(UUID consultaId) {
+        Consulta consulta = consultaRepository.findById(consultaId)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Consulta não encontrada"));
+
+        List<ProcedimentoTISS> procedimentos = procedimentoTISSRepository.findByConsultaId(consultaId);
+
+        if (procedimentos.isEmpty()) {
+            throw new RegraDeNegocioException("Nenhum procedimento TISS encontrado para esta consulta");
+        }
+
+        boolean todosAutorizados = procedimentos.stream()
+                .allMatch(p -> p.getStatusAutorizacao() == StatusAutorizacaoTISS.AUTORIZADO);
+        if (!todosAutorizados) {
+            throw new RegraDeNegocioException("Todos os procedimentos precisam estar autorizados");
+        }
+
+        boolean jaTemPagamentoPago = pagamentoRepository.existsByConsultaIdAndStatusPagamento(
+                consultaId, StatusPagamento.PAGO);
+        if (jaTemPagamentoPago) {
+            throw new RegraDeNegocioException("Esta consulta já possui um pagamento confirmado");
+        }
+
+        BigDecimal total = procedimentos.stream()
+                .map(p -> p.getValor().multiply(BigDecimal.valueOf(p.getQuantidade())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        boolean temConvenio = consulta.getPaciente().getConvenio() != null;
+
+        PagamentoDTO dto = new PagamentoDTO(
+                consulta.getId(),
+                temConvenio ? TipoPagamento.CONVENIO : TipoPagamento.PARTICULAR,
+                temConvenio ? FormaPagamento.CONVENIO : FormaPagamento.PIX,
+                total,
+                1,
+                temConvenio ? consulta.getPaciente().getConvenio().getNome() : null,
+                temConvenio ? StatusPagamento.PAGO : StatusPagamento.PENDENTE
+        );
+
+        return pagamentoService.insert(dto);
     }
 
     public List<ProcedimentoTISSResponseDTO> findAll() {

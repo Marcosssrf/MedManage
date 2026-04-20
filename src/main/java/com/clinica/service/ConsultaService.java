@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -46,9 +45,6 @@ public class ConsultaService {
 
 	private Integer getDuracaoMedico(UUID medicoId, LocalDateTime dataHora){
 		DayOfWeek diaSemana = dataHora.getDayOfWeek();
-		System.out.println("Dia: " + diaSemana);
-		System.out.println("Resultado: " + horarioTrabalhoMedicoRepository
-				.findByMedicoIdAndDiaSemana(medicoId, diaSemana));
 		return horarioTrabalhoMedicoRepository
 				.findByMedicoIdAndDiaSemana(medicoId, diaSemana)
 				.map(HorarioTrabalhoMedico::getDuracaoPadrao)

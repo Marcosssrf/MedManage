@@ -1,11 +1,6 @@
 package com.clinica.service;
 
 import com.clinica.dto.MedicoMaisAtendidoDTO;
-import com.clinica.model.Consulta;
-import com.clinica.model.Medico;
-import com.clinica.model.Pagamento;
-import com.clinica.model.enums.StatusConsulta;
-import com.clinica.model.enums.StatusPagamento;
 import com.clinica.repository.ConsultaRepository;
 import com.clinica.repository.PagamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Month;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 

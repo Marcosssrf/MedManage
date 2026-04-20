@@ -1,6 +1,7 @@
 package com.clinica.controller;
 
 import com.clinica.dto.ProcedimentoTISSDTO;
+import com.clinica.dto.resposta.PagamentoResponseDTO;
 import com.clinica.dto.resposta.ProcedimentoTISSResponseDTO;
 import com.clinica.model.ProcedimentoTISS;
 import com.clinica.service.ProcedimentoTISSService;
@@ -47,6 +48,12 @@ public class ProcedimentoTISSController {
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(response.id()).toUri();
         return ResponseEntity.created(uri).body(response);
+    }
+
+    @PostMapping("/consulta/{consultaId}/gerar-pagamento")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECRETARIA')")
+    public ResponseEntity<PagamentoResponseDTO> gerarPagamento(@PathVariable UUID consultaId) {
+        return ResponseEntity.ok(procedimentoTISSService.gerarPagamentoDaTISS(consultaId));
     }
 
     @PatchMapping(value = "/{id}/autorizar")
