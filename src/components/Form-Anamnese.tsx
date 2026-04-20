@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Save } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "./ui/button";
-import { anamneseApi } from "../services/api";
-import type { Consulta, Anamnese } from "../services/api";
-import { TextAreaField, CidAutocomplete } from "../consultas/SharedComponents";
+import {useCallback, useEffect, useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {Save} from "lucide-react";
+import {toast} from "sonner";
+import {Button} from "./ui/button";
+import type {Anamnese, Consulta} from "../services/api";
+import {anamneseApi} from "../services/api";
+import {CidAutocomplete, TextAreaField} from "../consultas/SharedComponents";
 
 interface Props {
     consulta: Consulta;

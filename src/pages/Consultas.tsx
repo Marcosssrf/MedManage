@@ -1,19 +1,19 @@
-import { useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, ChevronLeft, ChevronRight, X, Download, CalendarDays, LayoutGrid } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { consultasApi, configuracoesApi, medicosApi } from "../services/api";
-import type { Consulta } from "../services/api";
-import { useAuth } from "../context/AuthContext";
-import { usePermissions } from "../hooks/usePermissions";
-import { FormCadastroConsulta } from "../components/Form-Consulta";
-import { ConsultaDetail } from "../consultas/ConsultaDetail";
-import { MedicoFiltro } from "../consultas/SharedComponents";
-import { DAYS_PT, STATUS_STYLE, STATUS_LEGEND } from "../consultas/constants";
-import { getWeekDays, formatKey, isToday, buildWeekRange } from "../utils/utils";
-import { useIsMobile } from "../hooks/use-mobile";
-import { toast } from "sonner";
+import {useMemo, useState} from "react";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {CalendarDays, ChevronLeft, ChevronRight, Download, LayoutGrid, Plus} from "lucide-react";
+import {Button} from "../components/ui/button";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../components/ui/dialog";
+import type {Consulta} from "../services/api";
+import {configuracoesApi, consultasApi, medicosApi} from "../services/api";
+import {useAuth} from "../context/AuthContext";
+import {usePermissions} from "../hooks/usePermissions";
+import {FormCadastroConsulta} from "../components/Form-Consulta";
+import {ConsultaDetail} from "../consultas/ConsultaDetail";
+import {MedicoFiltro} from "../consultas/SharedComponents";
+import {DAYS_PT, STATUS_LEGEND, STATUS_STYLE} from "../consultas/constants";
+import {buildWeekRange, formatKey, getWeekDays, isToday} from "../utils/utils";
+import {useIsMobile} from "../hooks/use-mobile";
+import {toast} from "sonner";
 
 const MAX_VISIBLE_PER_SLOT = 2;
 

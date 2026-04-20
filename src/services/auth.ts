@@ -80,14 +80,10 @@ export const authService = {
     isAuthenticated: (): boolean => {
         const token = localStorage.getItem("auth_token");
         if (!token) return false;
-
         if (isTokenExpired(token)) {
-            // Limpa tudo e redireciona sem spammar o backend
             authService.logout();
-            window.location.href = "/login";
             return false;
         }
-
         return true;
     },
 };

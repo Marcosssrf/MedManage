@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useState} from "react";
 
 export function usePagination<T>(items: T[], perPage = 10) {
     const [page, setPage] = useState(1);

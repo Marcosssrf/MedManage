@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { medicosApi, type Medico } from "../services/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { Label } from "./ui/label";
+import {useState} from "react";
+import {type Medico, medicosApi} from "../services/api";
+import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {toast} from "sonner";
+import {Input} from "./ui/input";
+import {Button} from "./ui/button";
+import {Label} from "./ui/label";
 
 interface FormData {
     nome: string;

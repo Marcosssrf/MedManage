@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { consultasApi, relatoriosApi } from "../services/api";
-import { Users, Stethoscope, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle, CalendarCheck } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {useState} from "react";
+import {useQuery} from "@tanstack/react-query";
+import {consultasApi, relatoriosApi} from "../services/api";
+import {CalendarCheck, CalendarDays, Stethoscope, TrendingUp, Users} from "lucide-react";
+import {useAuth} from "../context/AuthContext";
+import {Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from "recharts";
 
 function StatCard({ icon: Icon, label, value, color }: {
     icon: React.ElementType;

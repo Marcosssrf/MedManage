@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import {Navigate, Route, Routes} from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Layout from "./components/AppLayout";
@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Usuarios from "./pages/Usuarios";
 import Convenios from "./pages/Convenios";
 import Configuracoes from "./pages/Configuracoes";
+import Relatorios from "@/pages/Relatorios.tsx";
 
 export default function App() {
   return (
@@ -57,7 +58,7 @@ export default function App() {
         } />
         <Route path="relatorios" element={
           <ProtectedRoute roles={["ADMIN"]}>
-            <p>Relatórios</p>
+            <Relatorios />
           </ProtectedRoute>
         } />
         <Route path="configuracoes" element={

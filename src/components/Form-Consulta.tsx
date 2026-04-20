@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { consultasApi, pacientesApi, medicosApi, type Consulta } from "../services/api";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { toast } from "sonner";
-import { Search } from "lucide-react";
-import { usePermissions } from "../hooks/usePermissions";
-import { useAuth } from "../context/AuthContext";
+import {useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {type Consulta, consultasApi, medicosApi, pacientesApi} from "../services/api";
+import {Button} from "./ui/button";
+import {Input} from "./ui/input";
+import {toast} from "sonner";
+import {Search} from "lucide-react";
+import {usePermissions} from "../hooks/usePermissions";
+import {useAuth} from "../context/AuthContext";
 
 interface Props {
     onSuccess?: () => void;
@@ -222,8 +222,12 @@ export function FormCadastroConsulta({ onSuccess, initialData, prefillData, pref
                 >
                     <option value="PRIMEIRA_CONSULTA">Primeira Consulta</option>
                     <option value="RETORNO">Retorno</option>
+                    <option value="URGENCIA">Urgencia</option>
                     <option value="EXAME">Exame</option>
                     <option value="ROTINA">Rotina</option>
+                    <option value="TELEMEDICINA">Telemedicina</option>
+                    <option value="PRE_OPERATORIO">Pre Operatorio</option>
+                    <option value="POS_OPERATORIO">Pos Operatorio</option>
                 </select>
             </div>
 

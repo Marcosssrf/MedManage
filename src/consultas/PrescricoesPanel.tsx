@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, FileDown } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
-import { consultasApi, prescricoesApi } from "../services/api";
-import type { Consulta, Prescricao } from "../services/api";
-import { gerarPrescricaoPDF } from "../components/pdfGenerator";
-import type { ClinicaInfo } from "../components/pdfGenerator";
-import { TIPOS_RECEITA_LABELS, TIPOS_RECEITA_MAP, EMPTY_RX } from "./constants";
+import {useState} from "react";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {FileDown, Plus} from "lucide-react";
+import {toast} from "sonner";
+import {Button} from "../components/ui/button";
+import {Input} from "../components/ui/input";
+import {Label} from "../components/ui/label";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../components/ui/dialog";
+import type {Consulta, Prescricao} from "../services/api";
+import {consultasApi, prescricoesApi} from "../services/api";
+import type {ClinicaInfo} from "../components/pdfGenerator";
+import {gerarPrescricaoPDF} from "../components/pdfGenerator";
+import {EMPTY_RX, TIPOS_RECEITA_LABELS, TIPOS_RECEITA_MAP} from "./constants";
 
 // ─── AddRxForm ─────────────────────────────────
 function AddRxForm({ onSave, onCancel, loading }: {
