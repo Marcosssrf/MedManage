@@ -184,13 +184,13 @@ export const FormCadastroPaciente = ({ onSuccess, initialData }: Props) => {
         ? pacientesApi.atualizar(initialData!.id!, payload)
         : pacientesApi.cadastrar(payload);
     },
-    onSuccess: () => {
+    onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["pacientes"] });
       queryClient.invalidateQueries({ queryKey: ["paciente", initialData?.id] });
       queryClient.refetchQueries({ queryKey: ["pacientes"] });
       if (!isEditing) setForm(initialForm);
       toast.success(isEditing ? "Paciente atualizado com sucesso!" : "Paciente cadastrado com sucesso!");
-      onSuccess?.();
+      onSuccess?.(updated);
     },
     onError: (error: Error) => {
       toast.error(error.message || (isEditing ? "Erro ao atualizar paciente" : "Erro ao cadastrar paciente"));
