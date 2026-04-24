@@ -3,10 +3,12 @@ package com.clinica.controller;
 import com.clinica.dto.UserCreateDTO;
 import com.clinica.dto.UserDTO;
 import com.clinica.dto.resposta.MedicoConsultaDTO;
+import com.clinica.dto.update.MeuPerfilUpdateDTO;
 import com.clinica.dto.update.UserUpdateDTO;
 import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.model.User;
 import com.clinica.repository.UserRepository;
+import com.clinica.security.JwtTokenService;
 import com.clinica.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +33,8 @@ public class UserController {
     private UserService service;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private JwtTokenService jwtTokenService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -57,6 +63,30 @@ public class UserController {
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Usuário não encontrado"));
         UserDTO dto = converterParaDTO(user);
         return ResponseEntity.ok(dto);
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<Map<String, Object>> patchMe(Authentication authentication,
+                                                       @RequestBody MeuPerfilUpdateDTO dto) {
+        String usernameAtual = authentication.getName();
+        UserDTO userAtualizado = service.patchMe(usernameAtual, dto);
+
+        Map<String, Object> resposta = new HashMap<>();
+        resposta.put("user", userAtualizado);
+
+        // Se o username mudou, gera novo token com o username atualizado
+        boolean usernameMudou = dto.username() != null
+                && !dto.username().isBlank()
+                && !dto.username().equals(usernameAtual);
+
+        if (usernameMudou) {
+            String novoToken = jwtTokenService.generateToken(userAtualizado.username());
+            resposta.put("accessToken", novoToken);
+            resposta.put("tokenType", "Bearer");
+            resposta.put("expiresIn", jwtTokenService.getExpirationSeconds());
+        }
+
+        return ResponseEntity.ok(resposta);
     }
 
     @PatchMapping("/{id}")

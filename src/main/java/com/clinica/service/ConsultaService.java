@@ -7,10 +7,7 @@ import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.exception.RegraDeNegocioException;
 import com.clinica.model.*;
 import com.clinica.model.enums.StatusConsulta;
-import com.clinica.repository.ConsultaRepository;
-import com.clinica.repository.HorarioTrabalhoMedicoRepository;
-import com.clinica.repository.MedicoRepository;
-import com.clinica.repository.PacienteRepository;
+import com.clinica.repository.*;
 import com.clinica.security.SecurityService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,11 +34,14 @@ public class ConsultaService {
 	@Autowired
 	ConfiguracaoClinicaService configuracaoClinicaService;
 
-    @Autowired
+	@Autowired
 	SecurityService securityService;
 
 	@Autowired
 	HorarioTrabalhoMedicoRepository horarioTrabalhoMedicoRepository;
+
+	@Autowired
+	BloqueioAgendaRepository bloqueioAgendaRepository;
 
 	private Integer getDuracaoMedico(UUID medicoId, LocalDateTime dataHora){
 		DayOfWeek diaSemana = dataHora.getDayOfWeek();
@@ -86,12 +86,39 @@ public class ConsultaService {
 
 		boolean isHorarioAtendimento = !horario.isBefore(getInicio()) && !horario.isAfter(getFim());
 
+		// Verifica se o médico atende no dia da semana solicitado.
+		// Só bloqueia se o médico tiver horários cadastrados e o dia não estiver entre eles.
+		DayOfWeek diaSemana = dto.dataHora().getDayOfWeek();
+		boolean temHorariosCadastrados = !horarioTrabalhoMedicoRepository.findByMedicoId(medico.getId()).isEmpty();
+		if (temHorariosCadastrados) {
+			boolean medicoAtendeNoDia = horarioTrabalhoMedicoRepository
+					.existsByMedicoIdAndDiaSemana(medico.getId(), diaSemana);
+			if (!medicoAtendeNoDia) {
+				throw new RegraDeNegocioException("O médico não atende neste dia da semana");
+			}
+
+			// Valida também o horário específico do médico naquele dia
+			HorarioTrabalhoMedico htMedico = horarioTrabalhoMedicoRepository
+					.findByMedicoIdAndDiaSemana(medico.getId(), diaSemana).get();
+			if (horario.isBefore(htMedico.getHoraInicio()) || horario.isAfter(htMedico.getHoraFim())) {
+				throw new RegraDeNegocioException(
+						"Fora do horário de atendimento do médico neste dia (" +
+								htMedico.getHoraInicio() + " às " + htMedico.getHoraFim() + ")"
+				);
+			}
+		}
+
 		if (paciente.getAtivo() == false){
 			throw new RegraDeNegocioException("Paciente inativo");
 		}
 
 		if(medico.getAtivo() == false){
 			throw new RegraDeNegocioException("Médico inativo");
+		}
+
+		// Verifica bloqueio de agenda (férias, feriado, manutenção) — médico ou clínica geral
+		if (bloqueioAgendaRepository.existsBloqueioParaMedicoNaData(medico.getId(), dto.dataHora().toLocalDate())) {
+			throw new RegraDeNegocioException("Data bloqueada na agenda deste médico (férias, feriado ou manutenção)");
 		}
 
 		if(!isHorarioAtendimento){
@@ -169,6 +196,30 @@ public class ConsultaService {
 
 		if (horario.isBefore(getInicio()) || horario.isAfter(getFim()))
 			throw new RegraDeNegocioException("Fora do horário de atendimento");
+
+		// Verifica se o médico atende no dia da semana solicitado
+		DayOfWeek diaSemanaUpdate = novaDataHora.getDayOfWeek();
+		boolean temHorariosCadastradosUpdate = !horarioTrabalhoMedicoRepository.findByMedicoId(medico.getId()).isEmpty();
+		if (temHorariosCadastradosUpdate) {
+			boolean medicoAtendeNoDiaUpdate = horarioTrabalhoMedicoRepository
+					.existsByMedicoIdAndDiaSemana(medico.getId(), diaSemanaUpdate);
+			if (!medicoAtendeNoDiaUpdate) {
+				throw new RegraDeNegocioException("O médico não atende neste dia da semana");
+			}
+			HorarioTrabalhoMedico htMedicoUpdate = horarioTrabalhoMedicoRepository
+					.findByMedicoIdAndDiaSemana(medico.getId(), diaSemanaUpdate).get();
+			if (horario.isBefore(htMedicoUpdate.getHoraInicio()) || horario.isAfter(htMedicoUpdate.getHoraFim())) {
+				throw new RegraDeNegocioException(
+						"Fora do horário de atendimento do médico neste dia (" +
+								htMedicoUpdate.getHoraInicio() + " às " + htMedicoUpdate.getHoraFim() + ")"
+				);
+			}
+		}
+
+		// Verifica bloqueio de agenda (férias, feriado, manutenção) — médico ou clínica geral
+		if (bloqueioAgendaRepository.existsBloqueioParaMedicoNaData(medico.getId(), novaDataHora.toLocalDate())) {
+			throw new RegraDeNegocioException("Data bloqueada na agenda deste médico (férias, feriado ou manutenção)");
+		}
 
 		if (!novaDataHora.isAfter(dataHoje))
 			throw new RegraDeNegocioException("Data de atendimento deve ser futura");

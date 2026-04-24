@@ -3,6 +3,7 @@ package com.clinica.service;
 import com.clinica.dto.UserCreateDTO;
 import com.clinica.dto.UserDTO;
 import com.clinica.dto.resposta.MedicoConsultaDTO;
+import com.clinica.dto.update.MeuPerfilUpdateDTO;
 import com.clinica.dto.update.UserUpdateDTO;
 import com.clinica.exception.EntidadeNaoEncontradaException;
 import com.clinica.exception.RegraDeNegocioException;
@@ -108,6 +109,33 @@ public class UserService {
         repository.save(user);
 
         return converterParaDTO(user);
+    }
+
+    @Transactional
+    public UserDTO patchMe(String username, MeuPerfilUpdateDTO dto) {
+        User user = repository.findByUsername(username)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Usuário não encontrado"));
+
+        // Troca de username
+        if (dto.username() != null && !dto.username().isBlank()) {
+            if (!dto.username().equals(username) && repository.findByUsername(dto.username()).isPresent()) {
+                throw new RegraDeNegocioException("Username já está em uso");
+            }
+            user.setUsername(dto.username());
+        }
+
+        // Troca de senha — exige confirmação da senha atual
+        if (dto.novaSenha() != null && !dto.novaSenha().isBlank()) {
+            if (dto.senhaAtual() == null || dto.senhaAtual().isBlank()) {
+                throw new RegraDeNegocioException("Informe a senha atual para alterá-la");
+            }
+            if (!encoder.matches(dto.senhaAtual(), user.getSenha())) {
+                throw new RegraDeNegocioException("Senha atual incorreta");
+            }
+            user.setSenha(encoder.encode(dto.novaSenha()));
+        }
+
+        return converterParaDTO(repository.save(user));
     }
 
     public UserDTO delete(UUID id){
