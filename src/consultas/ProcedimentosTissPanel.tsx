@@ -323,7 +323,7 @@ export function ProcedimentosTissPanel({
         mutationFn: (dados: Omit<ProcedimentoTiss, "id" | "status" | "numeroAutorizacao">) =>
             procedimentosTissApi.cadastrar(dados),
         onSuccess: () => { invalidate(); setAddOpen(false); toast.success("Procedimento TISS cadastrado!"); },
-        onError: () => toast.error("Erro ao cadastrar procedimento."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao cadastrar procedimento."),
     });
 
     const gerarPagamentoMutation = useMutation({
@@ -363,13 +363,13 @@ export function ProcedimentosTissPanel({
                 gerarPagamentoMutation.mutate();
             }
         },
-        onError: () => toast.error("Erro ao autorizar procedimento."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao autorizar procedimento."),
     });
 
     const negarMutation = useMutation({
         mutationFn: (id: string | number) => procedimentosTissApi.negar(id),
         onSuccess: () => { invalidate(); toast.success("Procedimento negado."); },
-        onError: () => toast.error("Erro ao negar procedimento."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao negar procedimento."),
     });
 
     const total = procedimentos.reduce((acc, p) => acc + (Number(p.valor) * (p.quantidade || 1)), 0);

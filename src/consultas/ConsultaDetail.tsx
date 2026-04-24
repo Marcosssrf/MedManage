@@ -9,7 +9,7 @@ import {anamneseApi, configuracoesApi, consultasApi, historicoClinicoApi} from "
 import {FormCadastroConsulta} from "../components/Form-Consulta";
 import {AnamneseForm, AnamneseView} from "../components/Form-Anamnese";
 import {PrescricoesPanel} from "./PrescricoesPanel";
-import {ProcedimentosTissPanel} from "./ProcedimentosTissPanel";
+import {ProcedimentosTissPanel} from "./ProcedimentosTissPanel.tsx";
 import {STATUS_STYLE} from "./constants";
 import {consultaAtiva} from "../utils/utils";
 
@@ -61,7 +61,7 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
             setHistoricoEditMode(false);
             toast.success(historico?.id ? "Histórico atualizado!" : "Histórico criado!");
         },
-        onError: () => toast.error("Erro ao salvar histórico clínico."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao salvar histórico clínico."),
     });
     const podeEditarClinico = canEdit && consultaAtiva(currentStatus);
     const statusLabel = currentStatus?.replace("_", " ") ?? "";
@@ -73,7 +73,7 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
             toast.success("Consulta cancelada!");
             onBack();
         },
-        onError: () => toast.error("Erro ao cancelar."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao cancelar."),
     });
 
     const statusMutation = useMutation({
@@ -90,7 +90,7 @@ export function ConsultaDetail({ consulta, onBack, canEdit, canCancelar }: Props
             };
             toast.success(`Status alterado para ${labels[novoStatus] ?? novoStatus}!`);
         },
-        onError: () => toast.error("Erro ao alterar status."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao alterar status."),
     });
 
     return (

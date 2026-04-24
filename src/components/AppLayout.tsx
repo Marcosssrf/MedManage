@@ -2,6 +2,7 @@ import {NavLink, Outlet, useNavigate} from "react-router-dom";
 import {
     BarChart2,
     CalendarDays,
+    CalendarOff,
     CreditCard,
     LayoutDashboard,
     LogOut,
@@ -13,7 +14,7 @@ import {
     Stethoscope,
     Sun,
     Users,
-    X
+    X,
 } from "lucide-react";
 import {useAuth} from "../context/AuthContext";
 import {useEffect, useState} from "react";
@@ -24,36 +25,42 @@ const navSections = [
     {
         label: "CLÍNICO",
         items: [
-            { to: "/consultas", icon: CalendarDays, label: "Consultas", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
-            { to: "/pacientes", icon: Users, label: "Pacientes", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
-            { to: "/medicos", icon: Stethoscope, label: "Médicos", roles: ["ADMIN", "SECRETARIA"] },
+            { to: "/consultas",      icon: CalendarDays, label: "Consultas",  roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
+            { to: "/pacientes",      icon: Users,        label: "Pacientes",  roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
+            { to: "/medicos",        icon: Stethoscope,  label: "Médicos",    roles: ["ADMIN", "SECRETARIA"] },
+        ],
+    },
+    {
+        label: "AGENDA",
+        items: [
+            { to: "/bloqueios-agenda", icon: CalendarOff, label: "Bloqueios de Agenda", roles: ["ADMIN", "SECRETARIA", "MEDICO"] },
         ],
     },
     {
         label: "FINANCEIRO",
         items: [
-            { to: "/pagamentos", icon: CreditCard, label: "Pagamentos", roles: ["ADMIN", "SECRETARIA"] },
-            { to: "/convenios", icon: ShieldAlert, label: "Convênios", roles: ["ADMIN", "SECRETARIA"] },
+            { to: "/pagamentos", icon: CreditCard,  label: "Pagamentos", roles: ["ADMIN", "SECRETARIA"] },
+            { to: "/convenios",  icon: ShieldAlert, label: "Convênios",  roles: ["ADMIN", "SECRETARIA"] },
         ],
     },
     {
         label: "SISTEMA",
         items: [
-            { to: "/usuarios", icon: ShieldCheck, label: "Usuários", roles: ["ADMIN"] },
-            { to: "/relatorios", icon: BarChart2, label: "Relatórios", roles: ["ADMIN"] },
-            { to: "/configuracoes", icon: Settings, label: "Configurações", roles: ["ADMIN"] },
+            { to: "/usuarios",     icon: ShieldCheck, label: "Usuários",      roles: ["ADMIN"] },
+            { to: "/relatorios",   icon: BarChart2,   label: "Relatórios",    roles: ["ADMIN"] },
+            { to: "/configuracoes",icon: Settings,    label: "Configurações", roles: ["ADMIN"] },
         ],
     },
 ];
 
 const dashboardItem = { to: "/", icon: LayoutDashboard, label: "Dashboard", roles: ["ADMIN", "SECRETARIA", "MEDICO"] };
 
-// function roleLabel(role: string) {
-//     if (role === "ADMIN") return "Administrador";
-//     if (role === "SECRETARIA") return "Secretária";
-//     if (role === "MEDICO") return "Médico";
-//     return role;
-// }
+function roleLabel(role: string) {
+    if (role === "ADMIN") return "Administrador";
+    if (role === "SECRETARIA") return "Recepcionista";
+    if (role === "MEDICO") return "Médico";
+    return role;
+}
 
 export default function AppLayout() {
     const { user, logout } = useAuth();
@@ -131,7 +138,6 @@ export default function AppLayout() {
 
             {/* Desktop Sidebar */}
             <aside className="hidden md:flex flex-col w-64 shrink-0 bg-sidebar border-r border-sidebar-border z-20">
-                {/* Logo */}
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border shrink-0">
                     <div className="w-9 h-9 rounded-xl bg-sidebar-primary/20 flex items-center justify-center text-sidebar-primary">
                         <Stethoscope className="w-5 h-5" />
@@ -142,12 +148,10 @@ export default function AppLayout() {
                     </div>
                 </div>
 
-                {/* Nav */}
                 <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
                     <NavItems />
                 </nav>
 
-                {/* Logout */}
                 <div className="px-3 py-4 border-t border-sidebar-border shrink-0">
                     <button
                         onClick={handleLogout}
@@ -198,17 +202,14 @@ export default function AppLayout() {
 
                 {/* Topbar */}
                 <header className="h-16 shrink-0 border-b border-border bg-card flex items-center px-4 md:px-6 gap-4 z-10">
-                    {/* Mobile hamburger */}
                     <button onClick={() => setMenuOpen(true)} className="md:hidden p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors" aria-label="Abrir menu">
                         <Menu className="w-5 h-5" />
                     </button>
 
-                    {/* Welcome */}
                     <div className="flex-1">
                         <p className="text-sm font-semibold text-foreground">Bem-vindo ao MedManage</p>
                     </div>
 
-                    {/* Dark mode toggle */}
                     <button
                         onClick={toggleDark}
                         className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
@@ -217,18 +218,20 @@ export default function AppLayout() {
                         {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                     </button>
 
-                    {/* User info + avatar */}
-                    <div className="flex items-center gap-3">
+                    <NavLink
+                        to="/perfil"
+                        className={({ isActive }) =>
+                            `flex items-center gap-3 px-2.5 py-1.5 rounded-lg transition-colors ${isActive ? "bg-muted" : "hover:bg-muted"}`
+                        }
+                    >
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-semibold text-foreground leading-tight">{user.username}</p>
-                            <p className="text-xs text-muted-foreground leading-tight">
-                                {user?.role ? `${user.role}` : ""}
-                            </p>
+                            <p className="text-xs text-muted-foreground leading-tight">{roleLabel(userRole)}</p>
                         </div>
                         <div className="w-9 h-9 rounded-full bg-sidebar flex items-center justify-center text-sidebar-primary font-bold text-sm shrink-0 ring-2 ring-sidebar-primary/40">
                             {initials}
                         </div>
-                    </div>
+                    </NavLink>
                 </header>
 
                 {/* Page content */}

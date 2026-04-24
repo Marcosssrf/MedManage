@@ -86,4 +86,24 @@ export const authService = {
         }
         return true;
     },
+
+    fetchMe: async (): Promise<AuthUser | null> => {
+        const token = localStorage.getItem("auth_token");
+        if (!token) return null;
+        try {
+            const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "ngrok-skip-browser-warning": "true",
+                    "Content-Type": "application/json",
+                },
+            });
+            if (!res.ok) return null;
+            const user: AuthUser = await res.json();
+            localStorage.setItem("auth_user", JSON.stringify(user));
+            return user;
+        } catch {
+            return null;
+        }
+    },
 };

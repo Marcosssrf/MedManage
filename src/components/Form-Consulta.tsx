@@ -161,7 +161,7 @@ export function FormCadastroConsulta({ onSuccess, initialData, prefillData, pref
             toast.success(isEditing ? "Consulta atualizada com sucesso!" : "Consulta agendada com sucesso!");
             onSuccess?.();
         },
-        onError: () => toast.error(isEditing ? "Erro ao atualizar consulta." : "Erro ao agendar consulta."),
+        onError: (e: Error) => toast.error(e?.message || (isEditing ? "Erro ao atualizar consulta." : "Erro ao agendar consulta.")),
     });
 
     const handleSubmit = (e: React.FormEvent) => {

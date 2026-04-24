@@ -11,63 +11,75 @@ import Usuarios from "./pages/Usuarios";
 import Convenios from "./pages/Convenios";
 import Configuracoes from "./pages/Configuracoes";
 import Relatorios from "@/pages/Relatorios.tsx";
+import BloqueiosAgenda from "./pages/BloqueiosAgenda";
+import Perfil from "./pages/Perfil";
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
-      }>
-        <Route index element={
-          <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
-            <Dashboard />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={
+          <ProtectedRoute>
+            <Layout />
           </ProtectedRoute>
-        } />
-        <Route path="pacientes" element={
-          <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
-            <Pacientes />
-          </ProtectedRoute>
-        } />
-        <Route path="medicos" element={
-          <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
-            <Medicos />
-          </ProtectedRoute>
-        } />
-        <Route path="consultas" element={
-          <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
-            <Consultas />
-          </ProtectedRoute>
-        } />
-        <Route path="pagamentos" element={
-          <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
-            <Pagamentos />
-          </ProtectedRoute>
-        } />
-        <Route path="convenios" element={
-          <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
-            <Convenios />
-          </ProtectedRoute>
-        } />
-        <Route path="usuarios" element={
-          <ProtectedRoute roles={["ADMIN"]}>
-            <Usuarios />
-          </ProtectedRoute>
-        } />
-        <Route path="relatorios" element={
-          <ProtectedRoute roles={["ADMIN"]}>
-            <Relatorios />
-          </ProtectedRoute>
-        } />
-        <Route path="configuracoes" element={
-          <ProtectedRoute roles={["ADMIN"]}>
-            <Configuracoes />
-          </ProtectedRoute>
-        } />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        }>
+          <Route index element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="pacientes" element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
+              <Pacientes />
+            </ProtectedRoute>
+          } />
+          <Route path="medicos" element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
+              <Medicos />
+            </ProtectedRoute>
+          } />
+          <Route path="consultas" element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
+              <Consultas />
+            </ProtectedRoute>
+          } />
+          <Route path="bloqueios-agenda" element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
+              <BloqueiosAgenda />
+            </ProtectedRoute>
+          } />
+          <Route path="pagamentos" element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
+              <Pagamentos />
+            </ProtectedRoute>
+          } />
+          <Route path="convenios" element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA"]}>
+              <Convenios />
+            </ProtectedRoute>
+          } />
+          <Route path="usuarios" element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <Usuarios />
+            </ProtectedRoute>
+          } />
+          <Route path="relatorios" element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <Relatorios />
+            </ProtectedRoute>
+          } />
+          <Route path="perfil" element={
+            <ProtectedRoute roles={["ADMIN", "SECRETARIA", "MEDICO"]}>
+              <Perfil />
+            </ProtectedRoute>
+          } />
+          <Route path="configuracoes" element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <Configuracoes />
+            </ProtectedRoute>
+          } />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
   );
 }

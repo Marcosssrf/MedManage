@@ -7,6 +7,7 @@ interface AuthContextType {
     user: AuthUser | null;
     login: (username: string, senha: string) => Promise<void>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
     isAuthenticated: boolean;
 }
 
@@ -40,8 +41,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(loggedUser);
     };
 
+    const refreshUser = async () => {
+        const updated = await authService.fetchMe();
+        if (updated) setUser(updated);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+        <AuthContext.Provider value={{ user, login, logout, refreshUser, isAuthenticated: !!user }}>
             {children}
         </AuthContext.Provider>
     );

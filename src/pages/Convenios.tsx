@@ -45,7 +45,7 @@ export default function Convenios() {
             toast.success(editing ? "Convênio atualizado!" : "Convênio criado!");
             setModalOpen(false);
         },
-        onError: () => toast.error("Erro ao salvar convênio."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao salvar convênio."),
     });
 
     const openNew = () => { setEditing(null); setForm(EMPTY); setModalOpen(true); };

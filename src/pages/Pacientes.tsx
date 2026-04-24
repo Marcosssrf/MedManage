@@ -192,7 +192,7 @@ function PacienteDetail({
             setEditOpen(false);
             toast.success("Histórico clínico atualizado!");
         },
-        onError: () => toast.error("Erro ao salvar histórico."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao salvar histórico."),
     });
 
     const handleSaveHistorico = () => {

@@ -489,6 +489,10 @@ export const usuariosApi = {
         request<Usuario>(`/usuarios/${id}`, { method: "PATCH", body: JSON.stringify(dados) }),
     deletar: (id: string | number) =>
         request(`/usuarios/${id}`, { method: "DELETE" }),
+    me: () =>
+        request<Usuario>("/usuarios/me"),
+    patchMe: (dados: { username?: string; senhaAtual?: string; novaSenha?: string }) =>
+        request<{ user: Usuario; accessToken?: string; tokenType?: string; expiresIn?: number }>("/usuarios/me", { method: "PATCH", body: JSON.stringify(dados) }),
 };
 
 export interface HistoricoClinico {
@@ -817,4 +821,66 @@ export const procedimentosTissApi = {
 
     gerarPagamento: (consultaId: string | number) =>
         request<any>(`/procedimentos-tiss/consulta/${consultaId}/gerar-pagamento`, { method: "POST" }),
+};
+
+// ─────────────────────────────────────────────
+// BLOQUEIO DE AGENDA
+// ─────────────────────────────────────────────
+
+export type TipoBloqueio = "FERIAS" | "FERIADO" | "MANUTENCAO_SALA" | "OUTRO";
+
+export const TIPO_BLOQUEIO_LABEL: Record<TipoBloqueio, string> = {
+    FERIAS:          "Férias",
+    FERIADO:         "Feriado",
+    MANUTENCAO_SALA: "Manutenção de Sala",
+    OUTRO:           "Outro",
+};
+
+export interface BloqueioAgenda {
+    id?:            string;
+    medicoId?:      string | null;
+    medicoNome?:    string | null;
+    dataInicio:     string; // ISO date: "2025-07-14"
+    dataFim:        string;
+    tipo:           TipoBloqueio;
+    motivo?:        string;
+    ativo?:         boolean;
+    dataCadastro?:  string;
+}
+
+export interface BloqueioAgendaPayload {
+    medicoId?:  string | null;
+    dataInicio: string;
+    dataFim:    string;
+    tipo:       TipoBloqueio;
+    motivo?:    string;
+}
+
+export const bloqueiosApi = {
+    listar: () =>
+        request<BloqueioAgenda[]>("/bloqueios-agenda"),
+
+    listarPorMedico: (medicoId: string) =>
+        request<BloqueioAgenda[]>(`/bloqueios-agenda/medico/${medicoId}`),
+
+    listarGerais: () =>
+        request<BloqueioAgenda[]>("/bloqueios-agenda/gerais"),
+
+    buscarPorId: (id: string) =>
+        request<BloqueioAgenda>(`/bloqueios-agenda/${id}`),
+
+    criar: (dados: BloqueioAgendaPayload) =>
+        request<BloqueioAgenda>("/bloqueios-agenda", {
+            method: "POST",
+            body: JSON.stringify(dados),
+        }),
+
+    atualizar: (id: string, dados: Partial<BloqueioAgendaPayload> & { ativo?: boolean }) =>
+        request<BloqueioAgenda>(`/bloqueios-agenda/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(dados),
+        }),
+
+    deletar: (id: string) =>
+        request<void>(`/bloqueios-agenda/${id}`, { method: "DELETE" }),
 };

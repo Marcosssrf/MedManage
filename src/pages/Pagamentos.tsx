@@ -398,7 +398,7 @@ export default function Pagamentos() {
             queryClient.invalidateQueries({ queryKey: ["pagamentos-totais"] });
             toast.success("Pagamento confirmado!");
         },
-        onError: () => toast.error("Erro ao confirmar pagamento."),
+        onError: (e: Error) => toast.error(e?.message || "Erro ao confirmar pagamento."),
     });
 
     const hasFilters = !!(filterStatus || filterMes);
