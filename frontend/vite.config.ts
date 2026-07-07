@@ -5,6 +5,7 @@ import babel from '@rolldown/plugin-babel'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
+  base: '/medmanage/',
   server: {
     port: 5173,
     host: true

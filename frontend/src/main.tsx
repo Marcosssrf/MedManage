@@ -10,12 +10,12 @@ import App from './App.tsx'
 
 const queryClient = new QueryClient()
 
-initializeSecurityProtections()
+// initializeSecurityProtections()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+        <BrowserRouter basename="/medmanage">
         <AuthProvider>
           <App />
           <Toaster />
